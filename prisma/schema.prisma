@@ -1,0 +1,213 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Institucion {
+  id                     Int      @id @default(autoincrement())
+  nombre                 String
+  logo_base64            String?
+  logo_path              String?
+  horario_inicio         String?
+  horario_salida         String?
+  margen_puntualidad_min Int      @default(5)
+  direccion              String?
+  pais                   String?
+  departamento           String?
+  municipio              String?
+  email                  String?
+  telefono               String?
+  inicializado           Boolean  @default(false)
+  creado_en              DateTime @default(now())
+  actualizado_en         DateTime @updatedAt
+  master_recovery_key    String?
+
+  @@map("institucion")
+}
+
+model Alumno {
+  id              Int                  @id @default(autoincrement())
+  carnet          String               @unique
+  nombres         String
+  apellidos       String
+  sexo            String?
+  grado           String
+  carrera         String?
+  especialidad    String?
+  jornada         String?
+  estado          String               @default("activo")
+  anio_ingreso    Int?
+  anio_graduacion Int?
+  nivel_actual    String?
+  motivo_baja     String?
+  fecha_baja      DateTime?
+  foto_path       String?
+  creado_en       DateTime             @default(now())
+  actualizado_en  DateTime             @updatedAt
+  asistencias     Asistencia[]         @relation("alumno_asistencia")
+  codigos_qr      CodigoQr[]           @relation("alumno_qr")
+  excusas         Excusa[]             @relation("alumno_excusa")
+  historial       HistorialAcademico[]
+
+  @@index([estado])
+  @@index([grado])
+  @@index([nivel_actual])
+  @@map("alumnos")
+}
+
+model Personal {
+  id             Int          @id @default(autoincrement())
+  carnet         String       @unique
+  nombres        String
+  apellidos      String
+  sexo           String?
+  cargo          String?
+  jornada        String?
+  grado_guia     String?
+  estado         String       @default("activo")
+  foto_path      String?
+  creado_en      DateTime     @default(now())
+  actualizado_en DateTime     @updatedAt
+  asistencias    Asistencia[] @relation("personal_asistencia")
+  codigos_qr     CodigoQr[]   @relation("personal_qr")
+  excusas        Excusa[]     @relation("personal_excusa")
+
+  @@index([estado])
+  @@map("personal")
+}
+
+model CodigoQr {
+  id            Int       @id @default(autoincrement())
+  persona_tipo  String
+  alumno_id     Int?
+  personal_id   Int?
+  token         String    @unique
+  png_path      String?
+  vigente       Boolean   @default(true)
+  generado_en   DateTime  @default(now())
+  regenerado_en DateTime?
+  personal      Personal? @relation("personal_qr", fields: [personal_id], references: [id], onDelete: Cascade)
+  alumno        Alumno?   @relation("alumno_qr", fields: [alumno_id], references: [id], onDelete: Cascade)
+
+  @@unique([persona_tipo, alumno_id])
+  @@unique([persona_tipo, personal_id])
+  @@index([token])
+  @@index([vigente])
+  @@map("codigos_qr")
+}
+
+model Asistencia {
+  id                 Int       @id @default(autoincrement())
+  persona_tipo       String
+  alumno_id          Int?
+  personal_id        Int?
+  tipo_evento        String
+  timestamp          DateTime  @default(now())
+  origen             String    @default("QR")
+  dispositivo        String?
+  estado_puntualidad String?
+  observaciones      String?
+  creado_en          DateTime  @default(now())
+  personal           Personal? @relation("personal_asistencia", fields: [personal_id], references: [id])
+  alumno             Alumno?   @relation("alumno_asistencia", fields: [alumno_id], references: [id])
+
+  @@index([timestamp])
+  @@index([persona_tipo])
+  @@map("asistencias")
+}
+
+model Usuario {
+  id             Int         @id @default(autoincrement())
+  email          String      @unique
+  nombres        String?
+  apellidos      String?
+  foto_path      String?
+  cargo          String?
+  jornada        String?
+  rol            String      @default("operador")
+  hash_pass      String
+  activo         Boolean     @default(true)
+  creado_en      DateTime    @default(now())
+  actualizado_en DateTime    @updatedAt
+  auditorias     Auditoria[] @relation("usuario_auditoria")
+
+  @@map("usuarios")
+}
+
+model Auditoria {
+  id         Int      @id @default(autoincrement())
+  entidad    String
+  entidad_id Int?
+  usuario_id Int?
+  accion     String
+  detalle    String?
+  timestamp  DateTime @default(now())
+  usuario    Usuario? @relation("usuario_auditoria", fields: [usuario_id], references: [id])
+
+  @@index([timestamp])
+  @@index([entidad])
+  @@map("auditoria")
+}
+
+model Excusa {
+  id          Int       @id @default(autoincrement())
+  alumno_id   Int?
+  personal_id Int?
+  motivo      String
+  fecha       DateTime  @default(now())
+  personal    Personal? @relation("personal_excusa", fields: [personal_id], references: [id], onDelete: Cascade)
+  alumno      Alumno?   @relation("alumno_excusa", fields: [alumno_id], references: [id], onDelete: Cascade)
+
+  @@index([fecha])
+  @@map("excusas")
+}
+
+model HistorialAcademico {
+  id            Int      @id @default(autoincrement())
+  alumno_id     Int
+  anio_escolar  Int
+  grado_cursado String
+  nivel         String
+  carrera       String?
+  promovido     Boolean  @default(true)
+  observaciones String?
+  creado_en     DateTime @default(now())
+  alumno        Alumno   @relation(fields: [alumno_id], references: [id], onDelete: Cascade)
+
+  @@index([alumno_id, anio_escolar])
+  @@map("historial_academico")
+}
+
+model DiagnosticResult {
+  id           Int       @id @default(autoincrement())
+  tipo         String
+  codigo_qr_id Int?
+  descripcion  String
+  reparado     Boolean   @default(false)
+  reparado_en  DateTime?
+  timestamp    DateTime  @default(now())
+
+  @@index([reparado])
+  @@index([timestamp])
+  @@map("diagnostic_results")
+}
+
+model Equipo {
+  id              Int      @id @default(autoincrement())
+  nombre          String?
+  hostname        String?
+  ip              String   @unique
+  os              String?
+  mac_address     String?  @unique
+  aprobado        Boolean  @default(false)
+  clave_seguridad String   @unique
+  ultima_conexion DateTime @default(now())
+  creado_en       DateTime @default(now())
+  actualizado_en  DateTime @updatedAt
+
+  @@map("equipos")
+}

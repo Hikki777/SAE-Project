@@ -1,0 +1,28 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Iniciar desarrollo (Backend + Frontend)",
+			"type": "shell",
+			"command": "npm run dev",
+			"args": [],
+			"isBackground": true,
+			"problemMatcher": []
+		},
+		{
+			"label": "Iniciar aplicación Electron",
+			"type": "shell",
+			"command": "npm run electron",
+			"args": [],
+			"isBackground": true,
+			"problemMatcher": []
+		},
+		{
+			"label": "Build de producción (Frontend)",
+			"type": "shell",
+			"command": "npm run build:frontend",
+			"args": [],
+			"isBackground": false
+		}
+	]
+}

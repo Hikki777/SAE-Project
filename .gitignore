@@ -1,0 +1,124 @@
+# ============================================
+# NODE MODULES Y DEPENDENCIAS
+# ============================================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-store/
+
+# ============================================
+# VARIABLES DE ENTORNO Y SECRETOS
+# ============================================
+.env
+.env.local
+.env.*.local
+
+# ============================================
+# BASE DE DATOS
+# ============================================
+prisma/dev.db
+prisma/dev.db-journal
+prisma/test.db
+prisma/test.db-journal
+*.db
+*.db-journal
+
+# ============================================
+# LOGS
+# ============================================
+logs/
+*.log
+combined.log
+error.log
+
+# ============================================
+# ARCHIVOS SUBIDOS (UPLOADS)
+# ============================================
+uploads/alumnos/*
+uploads/docentes/*
+uploads/qrs/*
+uploads/logos/*
+uploads/documentos/*
+!uploads/.gitkeep
+!uploads/alumnos/.gitkeep
+!uploads/docentes/.gitkeep
+!uploads/qrs/.gitkeep
+!uploads/logos/.gitkeep
+!uploads/documentos/.gitkeep
+
+# ============================================
+# BUILD Y DISTRIBUCIÓN
+# ============================================
+dist/
+build/
+frontend/dist/
+frontend/build/
+.next/
+out/
+
+# ============================================
+# COVERAGE Y TESTS
+# ============================================
+coverage/
+.nyc_output/
+*.lcov
+
+# ============================================
+# CACHE
+# ============================================
+.cache/
+.parcel-cache/
+.vite/
+.eslintcache
+
+# ============================================
+# SISTEMA OPERATIVO
+# ============================================
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ============================================
+# EDITORES E IDEs
+# ============================================
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+
+# ============================================
+# TEMPORAL
+# ============================================
+tmp/
+temp/
+*.tmp
+*.bak
+*.backup
+
+# ============================================
+# ELECTRON (SI SE USA)
+# ============================================
+electron/dist/
+electron/build/
+
+# ============================================
+# PRISMA
+# ============================================
+
+# ============================================
+# DATOS LOCALES Y BACKUPS
+# ============================================
+backups/
+release/
+.DS_Store
+

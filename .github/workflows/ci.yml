@@ -1,0 +1,44 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  # Tests y Lint deshabilitados temporalmente para versión beta
+  # Serán habilitados en v1.0.0 con configuración completa de secrets
+
+  build:
+    name: Build de Frontend
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.x"
+          cache: "npm"
+
+      - name: Instalar dependencias raíz
+        run: npm ci
+
+      - name: Instalar dependencias frontend
+        run: cd frontend && npm ci
+
+      - name: Build frontend
+        run: cd frontend && npm run build
+
+      - name: Verificar artifacts
+        run: |
+          if [ -d "frontend/dist" ]; then
+            echo "✅ Build exitoso"
+            ls -lh frontend/dist
+          else
+            echo "❌ Build falló"
+            exit 1
+          fi
