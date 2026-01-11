@@ -63,7 +63,7 @@ exports.validarCrearAlumno = [
   body('jornada')
     .optional()
     .trim()
-    .isIn(['Matutina', 'Vespertina', 'Nocturna']).withMessage('Jornada inválida'),
+    .isIn(['Matutina', 'Vespertina', 'Nocturna', 'Semipresencial', 'Virtual', 'Fin de Semana (Sábado)', 'Fin de Semana (Domingo)', 'Extendida']).withMessage('Jornada inválida'),
   
   body('estado')
     .optional()
@@ -110,7 +110,7 @@ exports.validarActualizarAlumno = [
   body('jornada')
     .optional()
     .trim()
-    .isIn(['Matutina', 'Vespertina', 'Nocturna']).withMessage('Jornada inválida'),
+    .isIn(['Matutina', 'Vespertina', 'Nocturna', 'Semipresencial', 'Virtual', 'Fin de Semana (Sábado)', 'Fin de Semana (Domingo)', 'Extendida']).withMessage('Jornada inválida'),
   
   body('estado')
     .optional()
@@ -154,7 +154,7 @@ exports.validarCrearDocente = [
   body('jornada')
     .optional()
     .trim()
-    .isIn(['Matutina', 'Vespertina', 'Nocturna']).withMessage('Jornada inválida'),
+    .isIn(['Matutina', 'Vespertina', 'Nocturna', 'Semipresencial', 'Virtual', 'Fin de Semana (Sábado)', 'Fin de Semana (Domingo)', 'Extendida']).withMessage('Jornada inválida'),
   
   body('estado')
     .optional()
@@ -197,7 +197,7 @@ exports.validarActualizarDocente = [
   body('jornada')
     .optional()
     .trim()
-    .isIn(['Matutina', 'Vespertina', 'Nocturna']).withMessage('Jornada inválida'),
+    .isIn(['Matutina', 'Vespertina', 'Nocturna', 'Semipresencial', 'Virtual', 'Fin de Semana (Sábado)', 'Fin de Semana (Domingo)', 'Extendida']).withMessage('Jornada inválida'),
   
   body('estado')
     .optional()

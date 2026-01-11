@@ -66,7 +66,15 @@ router.post('/generar', async (req, res) => {
 
     // Si no existe, crear uno nuevo
     if (!codigoQr) {
-      const token = tokenService.generarToken(persona_tipo, persona_id);
+      // CAMBIO: JSON Simple
+      // const token = tokenService.generarToken(persona_tipo, persona_id);
+      
+      const tokenData = {
+        tipo: persona_tipo === 'personal' ? 'docente' : persona_tipo, // Frontend antiguo/escáner suele esperar 'docente' o 'alumno'
+        id: persona_id,
+        carnet: persona.carnet
+      };
+      const token = JSON.stringify(tokenData);
       
       const createData = {
         persona_tipo,

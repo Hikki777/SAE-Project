@@ -123,7 +123,16 @@ async function generarQrParaPersona(tipo, id) {
     });
 
     if (!codigoQr) {
-        const token = tokenService.generarToken(tipo, id);
+        // CAMBIO: Usar JSON simple en lugar de token encriptado
+        // const token = tokenService.generarToken(tipo, id);
+        
+        const tokenData = {
+          tipo: tipo === 'personal' ? 'docente' : tipo, // Normalizar 'personal' a 'docente' para compatibilidad con escáner existente si es necesario, o mantener 'personal' y actualizar escáner
+          id: id,
+          carnet: persona.carnet
+        };
+        const token = JSON.stringify(tokenData);
+
         codigoQr = await prisma.codigoQr.create({
             data: {
                 persona_tipo: tipo,

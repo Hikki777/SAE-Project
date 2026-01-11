@@ -11,7 +11,7 @@ function createWindow() {
     height: 800,
     minWidth: 1024,
     minHeight: 768,
-    title: "Sistema de Gestión Institucional",
+    title: "SAE - Sistema de Administración Educativa",
     icon: path.join(__dirname, "..", "frontend", "public", "logo.png"),
     webPreferences: {
       nodeIntegration: false,

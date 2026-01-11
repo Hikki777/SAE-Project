@@ -19,7 +19,7 @@ const storage = multer.diskStorage({
   filename: function (req, file, cb) {
     const ext = path.extname(file.originalname);
     cb(null, `evidencia-${Date.now()}${ext}`);
-  }
+  },
 });
 
 const upload = multer({
@@ -31,7 +31,7 @@ const upload = multer({
     } else {
       cb(new Error('Solo imágenes o PDF permitidos'));
     }
-  }
+  },
 });
 
 // Proteger todas las rutas
@@ -44,11 +44,13 @@ router.use(verifyJWT);
 router.post('/', upload.single('archivo'), async (req, res) => {
   try {
     const { motivo, tipo, alumno_id, personal_id, fecha_ausencia, descripcion } = req.body;
-    
+
     if (!motivo || !tipo || (!alumno_id && !personal_id) || !fecha_ausencia) {
       // Eliminar archivo si la validación falla
       if (req.file) await fs.unlink(req.file.path);
-      return res.status(400).json({ error: 'Faltan datos requeridos (motivo, tipo, ID, fecha_ausencia)' });
+      return res
+        .status(400)
+        .json({ error: 'Faltan datos requeridos (motivo, tipo, ID, fecha_ausencia)' });
     }
 
     let documento_url = null;
@@ -56,31 +58,28 @@ router.post('/', upload.single('archivo'), async (req, res) => {
       documento_url = `justificaciones/${req.file.filename}`;
     }
 
+
     const data = {
       motivo,
       descripcion: descripcion || null,
-      fecha_ausencia: new Date(fecha_ausencia), // Usar fecha enviada
+      fecha_ausencia: fecha_ausencia ? new Date(fecha_ausencia) : null,
       documento_url,
       estado: 'pendiente',
-      created_at: new Date(), // created_at map to creado_en in schema if needed, but schema uses default now()
-      alumno_id: tipo === 'alumno' ? parseInt(alumno_id) : undefined,
-      personal_id: tipo === 'personal' ? parseInt(personal_id) : undefined
+      alumno_id: tipo === 'alumno' ? parseInt(alumno_id) : null,
+      personal_id: tipo === 'personal' ? parseInt(personal_id) : null,
     };
 
-    const excusa = await prisma.excusa.create({ 
-      data: {
-        ...data,
-        creado_en: new Date() // Explicitly setting creation date if model requires
-      } 
-    });
-    
+    const excusa = await prisma.excusa.create({ data });
+
     logger.info({ excusaId: excusa.id, user: req.user.id }, 'Justificación registrada');
     res.json({ success: true, excusa });
   } catch (error) {
     logger.error({ err: error }, 'Error registrando justificación');
     // Intentar limpiar archivo en caso de error de BD
     if (req.file) {
-      try { await fs.unlink(req.file.path); } catch(e){} 
+      try {
+        await fs.unlink(req.file.path);
+      } catch (e) {}
     }
     res.status(500).json({ error: error.message });
   }
@@ -93,25 +92,25 @@ router.post('/', upload.single('archivo'), async (req, res) => {
 router.get('/', async (req, res) => {
   try {
     const { fechaInicio, fechaFin, alumno_id, personal_id, estado, personaTipo } = req.query;
-    
+
     const where = {};
-    
+
     if (fechaInicio || fechaFin) {
       where.fecha_ausencia = {};
       if (fechaInicio) {
         const start = new Date(fechaInicio);
-        start.setHours(0,0,0,0);
+        start.setHours(0, 0, 0, 0);
         where.fecha_ausencia.gte = start;
       }
       if (fechaFin) {
         const end = new Date(fechaFin);
-        end.setHours(23,59,59,999);
+        end.setHours(23, 59, 59, 999);
         where.fecha_ausencia.lte = end;
       }
     }
 
     if (estado) where.estado = estado;
-    
+
     if (personaTipo === 'alumno') where.alumno_id = { not: null };
     if (personaTipo === 'personal') where.personal_id = { not: null };
 
@@ -122,9 +121,9 @@ router.get('/', async (req, res) => {
       where,
       include: {
         alumno: { select: { nombres: true, apellidos: true, carnet: true, grado: true } },
-        personal: { select: { nombres: true, apellidos: true, cargo: true } }
+        personal: { select: { nombres: true, apellidos: true, cargo: true } },
       },
-      orderBy: { creado_en: 'desc' }
+      orderBy: { fecha: 'desc' },
     });
 
     res.json({ excusas });
@@ -145,10 +144,10 @@ router.put('/:id', async (req, res) => {
 
     const excusa = await prisma.excusa.update({
       where: { id: parseInt(id) },
-      data: { 
-        estado, 
-        observaciones 
-      }
+      data: {
+        estado,
+        observaciones,
+      },
     });
 
     logger.info({ excusaId: id, estado }, 'Estado de justificación actualizado');
@@ -166,15 +165,19 @@ router.put('/:id', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     // Obtener info para borrar archivo
     const excusa = await prisma.excusa.findUnique({ where: { id: parseInt(id) } });
-    
+
     await prisma.excusa.delete({ where: { id: parseInt(id) } });
 
     if (excusa && excusa.documento_url) {
       const filePath = path.join(UPLOADS_DIR, excusa.documento_url);
-      try { await fs.unlink(filePath); } catch(e) { logger.warn('No se pudo borrar archivo de justificación', filePath); }
+      try {
+        await fs.unlink(filePath);
+      } catch (e) {
+        logger.warn('No se pudo borrar archivo de justificación', filePath);
+      }
     }
 
     res.json({ success: true });

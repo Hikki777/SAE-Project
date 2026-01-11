@@ -68,6 +68,7 @@ model Personal {
   cargo          String?
   jornada        String?
   grado_guia     String?
+  curso          String?
   estado         String       @default("activo")
   foto_path      String?
   creado_en      DateTime     @default(now())
@@ -154,15 +155,22 @@ model Auditoria {
 }
 
 model Excusa {
-  id          Int       @id @default(autoincrement())
-  alumno_id   Int?
-  personal_id Int?
-  motivo      String
-  fecha       DateTime  @default(now())
-  personal    Personal? @relation("personal_excusa", fields: [personal_id], references: [id], onDelete: Cascade)
-  alumno      Alumno?   @relation("alumno_excusa", fields: [alumno_id], references: [id], onDelete: Cascade)
+  id             Int       @id @default(autoincrement())
+  alumno_id      Int?
+  personal_id    Int?
+  motivo         String
+  descripcion    String?
+  estado         String    @default("pendiente")
+  fecha          DateTime  @default(now())
+  fecha_ausencia DateTime?
+  documento_url  String?
+  observaciones  String?
+  creado_en      DateTime  @default(now())
+  personal       Personal? @relation("personal_excusa", fields: [personal_id], references: [id], onDelete: Cascade)
+  alumno         Alumno?   @relation("alumno_excusa", fields: [alumno_id], references: [id], onDelete: Cascade)
 
   @@index([fecha])
+  @@index([estado])
   @@map("excusas")
 }
 

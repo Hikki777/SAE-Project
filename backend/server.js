@@ -150,8 +150,24 @@ app.use((err, req, res, next) => {
   next(err);
 });
 
-// Servir archivos estáticos (QR, logos, fotos)
-app.use('/uploads', express.static(UPLOADS_DIR));
+// Endpoint para servir imágenes con CORS correcto (solución para Electron)
+app.get('/uploads/*', (req, res) => {
+  const filePath = path.join(UPLOADS_DIR, req.params[0]);
+  
+  // Verificar que el archivo existe
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).json({ error: 'Archivo no encontrado' });
+  }
+  
+  // Configurar headers CORS explícitamente
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type');
+  res.header('Cross-Origin-Resource-Policy', 'cross-origin');
+  
+  // Enviar el archivo
+  res.sendFile(filePath);
+});
 
 // Servir frontend HTML
 app.use(express.static(FRONTEND_DIR));

@@ -213,7 +213,7 @@ export default function Dashboard() {
                 </div>
 
                 {/* Contact Info Acrylic */}
-                {(institucion.direccion || institucion.email || institucion.pais) && (
+                {(institucion.direccion || institucion.email || institucion.telefono || institucion.pais) && (
                   <div className="mt-3 flex flex-wrap gap-3">
                     {institucion.direccion && (
                       <span className="flex items-center gap-1.5 bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/10 text-sm text-blue-50 font-medium hover:bg-white/20 transition-all">
@@ -223,6 +223,11 @@ export default function Dashboard() {
                     {institucion.email && (
                       <span className="flex items-center gap-1.5 bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/10 text-sm text-blue-50 font-medium hover:bg-white/20 transition-all">
                         <span className="opacity-70">✉️</span> {institucion.email}
+                      </span>
+                    )}
+                    {institucion.telefono && (
+                      <span className="flex items-center gap-1.5 bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/10 text-sm text-blue-50 font-medium hover:bg-white/20 transition-all">
+                        <span className="opacity-70">📞</span> {institucion.telefono}
                       </span>
                     )}
                     {institucion.pais && (
@@ -543,10 +548,10 @@ export default function Dashboard() {
              )}
           </div>
 
-          {/* Gráfico: Distribución por Sexo */}
+          {/* Gráfico: Distribución General*/}
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg dark:shadow-gray-900/20 p-6 border border-gray-100 dark:border-gray-700">
             <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-6">
-              Distribuc. por Sexo
+              Distribución General
             </h3>
             {dashboardStats.totales.activos > 0 ? (
               <ResponsiveContainer width="100%" height={250}>

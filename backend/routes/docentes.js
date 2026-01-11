@@ -10,7 +10,6 @@ const {
 const { logger } = require('../utils/logger');
 const { cacheMiddleware, invalidateCacheMiddleware } = require('../middlewares/cache');
 const { uploadBuffer } = require('../services/imageService');
-const { compressProfilePhoto } = require('../services/imageService');
 
 // Configurar multer para memoria (no guardar en disco)
 const upload = multer({ 
@@ -102,7 +101,7 @@ router.post('/', invalidateCacheMiddleware('/api/docentes'), (req, res, next) =>
   }
 }, validarCrearDocente, async (req, res) => {
   try {
-    const { carnet, nombres, apellidos, sexo, cargo, jornada, grado_guia } = req.body;
+    const { carnet, nombres, apellidos, sexo, cargo, jornada, grado_guia, curso } = req.body;
 
     // Validar campos requeridos
     if (!carnet || !nombres || !apellidos) {
@@ -121,9 +120,9 @@ router.post('/', invalidateCacheMiddleware('/api/docentes'), (req, res, next) =>
     // Subir foto si existe
     let foto_url = null;
     if (req.file) {
-      const compressedBuffer = await compressProfilePhoto(req.file.buffer);
-      const publicId = `personal_${carnet}`;
-      const result = await uploadBuffer(compressedBuffer, 'personal', publicId);
+      // Subir imagen directamente
+      const publicId = `docente_${carnet}`;
+      const result = await uploadBuffer(req.file.buffer, 'personal', publicId);
       foto_url = result.secure_url;
     }
 
@@ -140,6 +139,7 @@ const qrService = require('../services/qrService');
         cargo: cargo || 'Docente',
         jornada: jornada || null,
         grado_guia: (cargo === 'Docente' && grado_guia) ? grado_guia : null,
+        curso: (cargo === 'Docente' && curso) ? curso : null,
         foto_path: foto_url
       }
     });
@@ -171,7 +171,7 @@ router.put('/:id', invalidateCacheMiddleware('/api/docentes'), (req, res, next) 
 }, validarActualizarDocente, async (req, res) => {
   try {
     const { id } = req.params;
-    const { carnet, nombres, apellidos, sexo, cargo, jornada, estado, grado_guia } = req.body;
+    const { carnet, nombres, apellidos, sexo, cargo, jornada, estado, grado_guia, curso } = req.body;
 
     const docente = await prisma.personal.findUnique({
       where: { id: parseInt(id) }
@@ -184,9 +184,9 @@ router.put('/:id', invalidateCacheMiddleware('/api/docentes'), (req, res, next) 
     // Subir nueva foto si existe
     let foto_url = docente.foto_path;
     if (req.file) {
-      const compressedBuffer = await compressProfilePhoto(req.file.buffer);
-      const publicId = `personal_${docente.carnet}`;
-      const result = await uploadBuffer(compressedBuffer, 'personal', publicId);
+      // Subir imagen directamente
+      const publicId = `docente_${docente.carnet}`;
+      const result = await uploadBuffer(req.file.buffer, 'personal', publicId);
       foto_url = result.secure_url;
     }
 
@@ -201,6 +201,7 @@ router.put('/:id', invalidateCacheMiddleware('/api/docentes'), (req, res, next) 
         jornada: jornada !== undefined ? jornada : docente.jornada,
         estado: estado || docente.estado,
         grado_guia: (cargo === 'Docente' || docente.cargo === 'Docente') && grado_guia !== undefined ? grado_guia : (cargo !== 'Docente' ? null : docente.grado_guia),
+        curso: (cargo === 'Docente' || docente.cargo === 'Docente') && curso !== undefined ? curso : (cargo !== 'Docente' ? null : docente.curso),
         foto_path: foto_url
       }
     });

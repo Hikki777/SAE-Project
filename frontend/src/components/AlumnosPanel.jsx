@@ -9,6 +9,8 @@ import { TableSkeleton } from './LoadingSpinner';
 import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const BASE_URL = API_URL.replace('/api', ''); // http://localhost:5000
+
 
 export default function AlumnosPanel() {
   const [alumnos, setAlumnos] = useState([]);
@@ -20,6 +22,7 @@ export default function AlumnosPanel() {
   const [filterJornada, setFilterJornada] = useState('');
   const [filterEstado, setFilterEstado] = useState('');
   const [filterCarrera, setFilterCarrera] = useState('');
+  const [filterEspecialidad, setFilterEspecialidad] = useState('');
   const [institucion, setInstitucion] = useState(null);
   const [posiblesGrados, setPosiblesGrados] = useState([]);
 
@@ -60,9 +63,9 @@ export default function AlumnosPanel() {
 
   const generarGrados = (pais) => {
     let grados = [
-      '1ro Primaria', '2do Primaria', '3ro Primaria', '4to Primaria', '5to Primaria', '6to Primaria',
-      '1ro Básico', '2do Básico', '3ro Básico',
-      '4to Diversificado', '5to Diversificado', '6to Diversificado'
+      '1ro. Primaria', '2do. Primaria', '3ro. Primaria', '4to. Primaria', '5to. Primaria', '6to. Primaria',
+      '1ro. Básico', '2do. Básico', '3ro. Básico',
+      '4to. Diversificado', '5to. Diversificado', '6to. Diversificado'
     ];
     // Aquí se podría personalizar más según el país si fuera necesario
     setPosiblesGrados(grados);
@@ -102,8 +105,10 @@ export default function AlumnosPanel() {
                 'Content-Type': 'multipart/form-data' 
             }
         });
-        toast.success('Foto subida exitosamente', { id: toastId });
       }
+      
+      // Mostrar mensaje final
+      toast.success(editingAlumno ? 'Alumno actualizado exitosamente' : 'Alumno creado exitosamente', { id: toastId });
       
       setShowModal(false);
       setEditingAlumno(null);
@@ -127,7 +132,7 @@ export default function AlumnosPanel() {
       jornada: alumno.jornada || '',
       sexo: alumno.sexo || '',
       foto: null,
-      preview: alumno.foto_path ? (alumno.foto_path.startsWith('http') ? alumno.foto_path : `${API_URL}/uploads/${alumno.foto_path}`) : null
+      preview: alumno.foto_path ? (alumno.foto_path.startsWith('http') ? alumno.foto_path : `${BASE_URL}/uploads/${alumno.foto_path}`) : null
     });
     setShowModal(true);
   };
@@ -159,7 +164,6 @@ export default function AlumnosPanel() {
   };
 
   const handleDownloadQR = async (id, carnet) => {
-    const toastId = toast.loading('Generando código QR...');
     try {
       const response = await qrAPI.download(id);
       const blob = new Blob([response.data], { type: 'image/png' });
@@ -171,9 +175,64 @@ export default function AlumnosPanel() {
       a.click();
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
-      toast.success('Código QR descargado', { id: toastId });
     } catch (error) {
-      toast.error('Error al descargar QR: ' + error.message, { id: toastId });
+      toast.error('Error al descargar QR: ' + error.message);
+    }
+  };
+
+  const [qrModalData, setQrModalData] = useState(null);
+
+  const handleViewQR = async (id) => {
+    try {
+      const response = await qrAPI.download(id);
+      const blob = new Blob([response.data], { type: 'image/png' });
+      const url = window.URL.createObjectURL(blob);
+      setQrModalData(url);
+    } catch (error) {
+      toast.error('Error al ver QR: ' + error.message);
+    }
+  };
+
+  const handleDownloadQRsMasivo = async () => {
+    const toastId = toast.loading('Generando códigos QR...');
+    try {
+      // Importar JSZip dinámicamente
+      const JSZip = (await import('jszip')).default;
+      const zip = new JSZip();
+      
+      // Filtrar alumnos según los filtros activos
+      const alumnosADescargar = filteredAlumnos.filter(a => a.codigos_qr?.[0]);
+      
+      if (alumnosADescargar.length === 0) {
+        toast.error('No hay códigos QR para descargar', { id: toastId });
+        return;
+      }
+      
+      // Descargar todos los QRs
+      for (const alumno of alumnosADescargar) {
+        try {
+          const response = await qrAPI.download(alumno.codigos_qr[0].id);
+          zip.file(`qr-${alumno.carnet}.png`, response.data);
+        } catch (error) {
+          console.error(`Error descargando QR de ${alumno.carnet}:`, error);
+        }
+      }
+      
+      // Generar y descargar el ZIP
+      const content = await zip.generateAsync({ type: 'blob' });
+      const url = window.URL.createObjectURL(content);
+      const a = document.createElement('a');
+      a.href = url;
+      const gradoNombre = filterGrado || 'todos';
+      a.download = `qr-${gradoNombre.replace(/\s+/g, '-')}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+      
+      toast.success(`${alumnosADescargar.length} códigos QR descargados`, { id: toastId });
+    } catch (error) {
+      toast.error('Error al generar ZIP: ' + error.message, { id: toastId });
     }
   };
 
@@ -187,12 +246,14 @@ export default function AlumnosPanel() {
     const matchJornada = !filterJornada || a.jornada === filterJornada;
     const matchEstado = !filterEstado || a.estado === filterEstado;
     const matchCarrera = !filterCarrera || (a.carrera && a.carrera.toLowerCase().includes(filterCarrera.toLowerCase()));
-    return matchSearch && matchGrado && matchJornada && matchEstado && matchCarrera;
+    const matchEspecialidad = !filterEspecialidad || (a.especialidad && a.especialidad.toLowerCase().includes(filterEspecialidad.toLowerCase()));
+    return matchSearch && matchGrado && matchJornada && matchEstado && matchCarrera && matchEspecialidad;
   });
 
   const gradosUnicos = [...new Set(alumnos.map(a => a.grado))].sort();
   const jornadasUnicas = [...new Set(alumnos.map(a => a.jornada).filter(Boolean))];
   const carrerasUnicas = [...new Set(alumnos.map(a => a.carrera).filter(Boolean))].sort();
+  const especialidadesUnicas = [...new Set(alumnos.map(a => a.especialidad).filter(Boolean))].sort();
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -303,8 +364,32 @@ export default function AlumnosPanel() {
               ))}
             </select>
           </div>
-          <div className="flex items-end">
-            <div className="text-sm text-gray-600 dark:text-gray-400 font-medium">
+          <div>
+            <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <BookOpen size={16} />
+              Especialidad
+            </label>
+            <select
+              value={filterEspecialidad}
+              onChange={(e) => setFilterEspecialidad(e.target.value)}
+              className="w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500 focus:border-transparent text-gray-900 dark:text-gray-100"
+            >
+              <option value="">Todas</option>
+              {especialidadesUnicas.map((especialidad) => (
+                <option key={especialidad} value={especialidad}>{especialidad}</option>
+              ))}
+            </select>
+          </div>
+          <div className="flex flex-col gap-2">
+            <button
+              onClick={handleDownloadQRsMasivo}
+              className="flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition font-medium"
+              title="Descargar QRs filtrados en ZIP"
+            >
+              <Download size={18} />
+              Descargar QRs
+            </button>
+            <div className="text-sm text-gray-600 dark:text-gray-400 font-medium text-center">
               {filteredAlumnos.length} de {alumnos.length} alumno(s)
             </div>
           </div>
@@ -331,14 +416,15 @@ export default function AlumnosPanel() {
               <table className="w-full">
                 <thead className="bg-primary-600 dark:bg-primary-700 text-white">
                   <tr>
-                    <th className="px-6 py-4 text-left text-sm font-semibold">Carnet</th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold">Nombre Completo</th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold">Grado</th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold">Carrera</th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold">Especialidad</th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold">Jornada</th>
-                    <th className="px-6 py-4 text-center text-sm font-semibold">Estado</th>
-                    <th className="px-6 py-4 text-center text-sm font-semibold">Acciones</th>
+                    <th className="px-2 py-3 text-center text-xs font-semibold w-12">No.</th>
+                    <th className="px-3 py-3 text-left text-xs font-semibold w-24">Carnet</th>
+                    <th className="px-3 py-3 text-left text-xs font-semibold">Nombre Completo</th>
+                    <th className="px-3 py-3 text-left text-xs font-semibold w-28">Grado</th>
+                    <th className="px-3 py-3 text-left text-xs font-semibold w-40">Carrera</th>
+                    <th className="px-3 py-3 text-left text-xs font-semibold w-32">Especialidad</th>
+                    <th className="px-3 py-3 text-left text-xs font-semibold w-28">Jornada</th>
+                    <th className="px-3 py-3 text-center text-xs font-semibold w-20">Estado</th>
+                    <th className="px-3 py-3 text-center text-xs font-semibold w-28">Acciones</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -350,74 +436,96 @@ export default function AlumnosPanel() {
                       transition={{ delay: index * 0.05 }}
                       className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
                     >
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="font-mono text-sm font-semibold text-primary-600 dark:text-primary-400">
+                      <td className="px-2 py-3 text-center">
+                        <span className="text-sm font-bold text-gray-600 dark:text-gray-400">
+                          {index + 1}
+                        </span>
+                      </td>
+                      <td className="px-3 py-3 whitespace-nowrap">
+                        <span className="font-mono text-sm font-bold text-primary-600 dark:text-primary-400">
                           {alumno.carnet}
                         </span>
                       </td>
-                      <td className="px-6 py-4">
-                        <div className="font-medium text-gray-900 dark:text-gray-100">
-                          {alumno.nombres} {alumno.apellidos}
+                      <td className="px-3 py-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700 flex-shrink-0">
+                            {alumno.foto_path ? (
+                              <img 
+                                src={alumno.foto_path.startsWith('http') ? alumno.foto_path : `${BASE_URL}/uploads/${alumno.foto_path}`}
+                                alt={`${alumno.nombres} ${alumno.apellidos}`}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-gray-400 dark:text-gray-500">
+                                <User size={20} />
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex flex-col justify-center">
+                            <span className="font-medium text-gray-900 dark:text-gray-100 leading-snug">
+                              {alumno.nombres}
+                            </span>
+                            <span className="font-medium text-gray-900 dark:text-gray-100 leading-snug">
+                              {alumno.apellidos}
+                            </span>
+                          </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
+                      <td className="px-3 py-3 whitespace-nowrap text-xs text-gray-600 dark:text-gray-400">
                         {alumno.grado}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
+                      <td className="px-3 py-3 text-xs text-gray-600 dark:text-gray-400">
                         {alumno.carrera || '-'}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
+                      <td className="px-3 py-3 text-xs text-gray-600 dark:text-gray-400 truncate max-w-[120px]">
                         {alumno.especialidad || '-'}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        <span className="font-medium text-gray-900 dark:text-gray-100">
-                          {alumno.jornada || '-'}
-                        </span>
+                      <td className="px-3 py-3 whitespace-nowrap text-xs text-gray-600 dark:text-gray-400">
+                        {alumno.jornada}
                       </td>
-                      <td className="px-6 py-4 text-center">
-                        <span className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${
+                      <td className="px-3 py-3 text-center">
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
                           alumno.estado === 'activo'
-                            ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
-                            : 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300'
+                            ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                            : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
                         }`}>
                           {alumno.estado}
                         </span>
                       </td>
-                      <td className="px-6 py-4">
-                        <div className="flex justify-center gap-2">
-                          {alumno.codigos_qr?.[0] && (
-                            <button
-                              onClick={() => handleDownloadQR(alumno.codigos_qr[0].id, alumno.carnet)}
-                              className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition"
-                              title="Descargar QR"
-                            >
-                              <Download size={18} />
-                            </button>
-                          )}
+                      <td className="px-3 py-3">
+                        <div className="flex items-center justify-center gap-1">
+                          <button
+                            onClick={() => handleViewQR(alumno.codigos_qr?.[0]?.id)}
+                            className="p-1.5 text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg transition"
+                            title="Ver QR"
+                            disabled={!alumno.codigos_qr?.[0]}
+                          >
+                            <QrCode size={16} />
+                          </button>
                           <button
                             onClick={() => handleToggleEstado(alumno.id, alumno.estado, `${alumno.nombres} ${alumno.apellidos}`)}
-                            className={`p-2 rounded-lg transition ${
+                            className={`p-1.5 rounded-lg transition ${
                               alumno.estado === 'activo'
-                                ? 'text-orange-600 hover:bg-orange-50'
-                                : 'text-green-600 hover:bg-green-50'
+                                ? 'text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/20'
+                                : 'text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20'
                             }`}
                             title={alumno.estado === 'activo' ? 'Desactivar' : 'Activar'}
                           >
-                            {alumno.estado === 'activo' ? <XCircle size={18} /> : <CheckCircle size={18} />}
+                            {alumno.estado === 'activo' ? <XCircle size={16} /> : <CheckCircle size={16} />}
                           </button>
                           <button
                             onClick={() => handleEdit(alumno)}
-                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition"
+                            className="p-1.5 text-yellow-600 hover:bg-yellow-50 dark:hover:bg-yellow-900/20 rounded-lg transition"
                             title="Editar"
                           >
-                            <Edit size={18} />
+                            <Edit size={16} />
                           </button>
                           <button
                             onClick={() => handleDelete(alumno.id, `${alumno.nombres} ${alumno.apellidos}`)}
-                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
+                            className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition"
                             title="Eliminar"
                           >
-                            <Trash2 size={18} />
+                            <Trash2 size={16} />
                           </button>
                         </div>
                       </td>
@@ -438,14 +546,30 @@ export default function AlumnosPanel() {
                   className="p-4 hover:bg-gray-50"
                 >
                   <div className="flex justify-between items-start mb-3">
-                    <div>
-                      <div className="font-bold text-gray-900">{alumno.nombres} {alumno.apellidos}</div>
-                      <div className="text-sm text-blue-600 font-mono font-semibold">{alumno.carnet}</div>
-                      {alumno.especialidad && (
-                        <div className="text-xs text-gray-600 mt-1">
-                          {alumno.especialidad}
-                        </div>
-                      )}
+                    <div className="flex items-center gap-3 flex-1">
+                      <span className="text-sm font-bold text-gray-500 dark:text-gray-400">#{index + 1}</span>
+                      <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700 flex-shrink-0">
+                        {alumno.foto_path ? (
+                          <img 
+                            src={alumno.foto_path.startsWith('http') ? alumno.foto_path : `${BASE_URL}/uploads/${alumno.foto_path}`}
+                            alt={`${alumno.nombres} ${alumno.apellidos}`}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-gray-400 dark:text-gray-500">
+                            <User size={24} />
+                          </div>
+                        )}
+                      </div>
+                      <div>
+                        <div className="font-bold text-gray-900 dark:text-gray-100">{alumno.nombres} {alumno.apellidos}</div>
+                        <div className="text-sm text-blue-600 font-mono font-semibold">{alumno.carnet}</div>
+                        {alumno.especialidad && (
+                          <div className="text-xs text-gray-600 mt-1">
+                            {alumno.especialidad}
+                          </div>
+                        )}
+                      </div>
                     </div>
                     <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
                       alumno.estado === 'activo' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
@@ -638,28 +762,33 @@ export default function AlumnosPanel() {
                 </div>
               </div>
 
-               {/* Campos carrera/especialidad siempre visibles */}
-               <div>
-                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Carrera</label>
-                 <input
-                   type="text"
-                   value={formData.carrera}
-                   onChange={(e) => setFormData({ ...formData, carrera: e.target.value })}
-                   className="w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-primary-500 focus:border-transparent text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
-                   placeholder="Bachillerato en Computación"
-                 />
-               </div>
 
-               <div>
-                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Especialidad</label>
-                 <input
-                   type="text"
-                   value={formData.especialidad}
-                   onChange={(e) => setFormData({ ...formData, especialidad: e.target.value })}
-                   className="w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-primary-500 focus:border-transparent text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
-                   placeholder="Dibujo Técnico"
-                 />
-               </div>
+               {/* Campos carrera/especialidad solo visibles para Diversificado */}
+               {formData.grado && formData.grado.includes('Diversificado') && (
+                 <>
+                   <div>
+                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Carrera</label>
+                     <input
+                       type="text"
+                       value={formData.carrera}
+                       onChange={(e) => setFormData({ ...formData, carrera: e.target.value })}
+                       className="w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-primary-500 focus:border-transparent text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
+                       placeholder="Bachillerato en Computación"
+                     />
+                   </div>
+
+                   <div>
+                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Especialidad</label>
+                     <input
+                       type="text"
+                       value={formData.especialidad}
+                       onChange={(e) => setFormData({ ...formData, especialidad: e.target.value })}
+                       className="w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-primary-500 focus:border-transparent text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
+                       placeholder="Dibujo Técnico"
+                     />
+                   </div>
+                 </>
+               )}
 
                 <div className="flex gap-3 pt-4">
                   <button
@@ -686,6 +815,9 @@ export default function AlumnosPanel() {
       {/* Toast notifications */}
       <Toaster
         position="top-right"
+        containerStyle={{
+          zIndex: 99999
+        }}
         toastOptions={{
           duration: 3000,
           style: {
@@ -707,6 +839,35 @@ export default function AlumnosPanel() {
           },
         }}
       />
+
+      {/* Modal de visualización de QR */}
+      {qrModalData && createPortal(
+        <div 
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100000]"
+          onClick={() => setQrModalData(null)}
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Código QR</h3>
+              <button
+                onClick={() => setQrModalData(null)}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div className="flex justify-center">
+              <img src={qrModalData} alt="Código QR" className="max-w-full h-auto" />
+            </div>
+          </motion.div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 }

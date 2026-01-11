@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { Clock, UserCheck, UserX, Search, Calendar, TrendingUp, QrCode, Camera, CameraOff } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 import client from '../api/client';
-import { Html5Qrcode } from 'html5-qrcode';
+import QrScanner from 'qr-scanner';
 import { TableSkeleton } from './LoadingSpinner';
 
 // Usamos el cliente API compartido (con baseURL '/api' e interceptor JWT)
@@ -31,7 +31,10 @@ export default function AsistenciasPanel() {
   const [scanMessage, setScanMessage] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [modalData, setModalData] = useState(null);
-  const html5QrCodeRef = useRef(null);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [detectedCargo, setDetectedCargo] = useState('Docente'); // Estado para mostrar cargo específico (Directora, etc.) // Estado para controlar sugerencias
+  const videoRef = useRef(null);
+  const scannerRef = useRef(null);
   const scannerActiveRef = useRef(false);
   const isProcessingRef = useRef(false);
   const lastScannedQRRef = useRef('');
@@ -85,6 +88,10 @@ export default function AsistenciasPanel() {
           const fecha = new Date(data.datetime);
           setHoraInternet(fecha.toLocaleString('es-ES'));
         }
+      })
+      .catch(err => {
+        console.warn('⚠️ No se pudo obtener hora de internet, usando local:', err.message);
+        // Fallback silencioso a hora local si es necesario, aunque setHoraInternet ya tiene valor inicial vacío
       });
     
     return () => {
@@ -218,30 +225,30 @@ export default function AsistenciasPanel() {
         }
         personaData = {
           tipo: 'Alumno',
-          nombre: alumno?.nombre || alumno?.nombres || 'Desconocido',
-          apellido: alumno?.apellido || alumno?.apellidos || '',
+          nombres: alumno?.nombre || alumno?.nombres || 'Desconocido',
+          apellidos: alumno?.apellido || alumno?.apellidos || '',
           carnet: alumno?.carnet || `ID: ${selectedAlumno}`,
           grado: alumno?.grado || 'N/A',
           seccion: alumno?.seccion || 'N/A'
         };
       } else {
         const docente = docentes.find(d => d.id === parseInt(selectedDocente));
-        console.log('👨‍🏫 Docente encontrado:', docente);
+        console.log('👨‍🏫 Personal encontrado:', docente);
         
-        // Validar que el docente esté activo
+        // Validar que el personal esté activo
         if (!docente) {
-          toast.error('Docente no encontrado');
+          toast.error('Personal no encontrado');
           return;
         }
         if (docente.estado === 'inactivo' || docente.estado === 'baja') {
-          toast.error(`⚠️ El docente ${docente.nombres} ${docente.apellidos} está INACTIVO. No se puede registrar asistencia.`);
+          toast.error(`⚠️ El personal ${docente.nombres} ${docente.apellidos} está INACTIVO. No se puede registrar asistencia.`);
           return;
         }
         
         personaData = {
-          tipo: 'Personal',
-          nombre: docente?.nombre || docente?.nombres || 'Desconocido',
-          apellido: docente?.apellido || docente?.apellidos || '',
+          tipo: docente?.cargo || 'Personal', 
+          nombres: docente?.nombre || docente?.nombres || 'Desconocido', // Estandarizado a plural (DB)
+          apellidos: docente?.apellido || docente?.apellidos || '',
           carnet: docente?.carnet || `ID: ${selectedDocente}`,
           cargo: docente?.cargo || 'N/A',
           departamento: docente?.departamento || 'N/A'
@@ -306,6 +313,7 @@ export default function AsistenciasPanel() {
       ));
 
       toast.success('Asistencia registrada exitosamente');
+      fetchAsistenciasHoy(); // Sincronizar con backend para obtener estado y datos completos
 
     } catch (error) {
       // Rollback en caso de error
@@ -315,75 +323,94 @@ export default function AsistenciasPanel() {
     }
   };
 
-  // Efecto para inicializar el escáner cuando scannerActive cambia a true
+  // Efecto para inicializar el escáner QrScanner
   useEffect(() => {
     let mounted = true;
 
     const initScanner = async () => {
         if (scannerActive && tomaIniciada) {
-            console.log('🎥 Intentando iniciar escáner...');
+            console.log('🎥 Iniciando QrScanner (Nimus)...');
             
-            // Esperar a que el elemento se renderice realmente
-            let attempts = 0;
-            while (!document.getElementById("qr-reader") && attempts < 10) {
-                await new Promise(r => setTimeout(r, 100));
-                attempts++;
-            }
-
-            const readerElement = document.getElementById("qr-reader");
-            if (!readerElement) {
-                console.error("❌ Elemento qr-reader no encontrado después de esperar");
-                setScanMessage("❌ Error: Elemento de cámara no disponible");
-                setScannerActive(false);
+            // Esperar ref
+            if (!videoRef.current) {
+                console.warn("⚠️ Elemento video no disponible aún");
                 return;
             }
 
             try {
-                // Limpiar instancia previa si existe
-                if (html5QrCodeRef.current) {
-                    await html5QrCodeRef.current.stop().catch(e => console.warn(e));
-                    html5QrCodeRef.current = null;
-                }
-
-                const html5QrCode = new Html5Qrcode("qr-reader");
-                html5QrCodeRef.current = html5QrCode;
-
-                const config = {
-                    fps: 20, 
-                    qrbox: { width: 220, height: 220 }, // Aumentado ligeramente para 300px
-                    aspectRatio: 1.0,
-                    disableFlip: false
-                };
-
-                await html5QrCode.start(
-                    { facingMode: "environment" },
-                    config,
-                    (decodedText, decodedResult) => {
-                         if (!mounted) return;
-                         handleQRScanSuccess(decodedText);
-                    },
-                    (errorMessage) => {
-                        // Ignorar errores de "no QR found"
+                // 1. Obtener stream MANUALMENTE para forzar HD (720p mínimo)
+                // QrScanner a veces acepta lo que le da el navegador (480p), aquí exigimos calidad.
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        facingMode: 'environment', // Trasera en móviles
+                        width: { min: 1280, ideal: 1920 }, // Forzar HD
+                        height: { min: 720, ideal: 1080 },
+                        focusMode: { ideal: 'continuous' } // Pedir enfoque constante
                     }
-                );
-                
-                if (mounted) {
-                    setScanMessage('✅ Cámara activa. Coloca el QR...');
+                });
+
+                // Asignar stream al video antes de que QrScanner lo tome
+                videoRef.current.srcObject = stream;
+                // Esperar un toque a que cargue metadata (necesario para que QrScanner lea dimensiones)
+                await new Promise(r => videoRef.current.onloadedmetadata = r);
+                videoRef.current.play();
+
+                // 2. Instanciar QrScanner sobre el video ya activo
+                if (!scannerRef.current) {
+                    scannerRef.current = new QrScanner(
+                        videoRef.current,
+                        (result) => {
+                            if (!mounted) return;
+                            // Corrección: Validar explícitamente si viene como objeto detallado
+                            let text = result;
+                            if (result && typeof result === 'object' && 'data' in result) {
+                                text = result.data;
+                            }
+                            
+                            // Ignorar lecturas vacías
+                            if (!text || typeof text !== 'string') return;
+                            
+                            handleQRScanSuccess(text);
+                        },
+                        {
+                            highlightScanRegion: true,
+                            highlightCodeOutline: true,
+                            overlay: undefined, 
+                            maxScansPerSecond: 25,
+                            returnDetailedScanResult: true,
+                            calculateScanRegion: (v) => ({ 
+                                x: 0, 
+                                y: 0, 
+                                width: v.videoWidth, 
+                                height: v.videoHeight,
+                                downScaledWidth: v.videoWidth, 
+                                downScaledHeight: v.videoHeight 
+                            }),
+                            alsoTryWithoutScanRegion: true
+                        }
+                    );
                 }
+
+                // Iniciar (QrScanner usará el video que ya le 'preparamos')
+                await scannerRef.current.start();
+                
+                console.log('✅ QrScanner iniciado en HD');
+                if (mounted) setScanMessage('✅ Cámara activa en HD. Nitidez máxima.');
 
             } catch (err) {
-                console.error("❌ Error iniciando cámara:", err);
+                console.error("❌ Error iniciando QrScanner HD:", err);
                 if (mounted) {
-                    setScanMessage(`❌ Error de cámara: ${err.message}`);
+                    setScanMessage(`❌ Error de cámara: ${err.message || err}`);
                     setScannerActive(false);
                 }
             }
         } else {
-            // Si scannerActive es false, detener
-            if (html5QrCodeRef.current) {
-                html5QrCodeRef.current.stop().catch(e => console.warn(e));
-                html5QrCodeRef.current = null;
+            // Detener si no activo
+            if (scannerRef.current) {
+                scannerRef.current.stop();
+                // No destruimos la instancia para reusarla rápido, solo paramos el stream
             }
+            setScanMessage('');
         }
     };
 
@@ -391,12 +418,71 @@ export default function AsistenciasPanel() {
 
     return () => {
         mounted = false;
-        if (html5QrCodeRef.current) {
-            html5QrCodeRef.current.stop().catch(e => console.warn(e));
-            html5QrCodeRef.current = null;
+        // Limpieza real al desmontar componente
+        if (scannerRef.current) {
+            scannerRef.current.stop();
+            scannerRef.current.destroy();
+            scannerRef.current = null;
         }
     };
   }, [scannerActive, tomaIniciada]);
+
+  // ------------------------------------------------------------------
+  // SOPORTE PARA ESCÁNER USB (Modo Teclado HID)
+  // ------------------------------------------------------------------
+  useEffect(() => {
+    let buffer = '';
+    let lastKeyTime = Date.now();
+
+    const handleGlobalKeyDown = (e) => {
+        // Ignorar si el foco está en un input normal (salvo si parece un escaneo muy rápido)
+        // Pero para máxima compatibilidad, mejor capturamos todo lo que parezca JSON de QR
+        
+        const currentTime = Date.now();
+        const gap = currentTime - lastKeyTime;
+
+        // Si pasa mucho tiempo entre teclas (>100ms), reseteamos buffer (asumimos tipeo manual lento)
+        if (gap > 100) {
+            buffer = '';
+        }
+        
+        lastKeyTime = currentTime;
+
+        if (e.key === 'Enter') {
+            // Intentar procesar buffer
+            if (buffer.trim().startsWith('{') && buffer.trim().endsWith('}')) {
+                try {
+                    // Validar si es nuestro JSON
+                     const parsed = JSON.parse(buffer);
+                     if (parsed.tipo && parsed.id) {
+                         // Es un QR válido!
+                         console.log('🔫 Escáner USB detectado:', parsed);
+                         handleQRScanSuccess(buffer);
+                         
+                         // Prevenir submit de formularios si estabamos en un input
+                         e.preventDefault();
+                         e.stopPropagation();
+                         
+                         // Limpiar inputs si se escribió algo
+                         if (document.activeElement && document.activeElement.tagName === 'INPUT') {
+                             document.activeElement.value = '';
+                             setSearchTerm(''); // Limpiar nuestra búsqueda manual también
+                         }
+                     }
+                } catch (err) {
+                    // No es JSON válido, ignorar
+                }
+            }
+            buffer = ''; // Reset post-enter
+        } else if (e.key.length === 1) {
+            // Acumular caracteres imprimibles
+            buffer += e.key;
+        }
+    };
+
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, [tomaIniciada]); // Dependencia necesaria para que handleQRScanSuccess funcione si cambia
 
   // Wrapper para el éxito del escaneo para evitar bucles
   const handleQRScanSuccess = useCallback((decodedText) => {
@@ -582,28 +668,10 @@ export default function AsistenciasPanel() {
   };
   */ // FIN DEL COMENTARIO
 
-  const stopScanner = async () => {
-    console.log('🛑 Deteniendo escáner...');
-    
+  // stopScanner eliminado - el useEffect maneja la limpieza automáticamente al cambiar scannerActive
+  const stopScanner = () => {
+    console.log('🛑 Detener escaneo solicitado');
     setScannerActive(false);
-    scannerActiveRef.current = false;
-    
-    // Detener html5-qrcode
-    if (html5QrCodeRef.current) {
-      try {
-        if (html5QrCodeRef.current.isScanning) {
-            await html5QrCodeRef.current.stop();
-        }
-        html5QrCodeRef.current.clear(); // Limpiar canvas
-        console.log('✅ HTML5-QRCode detenido');
-      } catch (error) {
-        console.error('Error deteniendo escáner:', error);
-      }
-      html5QrCodeRef.current = null;
-    }
-    
-    setScanMessage('');
-    console.log('✅ Escáner detenido completamente');
   };
   
   /* FUNCIÓN STOP COMENTADA
@@ -733,8 +801,8 @@ export default function AsistenciasPanel() {
         }
         personaData = {
           tipo: 'Alumno',
-          nombre: alumno?.nombre || alumno?.nombres || 'Desconocido',
-          apellido: alumno?.apellido || alumno?.apellidos || '',
+          nombres: alumno?.nombre || alumno?.nombres || 'Desconocido', // Unificando nombres
+          apellidos: alumno?.apellido || alumno?.apellidos || '',
           carnet: alumno?.carnet || parsedData.carnet || `ID: ${parsedData.id}`,
           grado: alumno?.grado || 'N/A',
           seccion: alumno?.seccion || 'N/A'
@@ -756,9 +824,9 @@ export default function AsistenciasPanel() {
         }
         
         personaData = {
-          tipo: 'Personal',
-          nombre: docente?.nombre || docente?.nombres || 'Desconocido',
-          apellido: docente?.apellido || docente?.apellidos || '',
+          tipo: docente?.cargo || 'Docente',
+          nombres: docente?.nombre || docente?.nombres || 'Desconocido',
+          apellidos: docente?.apellido || docente?.apellidos || '',
           carnet: docente?.carnet || parsedData.carnet || `ID: ${parsedData.id}`,
           cargo: docente?.cargo || 'N/A',
           departamento: docente?.departamento || 'N/A'
@@ -951,8 +1019,13 @@ export default function AsistenciasPanel() {
           <div className={`relative w-full h-80 rounded-xl overflow-hidden flex items-center justify-center ${scannerActive ? 'bg-black' : 'bg-gray-100 dark:bg-gray-700'}`}>
             
             {scannerActive && tomaIniciada ? (
-                /* El div interno ocupa el 100% */
-                <div id="qr-reader" className="w-full h-full" style={{ width: '100%', height: '100%', objectFit: 'cover' }}></div>
+                /* Video nativo para qr-scanner */
+                <video 
+                    ref={videoRef} 
+                    className="w-full h-full object-cover"
+                    muted 
+                    playsInline
+                />
             ) : (
                 <div className="flex flex-col items-center justify-center text-gray-400 dark:text-gray-500">
                     <QrCode size={60} className="mb-4 opacity-50" />
@@ -960,23 +1033,7 @@ export default function AsistenciasPanel() {
                 </div>
             )}
             
-            {/* Marco decorativo (Overlay) - Solo si activo */}
-            {scannerActive && tomaIniciada && (
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                {/* Estilo para ocultar overlay nativo de html5-qrcode */}
-                <style>{`
-                  #qr-shaded-region { display: none !important; }
-                  #qr-reader__scan_region { display: none !important; }
-                  #qr-reader div { box-shadow: none !important; border: none !important; }
-                `}</style>
-                <div className="w-[220px] h-[220px] rounded-lg relative shadow-[0_0_0_9999px_rgba(0,0,0,0.4)]">
-                  <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-blue-500 rounded-tl-lg"></div>
-                  <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-blue-500 rounded-tr-lg"></div>
-                  <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-blue-500 rounded-bl-lg"></div>
-                  <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-blue-500 rounded-br-lg"></div>
-                </div>
-              </div>
-            )}
+            {/* Overlay nativo de qr-scanner se maneja internamente o es invisible */}
           </div>
           
           {/* Texto de ayuda opcional debajo del video */}
@@ -1010,7 +1067,7 @@ export default function AsistenciasPanel() {
                   ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-700' 
                   : 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 border-green-300 dark:border-green-700'
               }`}>
-                {tipoPersona === 'alumno' ? '🎓 Alumno' : '👨‍🏫 Docente'}
+                {tipoPersona === 'alumno' ? '🎓 Alumno' : `👨‍🏫 ${detectedCargo || 'Docente'}`}
               </div>
             </div>
 
@@ -1027,6 +1084,7 @@ export default function AsistenciasPanel() {
                 onChange={(e) => {
                   const term = e.target.value;
                   setSearchTerm(term);
+                  setShowSuggestions(true); // Mostrar sugerencias al escribir
                   
                   // Auto-detectar tipo buscando en ambas listas
                   if (term.length > 0) {
@@ -1047,13 +1105,14 @@ export default function AsistenciasPanel() {
                       setTipoPersona('alumno');
                     } else if (foundDocente && !foundAlumno) {
                       setTipoPersona('docente');
+                      setDetectedCargo(foundDocente.cargo || 'Docente'); // Actualizar cargo detectado
                     }
                   }
                 }}
                 className="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 outline-none transition dark:text-white"
               />
               
-              {searchTerm && (
+              {searchTerm && showSuggestions && (
                 <div className="absolute top-full left-0 right-0 mt-1 max-h-48 overflow-y-auto border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 z-50 shadow-xl">
                   {/* Mostrar resultados combinados (optimizado con useMemo) */}
                   {/* Alumnos */}
@@ -1066,6 +1125,7 @@ export default function AsistenciasPanel() {
                           setSelectedAlumno(alumno.id);
                           setSelectedDocente('');
                           setSearchTerm(`${alumno.nombres} ${alumno.apellidos} (${alumno.carnet})`);
+                          setShowSuggestions(false); // Ocultar sugerencias al seleccionar
                         }}
                         className="w-full text-left px-3 py-2 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition border-l-4 border-blue-500"
                       >
@@ -1089,15 +1149,19 @@ export default function AsistenciasPanel() {
                           setSelectedDocente(docente.id);
                           setSelectedAlumno('');
                           setSearchTerm(`${docente.nombres} ${docente.apellidos} (${docente.carnet})`);
+                          setShowSuggestions(false);
+                          setDetectedCargo(docente.cargo || 'Docente'); // Fijar cargo al seleccionar
                         }}
                         className="w-full text-left px-3 py-2 hover:bg-green-50 dark:hover:bg-green-900/30 transition border-l-4 border-green-500"
                       >
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-semibold text-green-600">👨‍🏫 DOCENTE</span>
+                      <div className="flex items-center gap-2">
+                          <span className="text-xs font-semibold text-green-600">
+                            👨‍🏫 {docente.cargo ? docente.cargo.toUpperCase() : 'DOCENTE'}
+                          </span>
                           <div className="font-medium text-gray-900 dark:text-gray-100">{docente.nombres} {docente.apellidos}</div>
                         </div>
                         <div className="text-xs text-gray-500">
-                          {docente.carnet} - {docente.grado || 'Docente'} - {docente.jornada}
+                          {docente.carnet} - {docente.jornada}
                         </div>
                       </button>
                     ))}
@@ -1194,7 +1258,7 @@ export default function AsistenciasPanel() {
                         {persona?.carnet}
                       </td>
                       <td className="px-3 py-2 font-medium text-gray-900 dark:text-gray-100">
-                        {persona?.nombres} {persona?.apellidos}
+                        {persona?.nombres || persona?.nombre} {persona?.apellidos || persona?.apellido}
                       </td>
                       <td className="px-3 py-2">
                         <div className="flex flex-col items-center gap-1">
@@ -1299,7 +1363,7 @@ export default function AsistenciasPanel() {
               {/* 3 y 4. Nombres y Apellidos */}
               <div>
                 <p className="text-gray-500 text-sm">Nombre Completo</p>
-                <p className="text-2xl font-bold text-gray-900">{modalData.nombre} {modalData.apellido}</p>
+                <p className="text-2xl font-bold text-gray-900">{modalData.nombres || modalData.nombre} {modalData.apellidos || modalData.apellido}</p>
               </div>
 
               {/* 5. Grado/Sección (para Alumnos) */}

@@ -538,21 +538,96 @@ const SistemaSettings = ({ currentUser }) => {
     }
   };
 
-  // Detectar SO del cliente
+  // Detectar SO del cliente con versión específica
   const getClientOS = () => {
     const userAgent = window.navigator.userAgent;
+    const platform = window.navigator.platform;
     
-    if (userAgent.indexOf('Win') !== -1) {
-      if (userAgent.indexOf('Windows NT 10.0') !== -1) return 'Windows 10/11';
+    // Windows - Detectar versión y edición específica
+    if (userAgent.indexOf('Win') !== -1 || platform.indexOf('Win') !== -1) {
+      let windowsVersion = 'Windows';
+      let windowsEdition = '';
+      
+      // Detectar versión base
+      if (userAgent.indexOf('Windows NT 10.0') !== -1) {
+        windowsVersion = 'Windows 11'; // Asumimos Windows 11 para NT 10.0 moderno
+        
+        // Intentar detectar edición específica del userAgent
+        // Algunas ediciones especiales pueden aparecer en el userAgent
+        if (userAgent.indexOf('IoT') !== -1) {
+          windowsEdition = ' IoT';
+        }
+        if (userAgent.indexOf('Enterprise') !== -1) {
+          windowsEdition += ' Enterprise';
+        }
+        if (userAgent.indexOf('LTSC') !== -1 || userAgent.indexOf('LTSB') !== -1) {
+          windowsEdition += ' LTSC';
+        }
+        
+        // Si no se detectó edición específica, intentar con User-Agent Client Hints
+        if (!windowsEdition && navigator.userAgentData) {
+          // Esta API moderna puede dar más información
+          navigator.userAgentData.getHighEntropyValues(['platformVersion', 'model'])
+            .then(ua => {
+              // Aquí podríamos obtener más detalles, pero es asíncrono
+              console.log('User-Agent Data:', ua);
+            })
+            .catch(() => {});
+        }
+        
+        return windowsVersion + windowsEdition || windowsVersion;
+      }
       if (userAgent.indexOf('Windows NT 6.3') !== -1) return 'Windows 8.1';
       if (userAgent.indexOf('Windows NT 6.2') !== -1) return 'Windows 8';
       if (userAgent.indexOf('Windows NT 6.1') !== -1) return 'Windows 7';
+      if (userAgent.indexOf('Windows NT 6.0') !== -1) return 'Windows Vista';
       return 'Windows';
     }
-    if (userAgent.indexOf('Mac') !== -1) return 'macOS';
-    if (userAgent.indexOf('Linux') !== -1 && userAgent.indexOf('Android') === -1) return 'Linux';
-    if (userAgent.indexOf('Android') !== -1) return 'Android';
-    if (userAgent.indexOf('iPhone') !== -1 || userAgent.indexOf('iPad') !== -1) return 'iOS';
+    
+    // macOS - Detectar versión
+    if (userAgent.indexOf('Mac') !== -1 || platform.indexOf('Mac') !== -1) {
+      // Intentar extraer versión de macOS
+      const macMatch = userAgent.match(/Mac OS X (\d+)[._](\d+)([._](\d+))?/);
+      if (macMatch) {
+        const major = parseInt(macMatch[1]);
+        const minor = parseInt(macMatch[2]);
+        
+        // Mapear versiones a nombres
+        const macVersions = {
+          '10.15': 'macOS Catalina',
+          '10.16': 'macOS Big Sur',
+          '11': 'macOS Big Sur',
+          '12': 'macOS Monterey',
+          '13': 'macOS Ventura',
+          '14': 'macOS Sonoma',
+          '15': 'macOS Sequoia'
+        };
+        
+        const versionKey = major >= 11 ? `${major}` : `${major}.${minor}`;
+        return macVersions[versionKey] || `macOS ${major}.${minor}`;
+      }
+      return 'macOS';
+    }
+    
+    // Linux - Intentar detectar distribución
+    if (userAgent.indexOf('Linux') !== -1 && userAgent.indexOf('Android') === -1) {
+      if (userAgent.indexOf('Ubuntu') !== -1) return 'Ubuntu Linux';
+      if (userAgent.indexOf('Fedora') !== -1) return 'Fedora Linux';
+      if (userAgent.indexOf('Debian') !== -1) return 'Debian Linux';
+      if (userAgent.indexOf('Mint') !== -1) return 'Linux Mint';
+      return 'Linux';
+    }
+    
+    // Móviles
+    if (userAgent.indexOf('Android') !== -1) {
+      const androidMatch = userAgent.match(/Android (\d+(\.\d+)?)/);
+      return androidMatch ? `Android ${androidMatch[1]}` : 'Android';
+    }
+    
+    if (userAgent.indexOf('iPhone') !== -1 || userAgent.indexOf('iPad') !== -1) {
+      const iosMatch = userAgent.match(/OS (\d+)[._](\d+)/);
+      return iosMatch ? `iOS ${iosMatch[1]}.${iosMatch[2]}` : 'iOS';
+    }
     
     return 'Desconocido';
   };

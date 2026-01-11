@@ -46,6 +46,7 @@ router.get('/', async (req, res) => {
         especialidad: true,
         jornada: true,
         estado: true,
+        foto_path: true,
         creado_en: true,
         codigos_qr: {
           select: {
@@ -287,13 +288,9 @@ router.post('/:id/foto', upload.single('foto'), async (req, res) => {
       return res.status(404).json({ error: 'Alumno no encontrado' });
     }
 
-    // Comprimir imagen antes de subir
-    const { compressProfilePhoto } = require('../services/imageService');
-    const compressedBuffer = await compressProfilePhoto(req.file.buffer);
-
-    // Subir imagen
+    // Subir imagen directamente
     const publicId = `alumno_${alumno.carnet}`;
-    const result = await uploadBuffer(compressedBuffer, 'alumnos', publicId);
+    const result = await uploadBuffer(req.file.buffer, 'alumnos', publicId);
 
     // Actualizar BD con la URL segura
     const updated = await prisma.alumno.update({
