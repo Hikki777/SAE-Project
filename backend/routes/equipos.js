@@ -156,6 +156,14 @@ router.put('/:id/approve', verifyJWT, verifyAdmin, async (req, res) => {
     });
 
     logger.info({ equipo_id: id, aprobado }, '[OK] Estado de aprobación de equipo actualizado');
+    
+    // 🔥 FIX: Notificar al cliente vía WebSocket sobre el cambio de estado
+    const io = req.app.get('io');
+    if (io && io.notifyEquipmentApproval) {
+      io.notifyEquipmentApproval(id, aprobado);
+      logger.info({ equipo_id: id, aprobado }, '[WS] Notificación de aprobación enviada vía WebSocket');
+    }
+    
     res.json(equipo);
   } catch (error) {
     res.status(500).json({ error: 'Error al actualizar equipo' });
@@ -173,6 +181,81 @@ router.delete('/:id', verifyJWT, verifyAdmin, async (req, res) => {
     res.json({ message: 'Equipo eliminado' });
   } catch (error) {
     res.status(500).json({ error: 'Error al eliminar equipo' });
+  }
+});
+
+/**
+ * GET /api/equipos/check-approval/:id
+ * Cliente verifica si fue aprobado (para polling)
+ */
+router.get('/check-approval/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const equipo = await prisma.equipo.findUnique({
+      where: { id },
+      select: { aprobado: true, nombre: true }
+    });
+    
+    if (!equipo) {
+      return res.status(404).json({ error: 'Equipo no encontrado' });
+    }
+    
+    res.json({ 
+      aprobado: equipo.aprobado,
+      nombre: equipo.nombre
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Error al verificar aprobación' });
+  }
+});
+
+/**
+ * GET /api/equipos/pending-count
+ * Obtener cantidad de equipos pendientes de aprobación
+ */
+router.get('/pending-count', verifyJWT, verifyAdmin, async (req, res) => {
+  try {
+    const count = await prisma.equipo.count({
+      where: { aprobado: false }
+    });
+    res.json({ count });
+  } catch (error) {
+    logger.error({ err: error }, '[ERROR] Obteniendo conteo de equipos pendientes');
+    res.status(500).json({ error: 'Error al obtener conteo' });
+  }
+});
+
+/**
+ * GET /api/equipos/pending
+ * Listar equipos pendientes de aprobación
+ */
+router.get('/pending', verifyJWT, verifyAdmin, async (req, res) => {
+  try {
+    const equipos = await prisma.equipo.findMany({
+      where: { aprobado: false },
+      orderBy: { creado_en: 'desc' }
+    });
+    res.json(equipos);
+  } catch (error) {
+    logger.error({ err: error }, '[ERROR] Obteniendo equipos pendientes');
+    res.status(500).json({ error: 'Error al obtener equipos pendientes' });
+  }
+});
+
+/**
+ * POST /api/equipos/heartbeat/:id
+ * Cliente envía señal de vida
+ */
+router.post('/heartbeat/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    await prisma.equipo.update({
+      where: { id },
+      data: { ultima_conexion: new Date() }
+    });
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: 'Error al actualizar heartbeat' });
   }
 });
 

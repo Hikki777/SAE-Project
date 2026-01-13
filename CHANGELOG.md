@@ -5,6 +5,29 @@ Todos los cambios notables en este proyecto serán documentados en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [0.9.1-beta] - 2026-01-13
+
+### 🐛 Corregido
+
+#### Sistema Multi-Cliente - Notificaciones WebSocket
+- **Notificaciones de aprobación:** Los clientes ahora reciben notificaciones en tiempo real cuando un administrador aprueba su equipo
+- **Fix en `/api/equipos/:id/approve`:** Agregada emisión de evento WebSocket `approval-status` después de actualizar el estado de aprobación
+- **Eliminado estado de espera infinito:** Los clientes ya no quedan atrapados en "waiting-approval" indefinidamente
+
+#### Socket.IO - Estabilidad del Servidor
+- **Middleware namespace-specific:** Movido el middleware de autenticación de `io.use()` (global) a `clientNamespace.use()` y `adminNamespace.use()` (específico por namespace)
+- **Prevención de race conditions:** Eliminados conflictos de inicialización entre namespaces
+- **Mejor aislamiento:** Cada namespace (`/client` y `/admin`) ahora tiene su propio middleware de autenticación independiente
+- **Estabilidad mejorada:** Reducción significativa de errores de conexión durante desarrollo y producción
+
+### 📊 Impacto
+- ✅ Sistema multi-cliente completamente funcional
+- ✅ Notificaciones en tiempo real operativas
+- ✅ Mayor estabilidad en conexiones WebSocket
+- ✅ Experiencia de usuario mejorada en flujo de aprobación de equipos
+
+---
+
 ## [0.9.0-beta] - 2026-01-07
 
 ### 🎉 Versión Beta Pública
