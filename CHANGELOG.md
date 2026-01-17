@@ -5,6 +5,86 @@ Todos los cambios notables en este proyecto serán documentados en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [0.9.2-beta] - 2026-01-17
+
+### ✨ Agregado
+
+#### Dashboard - Estadísticas de Personal
+- **Gráfico de distribución de personal por sexo:** Visualización de personal masculino/femenino con gráfico de pastel
+- **Gráfico de personal por cargo:** Distribución de personal por posiciones (Docente, Director, etc.) con gráfico de barras
+- **Gráfico de usuarios por jornada:** Comparación de alumnos y personal por jornada (Matutina, Vespertina, etc.)
+- **Estadísticas detalladas en backend:** Endpoint `/api/dashboard/stats` ahora incluye:
+  - `personalPorSexo`: Conteo de personal por género
+  - `personalPorCargo`: Distribución por cargos
+  - `personalPorJornada`: Personal por jornada
+  - `alumnosPorJornada`: Alumnos por jornada
+
+#### Sistema de Carnets
+- **Cálculo automático de nivel académico:** El campo `nivel_actual` ahora se calcula automáticamente basado en el grado del alumno
+  - Primaria: 1ro-6to Primaria
+  - Básicos: 1ro-3ro Básico/Básicos
+  - Diversificado: 4to-6to, Bachillerato, Perito
+- **Endpoint de migración:** `/api/alumnos/fix-niveles` para actualizar niveles de alumnos existentes
+- **Lógica case-insensitive:** Acepta variaciones como "Básicos", "Basicos", "Básico"
+
+### 🔄 Cambiado
+
+#### Dashboard - Reorganización de Gráficos
+- **Layout mejorado:** Gráficos separados en filas de 2 columnas para mejor visibilidad
+  - Fila 1: Alumnos por Nivel + Alumnos por Grado
+  - Fila 2: Alumnos - Distribución General + Personal - Distribución General
+  - Fila 3: Personal por Cargo + Usuarios por Jornada
+- **Altura aumentada:** Gráficos ahora tienen 300px de altura (antes 250px)
+- **Labels mejorados:** Gráficos de pastel muestran valores y porcentajes directamente
+- **Headers con iconos:** Cada gráfico tiene un icono distintivo y color temático
+- **Títulos clarificados:**
+  - "Distribución General" → "Alumnos - Distribución General"
+  - Agregado "Personal - Distribución General"
+
+#### AlumnosPanel - UI Mejorada
+- **Columna Especialidad ampliada:** Ancho aumentado de 128px a 192px
+- **Texto multi-línea:** Especialidades largas ahora se muestran en hasta 2 líneas
+- **Tooltip agregado:** Hover sobre especialidad muestra texto completo
+
+### 🐛 Corregido
+
+#### Dashboard - Validación de Datos
+- **Gráficos sin datos:** Mensajes informativos cuando no hay datos disponibles
+- **Validación robusta:** Verificación de existencia de datos antes de renderizar gráficos
+- **Campo jornada faltante:** Agregado `jornada` al select de alumnos en `/api/dashboard/stats`
+- **Filtrado de valores vacíos:** Gráficos solo muestran categorías con datos > 0
+
+#### Sistema de Carnets
+- **Bug de carnet automático:** Corregido el problema donde el modo automático se quedaba en "Loading..." al cambiar de manual a automático
+  - Agregado `carnetMode` como dependencia del `useEffect`
+- **Reasignación de carnets:** Sistema completo de reasignación con validación y regeneración automática de QR
+  - Modal dedicado con advertencias de seguridad
+  - Validación en tiempo real
+  - Regeneración automática de QR tras reasignación exitosa
+
+### 🔧 Mejoras Técnicas
+
+#### Backend
+- **Logs de debug mejorados:** Agregados logs con emoji 📊 para facilitar debugging de estadísticas
+- **Consultas optimizadas:** Select específico de campos necesarios en lugar de traer todos los datos
+- **Validación flexible:** Soporte para variaciones de texto (mayúsculas/minúsculas, con/sin acentos)
+
+#### Frontend
+- **Componentes consistentes:** Todos los gráficos siguen el mismo patrón de diseño
+- **Dark mode completo:** Todos los nuevos gráficos soportan modo oscuro
+- **Responsive:** Gráficos se adaptan a diferentes tamaños de pantalla
+
+### 📊 Impacto
+- ✅ Dashboard más informativo con estadísticas de personal
+- ✅ Mejor visualización de datos con gráficos separados
+- ✅ Sistema de carnets más robusto y automático
+- ✅ Nivel académico calculado automáticamente
+- ✅ UI mejorada en panel de alumnos
+- ✅ Mejor experiencia de usuario en general
+
+---
+
+
 ## [0.9.1-beta] - 2026-01-13
 
 ### 🐛 Corregido

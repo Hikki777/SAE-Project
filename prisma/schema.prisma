@@ -68,11 +68,11 @@ model Personal {
   cargo          String?
   jornada        String?
   grado_guia     String?
-  curso          String?
   estado         String       @default("activo")
   foto_path      String?
   creado_en      DateTime     @default(now())
   actualizado_en DateTime     @updatedAt
+  curso          String?
   asistencias    Asistencia[] @relation("personal_asistencia")
   codigos_qr     CodigoQr[]   @relation("personal_qr")
   excusas        Excusa[]     @relation("personal_excusa")
@@ -166,8 +166,8 @@ model Excusa {
   documento_url  String?
   observaciones  String?
   creado_en      DateTime  @default(now())
-  personal       Personal? @relation("personal_excusa", fields: [personal_id], references: [id], onDelete: Cascade)
   alumno         Alumno?   @relation("alumno_excusa", fields: [alumno_id], references: [id], onDelete: Cascade)
+  personal       Personal? @relation("personal_excusa", fields: [personal_id], references: [id], onDelete: Cascade)
 
   @@index([fecha])
   @@index([estado])

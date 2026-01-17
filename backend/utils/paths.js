@@ -1,5 +1,5 @@
 const path = require('path');
-// Railway deployment fix v2 (cache buster)
+// Path configuration
 
 const isProduction = process.env.NODE_ENV === 'production';
 

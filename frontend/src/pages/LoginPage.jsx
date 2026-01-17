@@ -319,7 +319,7 @@ export default function LoginPage() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className={`w-full pl-11 pr-4 py-3 bg-gray-50/50 border ${submitted && !email ? 'border-red-500 ring-4 ring-red-500/10' : 'border-gray-200'} rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-gray-900 placeholder-gray-400 shadow-sm`}
+                className={`w-full pl-11 pr-4 py-3 bg-white border ${submitted && !email ? 'border-red-500 ring-4 ring-red-500/10' : 'border-gray-200'} rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-gray-900 placeholder-gray-400 shadow-sm`}
                 placeholder="admin@test.edu"
                 required
               />
@@ -338,7 +338,7 @@ export default function LoginPage() {
                 type={showPassword ? "text" : "password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className={`w-full pl-11 pr-12 py-3 bg-gray-50/50 border ${submitted && !password ? 'border-red-500 ring-4 ring-red-500/10' : 'border-gray-200'} rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-gray-900 placeholder-gray-400 shadow-sm`}
+                className={`w-full pl-11 pr-12 py-3 bg-white border ${submitted && !password ? 'border-red-500 ring-4 ring-red-500/10' : 'border-gray-200'} rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-gray-900 placeholder-gray-400 shadow-sm`}
                 placeholder="••••••••"
                 required
               />

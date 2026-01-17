@@ -1,6 +1,7 @@
 const express = require('express');
 const prisma = require('../prismaClient');
 const { verifyJWT } = require('../middlewares/auth');
+const { generateAlumnoCarnet, validateCarnet } = require('../utils/carnetGenerator');
 const { 
   validarCrearAlumno, 
   validarActualizarAlumno, 
@@ -17,6 +18,64 @@ const router = express.Router();
 
 // Aplicar autenticación a todas las rutas de alumnos
 router.use(verifyJWT);
+
+/**
+ * Helper: Calcular nivel académico basado en el grado
+ */
+function calcularNivelActual(grado) {
+  if (!grado) return null;
+  
+  const gradoLower = grado.toLowerCase();
+  
+  // Primaria: 1ro-6to Primaria
+  if (gradoLower.includes('primaria')) {
+    return 'Primaria';
+  }
+  
+  // Básicos: 1ro-3ro Básico
+  if (gradoLower.includes('básico') || gradoLower.includes('basico')) {
+    return 'Básicos';
+  }
+  
+  // Diversificado: 4to-6to Diversificado, Bachillerato, Perito, etc.
+  if (gradoLower.includes('diversificado') || 
+      gradoLower.includes('bachillerato') ||
+      gradoLower.includes('perito') ||
+      /[456]to\.?\s*(diversificado)?/.test(gradoLower)) {
+    return 'Diversificado';
+  }
+  
+  return null;
+}
+
+/**
+ * GET /api/alumnos/next-carnet
+ * Obtener el siguiente carnet disponible (preview)
+ */
+router.get('/next-carnet', async (req, res) => {
+  try {
+    const nextCarnet = await generateAlumnoCarnet();
+    res.json({ carnet: nextCarnet });
+  } catch (error) {
+    logger.error({ err: error }, '[ERROR] Error generando preview de carnet');
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * POST /api/alumnos/validate-carnet
+ * Validar un carnet (formato + disponibilidad)
+ */
+router.post('/validate-carnet', async (req, res) => {
+  try {
+    const { carnet, excludeId } = req.body;
+    const validation = await validateCarnet(carnet, 'alumno', excludeId);
+    res.json(validation);
+  } catch (error) {
+    logger.error({ err: error }, '[ERROR] Error validando carnet');
+    res.status(500).json({ error: error.message });
+  }
+});
 
 /**
  * GET /api/alumnos
@@ -111,18 +170,25 @@ router.get('/:id', validarId, async (req, res) => {
  */
 router.post('/', invalidateCacheMiddleware('/api/alumnos'), validarCrearAlumno, async (req, res) => {
   try {
-    const { carnet, nombres, apellidos, sexo, grado, carrera, jornada } = req.body;
+    let { carnet, nombres, apellidos, sexo, grado, carrera, jornada, carnetMode } = req.body;
 
-    if (!carnet || !nombres || !apellidos || !grado) {
+    if (!nombres || !apellidos || !grado) {
       return res.status(400).json({
-        error: 'Faltan campos requeridos: carnet, nombres, apellidos, grado'
+        error: 'Faltan campos requeridos: nombres, apellidos, grado'
       });
     }
 
-    // Verificar carnet único
-    const existing = await prisma.alumno.findUnique({ where: { carnet } }).catch(() => null);
-    if (existing) {
-      return res.status(409).json({ error: 'Carnet ya existe' });
+    // Sistema híbrido de carnets
+    if (carnetMode === 'auto' || !carnet) {
+      // Generar carnet automáticamente
+      carnet = await generateAlumnoCarnet();
+      logger.info({ carnet }, '[INFO] Carnet generado automáticamente');
+    } else {
+      // Validar carnet manual
+      const validation = await validateCarnet(carnet, 'alumno');
+      if (!validation.valid) {
+        return res.status(400).json({ error: validation.error });
+      }
     }
 
 const qrService = require('../services/qrService');
@@ -136,6 +202,7 @@ const qrService = require('../services/qrService');
         apellidos,
         sexo: sexo || null,
         grado,
+        nivel_actual: calcularNivelActual(grado), // Calcular automáticamente
         carrera: req.body.carrera || null,
         especialidad: req.body.especialidad || null,
         jornada: jornada || 'Matutina',
@@ -199,7 +266,7 @@ router.put('/:id', invalidateCacheMiddleware('/api/alumnos'), validarActualizarA
         ...(nombres && { nombres }),
         ...(apellidos && { apellidos }),
         ...(sexo && { sexo }),
-        ...(grado && { grado }),
+        ...(grado && { grado, nivel_actual: calcularNivelActual(grado) }), // Actualizar nivel si cambia grado
         ...(carrera !== undefined && { carrera }),
         ...(especialidad !== undefined && { especialidad }),
         ...(jornada && { jornada }),
@@ -302,6 +369,42 @@ router.post('/:id/foto', upload.single('foto'), async (req, res) => {
     res.json({ success: true, url: result.secure_url });
   } catch (error) {
     logger.error({ err: error, alumnoId: req.params.id }, '[ERROR] Error subiendo foto');
+    res.status(500).json({ error: error.message });
+  }
+});
+
+
+/**
+ * POST /api/alumnos/fix-niveles
+ * Actualizar nivel_actual de todos los alumnos existentes (migración)
+ */
+router.post('/fix-niveles', async (req, res) => {
+  try {
+    const alumnos = await prisma.alumno.findMany({
+      select: { id: true, grado: true, nivel_actual: true }
+    });
+
+    let updated = 0;
+    for (const alumno of alumnos) {
+      const nivelCalculado = calcularNivelActual(alumno.grado);
+      if (nivelCalculado !== alumno.nivel_actual) {
+        await prisma.alumno.update({
+          where: { id: alumno.id },
+          data: { nivel_actual: nivelCalculado }
+        });
+        updated++;
+      }
+    }
+
+    logger.info({ updated, total: alumnos.length }, '[OK] Niveles actualizados');
+    res.json({ 
+      success: true, 
+      message: `${updated} alumnos actualizados de ${alumnos.length} total`,
+      updated,
+      total: alumnos.length
+    });
+  } catch (error) {
+    logger.error({ err: error }, '[ERROR] Error actualizando niveles');
     res.status(500).json({ error: error.message });
   }
 });

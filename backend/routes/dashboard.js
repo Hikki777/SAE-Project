@@ -20,6 +20,7 @@ router.get('/stats', async (req, res) => {
         grado: true,
         nivel_actual: true,
         sexo: true,
+        jornada: true, // Necesario para estadísticas por jornada
         estado: true, // FIXED: usar estado en lugar de activo
       }
     });
@@ -27,12 +28,23 @@ router.get('/stats', async (req, res) => {
     // Helper para verificar activo
     const esActivo = (a) => a.estado === 'activo';
 
-    // Estadísticas por nivel académico
+    // Log para debug
+    console.log('📊 Dashboard Stats - Total alumnos:', alumnos.length);
+    console.log('📊 Alumnos activos:', alumnos.filter(a => esActivo(a)).length);
+    console.log('📊 Niveles únicos:', [...new Set(alumnos.map(a => a.nivel_actual))]);
+    console.log('📊 Sexos únicos:', [...new Set(alumnos.map(a => a.sexo))]);
+
+    // Estadísticas por nivel académico (case-insensitive)
     const porNivel = {
-      primaria: alumnos.filter(a => a.nivel_actual === 'Primaria' && esActivo(a)).length,
-      basicos: alumnos.filter(a => a.nivel_actual === 'Básicos' && esActivo(a)).length,
-      diversificado: alumnos.filter(a => a.nivel_actual === 'Diversificado' && esActivo(a)).length,
+      primaria: alumnos.filter(a => a.nivel_actual?.toLowerCase() === 'primaria' && esActivo(a)).length,
+      basicos: alumnos.filter(a => {
+        const nivel = a.nivel_actual?.toLowerCase();
+        return (nivel === 'básicos' || nivel === 'basicos' || nivel === 'básico' || nivel === 'basico') && esActivo(a);
+      }).length,
+      diversificado: alumnos.filter(a => a.nivel_actual?.toLowerCase() === 'diversificado' && esActivo(a)).length,
     };
+
+    console.log('📊 Por Nivel:', porNivel);
 
     // Estadísticas por grado
     const gradosUnicos = [...new Set(alumnos.filter(a => esActivo(a)).map(a => a.grado))].sort();
@@ -41,11 +53,21 @@ router.get('/stats', async (req, res) => {
       porGrado[grado] = alumnos.filter(a => a.grado === grado && esActivo(a)).length;
     });
 
-    // Estadísticas por sexo
+    console.log('📊 Por Grado:', porGrado);
+
+    // Estadísticas por sexo (case-insensitive y flexible)
     const porSexo = {
-      masculino: alumnos.filter(a => a.sexo === 'M' && esActivo(a)).length,
-      femenino: alumnos.filter(a => a.sexo === 'F' && esActivo(a)).length,
+      masculino: alumnos.filter(a => {
+        const sexo = a.sexo?.toUpperCase();
+        return (sexo === 'M' || sexo === 'MASCULINO') && esActivo(a);
+      }).length,
+      femenino: alumnos.filter(a => {
+        const sexo = a.sexo?.toUpperCase();
+        return (sexo === 'F' || sexo === 'FEMENINO') && esActivo(a);
+      }).length,
     };
+
+    console.log('📊 Por Sexo:', porSexo);
 
     // Totales
     const totales = {
@@ -54,8 +76,59 @@ router.get('/stats', async (req, res) => {
       total: alumnos.length,
     };
 
-    // Obtener personal
-    const personal = await prisma.personal.count();
+    // Obtener personal con estadísticas detalladas
+    const personalData = await prisma.personal.findMany({
+      select: {
+        id: true,
+        sexo: true,
+        cargo: true,
+        jornada: true,
+        estado: true,
+      }
+    });
+
+    const personalActivo = personalData.filter(p => p.estado === 'activo');
+
+    // Estadísticas de personal por sexo
+    const personalPorSexo = {
+      masculino: personalActivo.filter(p => {
+        const sexo = p.sexo?.toUpperCase();
+        return sexo === 'M' || sexo === 'MASCULINO';
+      }).length,
+      femenino: personalActivo.filter(p => {
+        const sexo = p.sexo?.toUpperCase();
+        return sexo === 'F' || sexo === 'FEMENINO';
+      }).length,
+    };
+
+    // Estadísticas de personal por cargo
+    const cargosUnicos = [...new Set(personalActivo.map(p => p.cargo).filter(Boolean))];
+    const personalPorCargo = {};
+    cargosUnicos.forEach(cargo => {
+      personalPorCargo[cargo] = personalActivo.filter(p => p.cargo === cargo).length;
+    });
+
+    // Estadísticas de personal por jornada
+    const jornadasUnicas = [...new Set(personalActivo.map(p => p.jornada).filter(Boolean))];
+    const personalPorJornada = {};
+    jornadasUnicas.forEach(jornada => {
+      personalPorJornada[jornada] = personalActivo.filter(p => p.jornada === jornada).length;
+    });
+
+    // Estadísticas de alumnos por jornada
+    const alumnosJornadasUnicas = [...new Set(alumnos.filter(a => esActivo(a)).map(a => a.jornada).filter(Boolean))];
+    const alumnosPorJornada = {};
+    alumnosJornadasUnicas.forEach(jornada => {
+      alumnosPorJornada[jornada] = alumnos.filter(a => a.jornada === jornada && esActivo(a)).length;
+    });
+
+    console.log('📊 Personal por Sexo:', personalPorSexo);
+    console.log('📊 Personal por Cargo:', personalPorCargo);
+    console.log('📊 Personal por Jornada:', personalPorJornada);
+    console.log('📊 Jornadas únicas de alumnos:', alumnosJornadasUnicas);
+    console.log('📊 Alumnos por Jornada:', alumnosPorJornada);
+
+    const personal = personalData.length;
 
     // Obtener asistencias del día
     const hoy = new Date();
@@ -149,6 +222,10 @@ router.get('/stats', async (req, res) => {
       porSexo,
       totales,
       personal,
+      personalPorSexo,
+      personalPorCargo,
+      personalPorJornada,
+      alumnosPorJornada,
       asistenciasHoy,
       qrsGenerados,
       excusasPendientes,

@@ -184,6 +184,34 @@ export default function AsistenciasPanel() {
     }
   }, []);
 
+  const handleFinalizarTomaAsistencias = async () => {
+    try {
+      // Llamar al endpoint para detectar ausentes
+      const response = await client.get('/asistencias/ausentes');
+      const { ausentes, total } = response.data;
+
+      if (total === 0) {
+        toast.success('✅ ¡Excelente! Todos presentes hoy.');
+        setTomaIniciada(false);
+        return;
+      }
+
+      // Guardar ausentes en sessionStorage
+      sessionStorage.setItem('ausentes_revision', JSON.stringify(ausentes));
+      sessionStorage.setItem('fecha_revision', new Date().toISOString());
+
+      // Redirigir al panel de justificaciones en modo revisión
+      toast.success(`📋 ${total} ausente${total !== 1 ? 's' : ''} detectado${total !== 1 ? 's' : ''}. Redirigiendo...`);
+      
+      setTimeout(() => {
+        window.location.hash = '#/justificaciones?modo=revision';
+      }, 1000);
+    } catch (error) {
+      console.error('Error detectando ausentes:', error);
+      toast.error('Error al detectar ausentes: ' + (error.response?.data?.error || error.message));
+    }
+  };
+
   const handleRegistrarAsistencia = async (e) => {
     e.preventDefault();
     
@@ -957,9 +985,7 @@ export default function AsistenciasPanel() {
           ) : (
             <button
               className="min-w-[220px] text-lg bg-orange-600 hover:bg-orange-700 font-bold py-3 px-6 rounded-xl shadow transition text-white"
-              onClick={() => {
-                setShowAusentesModal(true);
-              }}
+              onClick={handleFinalizarTomaAsistencias}
             >
               Finalizar toma de asistencias
             </button>

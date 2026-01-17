@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import client from '../api/client';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
-import { School, User, Lock, Clock, CheckCircle, MapPin, Mail, Phone, LogOut, Upload, Edit2, Server, Wifi, Globe, Eye, EyeOff } from 'lucide-react';
+import { School, User, Lock, Clock, CheckCircle, MapPin, Mail, Phone, LogOut, Upload, Edit2, Server, Wifi, Globe, Eye, EyeOff, Copy, Download, Users } from 'lucide-react';
 import ConnectionModal from './ConnectionModal';
 import PasswordStrengthIndicator from './PasswordStrengthIndicator';
 
@@ -15,6 +15,13 @@ export default function SetupWizard({ onComplete }) {
   const [showConnectionModal, setShowConnectionModal] = useState(false);
   const [connectionError, setConnectionError] = useState('');
   const [masterKey, setMasterKey] = useState(null);
+  
+  // Estados para aprobación de equipo cliente
+  const [waitingApproval, setWaitingApproval] = useState(false);
+  const [equipoId, setEquipoId] = useState(null);
+  const [pollingInterval, setPollingInterval] = useState(null);
+  const [pollingTimeout, setPollingTimeout] = useState(null);
+  const [approvalCheckCount, setApprovalCheckCount] = useState(0);
   const [formData, setFormData] = useState({
     nombre: '',
     horario_inicio: '07:00',
@@ -44,10 +51,57 @@ export default function SetupWizard({ onComplete }) {
   const [logoPreview, setLogoPreview] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
+  
+  // Estado para múltiples directores
+  const [directores, setDirectores] = useState([
+    { nombres: '', apellidos: '', cargo: 'Director General', sexo: '', jornada: '', foto_file: null, foto_preview: null }
+  ]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const addDirector = () => {
+    if (directores.length >= 5) {
+      toast.error('Máximo 5 directores permitidos');
+      return;
+    }
+    setDirectores([...directores, { 
+      nombres: '', 
+      apellidos: '', 
+      cargo: 'Director General',
+      sexo: '',
+      jornada: '',
+      foto_file: null,
+      foto_preview: null
+    }]);
+  };
+
+  const removeDirector = (index) => {
+    if (directores.length === 1) {
+      toast.error('Debe haber al menos un director');
+      return;
+    }
+    setDirectores(directores.filter((_, i) => i !== index));
+  };
+
+  const updateDirector = (index, field, value) => {
+    const updated = [...directores];
+    updated[index][field] = value;
+    setDirectores(updated);
+  };
+
+  const handleDirectorFotoChange = (index, e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        updateDirector(index, 'foto_preview', reader.result);
+        updateDirector(index, 'foto_file', file);
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleLogoChange = (e) => {
@@ -134,22 +188,118 @@ export default function SetupWizard({ onComplete }) {
       
       // Guardar configuración
       localStorage.setItem('api_url', `${url}/api`);
+      localStorage.setItem('server_url', url);
       localStorage.setItem('device_id', registerData.equipoId);
       localStorage.setItem('is_client', 'true');
       
-      // Paso 3: Conectado
-      setConnectionStatus('connected');
+      setEquipoId(registerData.equipoId);
       
-      // Redirigir al login después de 2 segundos
-      setTimeout(() => {
-        window.location.href = '/login';
-      }, 2000);
+      // Si ya está aprobado, conectar inmediatamente
+      if (registerData.aprobado) {
+        setConnectionStatus('connected');
+        setTimeout(() => {
+          window.location.href = '/login';
+        }, 2000);
+      } else {
+        // Mostrar modal de espera y comenzar polling
+        setConnectionStatus('waiting-approval');
+        setWaitingApproval(true);
+        setApprovalCheckCount(0);
+        startApprovalPolling(registerData.equipoId, url);
+      }
       
     } catch (error) {
       console.error('Connection error:', error);
       setConnectionStatus('error');
       setConnectionError(error.message || 'No se pudo conectar al servidor. Verifica la URL y que el servidor esté activo.');
     }
+  };
+
+  /**
+   * Iniciar polling para verificar aprobación
+   */
+  const startApprovalPolling = (eqId, serverUrl) => {
+    const MAX_WAIT_TIME = 120000; // 2 minutos
+    const POLL_INTERVAL = 5000; // 5 segundos
+    
+    const interval = setInterval(async () => {
+      try {
+        const response = await fetch(`${serverUrl}/api/equipos/check-approval/${eqId}`);
+        
+        if (response.ok) {
+          const data = await response.json();
+          setApprovalCheckCount(prev => prev + 1);
+          
+          if (data.aprobado) {
+            // ¡Aprobado! Detener polling y conectar
+            clearInterval(interval);
+            clearTimeout(timeout);
+            setPollingInterval(null);
+            setPollingTimeout(null);
+            setConnectionStatus('connected');
+            setWaitingApproval(false);
+            
+            toast.success('¡Equipo aprobado! Conectando...');
+            
+            // Redirigir al login
+            setTimeout(() => {
+              window.location.href = '/login';
+            }, 1500);
+          }
+        } else {
+          console.error('Error en respuesta de aprobación:', response.status);
+        }
+      } catch (error) {
+        console.error('Error checking approval:', error);
+      }
+    }, POLL_INTERVAL);
+    
+    // Timeout de 2 minutos
+    const timeout = setTimeout(() => {
+      clearInterval(interval);
+      setPollingInterval(null);
+      setPollingTimeout(null);
+      setWaitingApproval(false);
+      setConnectionStatus('error');
+      setConnectionError('Tiempo de espera agotado. El administrador no ha aprobado el equipo. Por favor, contacta al administrador e intenta nuevamente.');
+      
+      // Limpiar localStorage
+      localStorage.removeItem('api_url');
+      localStorage.removeItem('server_url');
+      localStorage.removeItem('device_id');
+      localStorage.removeItem('is_client');
+      
+      toast.error('Tiempo de espera agotado');
+    }, MAX_WAIT_TIME);
+    
+    setPollingInterval(interval);
+    setPollingTimeout(timeout);
+  };
+
+  /**
+   * Cancelar espera de aprobación
+   */
+  const cancelApprovalWait = () => {
+    if (pollingInterval) {
+      clearInterval(pollingInterval);
+      setPollingInterval(null);
+    }
+    if (pollingTimeout) {
+      clearTimeout(pollingTimeout);
+      setPollingTimeout(null);
+    }
+    setWaitingApproval(false);
+    setConnectionStatus(null);
+    setShowConnectionModal(false);
+    setApprovalCheckCount(0);
+    
+    // Limpiar localStorage
+    localStorage.removeItem('api_url');
+    localStorage.removeItem('server_url');
+    localStorage.removeItem('device_id');
+    localStorage.removeItem('is_client');
+    
+    toast.info('Conexión cancelada');
   };
 
   const handleCloseConnectionModal = () => {
@@ -209,6 +359,17 @@ export default function SetupWizard({ onComplete }) {
       // Append margin as integer
       dataToSend.append('margen_puntualidad_min', parseInt(formData.margen_puntualidad_min || 5));
 
+      // Append Directors (JSON string) - BEFORE FILES
+      console.log('Appending directors...', directores);
+      const directorsPayload = directores.map(d => ({
+        nombres: d.nombres,
+        apellidos: d.apellidos,
+        cargo: d.cargo,
+        sexo: d.sexo,
+        jornada: d.jornada
+      }));
+      dataToSend.append('directores', JSON.stringify(directorsPayload));
+
       // Append files
       if (formData.logo_file) {
         console.log('Appending logo...');
@@ -219,6 +380,13 @@ export default function SetupWizard({ onComplete }) {
         dataToSend.append('admin_foto', formData.admin_foto_file);
       }
 
+      // Append Director Photos
+      directores.forEach((dir, index) => {
+         if (dir.foto_file) {
+           dataToSend.append(`director_fotos_${index}`, dir.foto_file);
+         }
+      });
+
       console.log('Sending request to /institucion/init...');
       const response = await client.post('/institucion/init', dataToSend, {
         headers: { 'Content-Type': 'multipart/form-data' }
@@ -227,7 +395,7 @@ export default function SetupWizard({ onComplete }) {
 
       toast.success('¡Sistema inicializado correctamente!');
       setMasterKey(response.data.masterRecoveryKey);
-      setStep(4); // Move to a dedicated "Success/Key" step instead of immediate redirect
+      setStep(4); // Move to a dedicated "Success/Key" step
       
     } catch (error) {
       console.error('Submission error:', error);
@@ -297,14 +465,16 @@ export default function SetupWizard({ onComplete }) {
           <div className="md:w-2/3">
             <div className="p-8">
             <h2 className="text-2xl font-bold text-gray-900 mb-6">
-              {step === 0 ? 'Modo de Instalación' : 
-               step === 1 ? 'Datos de la Institución' : 
-               step === 2 ? 'Cuenta de Administrador' : 'Confirmar Configuración'}
+              {step === 0 ? 'Modo de Instalación' :
+               step === 1 ? 'Datos Institucionales y Directores' :
+               step === 2 ? 'Cuenta de Administrador' :
+               step === 3 ? 'Confirmación' :
+               step === 4 ? '¡Completado!' : ''}
             </h2>
 
             {/* PASO 0: Selección de Modo */}
             {step === 0 && (
-              <div className="space-y-6">
+              <div className="space-y-2">
                 <p className="text-gray-600 text-sm mb-4">
                   Selecciona cómo deseas configurar este equipo:
                 </p>
@@ -327,14 +497,7 @@ export default function SetupWizard({ onComplete }) {
                   </div>
                 </div>
 
-                <div className="relative">
-                  <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-gray-200"></div>
-                  </div>
-                  <div className="relative flex justify-center text-sm">
-                    <span className="px-2 bg-white text-gray-500">O</span>
-                  </div>
-                </div>
+
 
                 {/* Restaurar desde Backup */}
                 <div className="border-2 border-purple-100 rounded-xl p-6 bg-purple-50/30 opacity-60 cursor-not-allowed">
@@ -378,14 +541,7 @@ export default function SetupWizard({ onComplete }) {
                   </div>
                 </div>
 
-                <div className="relative">
-                  <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-gray-200"></div>
-                  </div>
-                  <div className="relative flex justify-center text-sm">
-                    <span className="px-2 bg-white text-gray-500">O</span>
-                  </div>
-                </div>
+
 
                 {/* Conectar a Servidor Existente */}
                 <div className="border-2 border-gray-200 rounded-xl p-6 hover:border-green-300 transition-colors">
@@ -639,6 +795,133 @@ export default function SetupWizard({ onComplete }) {
                     </div>
                   </div>
 
+                  {/* Sección de Directores */}
+                  <div className="border-t border-gray-200 pt-6 mt-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-bold text-gray-900">Directores de la Institución</h3>
+                      <button
+                        type="button"
+                        onClick={addDirector}
+                        disabled={directores.length >= 5}
+                        className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <User size={16} />
+                        Agregar Director
+                      </button>
+                    </div>
+                    
+                    <p className="text-sm text-gray-600 mb-4">
+                      Agregue los directores de su institución. Estos aparecerán en reportes oficiales.
+                    </p>
+
+                    <div className="space-y-4">
+                      {directores.map((director, index) => (
+                        <div key={index} className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                          <div className="flex items-center justify-between mb-3">
+                            <span className="text-sm font-semibold text-gray-700">Director {index + 1}</span>
+                            {directores.length > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => removeDirector(index)}
+                                className="text-red-600 hover:text-red-800 text-sm font-medium"
+                              >
+                                Eliminar
+                              </button>
+                            )}
+                          </div>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1">Nombres</label>
+                              <input
+                                type="text"
+                                value={director.nombres}
+                                onChange={(e) => updateDirector(index, 'nombres', e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white text-gray-900 text-sm"
+                                placeholder="Ej: Juan Carlos"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1">Apellidos</label>
+                              <input
+                                type="text"
+                                value={director.apellidos}
+                                onChange={(e) => updateDirector(index, 'apellidos', e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white text-gray-900 text-sm"
+                                placeholder="Ej: Pérez López"
+                              />
+                            </div>
+                            <div className="col-span-2">
+                              <label className="block text-xs font-medium text-gray-700 mb-1">Cargo</label>
+                              <select
+                                value={director.cargo}
+                                onChange={(e) => updateDirector(index, 'cargo', e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white text-gray-900 text-sm"
+                              >
+                                <option value="">Seleccione un cargo...</option>
+                                <option value="Director General">Director General</option>
+                                <option value="Directora General">Directora General</option>
+                                <option value="Director">Director</option>
+                                <option value="Directora">Directora</option>
+                                <option value="Director Técnico">Director Técnico</option>
+                                <option value="Directora Técnica">Directora Técnica</option>
+                                <option value="Subdirector">Subdirector</option>
+                                <option value="Subdirectora">Subdirectora</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1">Sexo</label>
+                              <select
+                                value={director.sexo || ''}
+                                onChange={(e) => updateDirector(index, 'sexo', e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white text-gray-900 text-sm"
+                              >
+                                <option value="">Seleccione...</option>
+                                <option value="Masculino">Masculino</option>
+                                <option value="Femenino">Femenino</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1">Jornada</label>
+                              <select
+                                value={director.jornada}
+                                onChange={(e) => updateDirector(index, 'jornada', e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white text-gray-900 text-sm"
+                              >
+                                <option value="">-</option>
+                                <option value="Matutina">Matutina</option>
+                                <option value="Vespertina">Vespertina</option>
+                                <option value="Nocturna">Nocturna</option>
+                                <option value="Semipresencial">Semipresencial</option>
+                                <option value="Virtual">Virtual</option>
+                                <option value="Fin de Semana (Sábado)">Fin de Semana (Sábado)</option>
+                                <option value="Fin de Semana (Domingo)">Fin de Semana (Domingo)</option>
+                                <option value="Extendida">Extendida</option>
+                              </select>
+                            </div>
+                            <div className="col-span-2">
+                              <label className="block text-xs font-medium text-gray-700 mb-1">Foto (Opcional)</label>
+                              <div className="flex items-center gap-3">
+                                <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden border-2 border-gray-300">
+                                  {director.foto_preview ? (
+                                    <img src={director.foto_preview} alt="Preview" className="w-full h-full object-cover" />
+                                  ) : (
+                                    <User size={20} className="text-gray-400" />
+                                  )}
+                                </div>
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  onChange={(e) => handleDirectorFotoChange(index, e)}
+                                  className="block w-full text-xs text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
                   <div className="flex gap-3 pt-4">
                     <button
                       type="button"
@@ -709,6 +992,10 @@ export default function SetupWizard({ onComplete }) {
                         >
                           <option value="">Seleccione...</option>
                           <option value="Director">Director(a)</option>
+                          <option value="Director General">Director General</option>
+                          <option value="Directora General">Directora General</option>
+                          <option value="Director Técnico">Director Técnico</option>
+                          <option value="Directora Técnica">Directora Técnica</option>
                           <option value="Subdirector">Subdirector(a)</option>
                           <option value="Secretaria">Secretaria(o)</option>
                           <option value="Administrador">Administrador(a)</option>
@@ -920,6 +1207,58 @@ export default function SetupWizard({ onComplete }) {
                     </div>
                   </div>
 
+                  {/* Directores Agregados */}
+                  {directores.length > 0 && (
+                    <div className="bg-purple-50 rounded-lg p-4 border border-purple-200">
+                      <div className="flex items-center justify-between mb-3">
+                        <h3 className="font-bold text-gray-900 flex items-center gap-2">
+                          <Users size={20} className="text-purple-600" />
+                          Directores ({directores.length})
+                        </h3>
+                        <button
+                          type="button"
+                          onClick={() => setStep(1)}
+                          className="text-purple-600 hover:text-purple-700 text-sm flex items-center gap-1"
+                        >
+                          <Edit2 size={14} />
+                          Editar
+                        </button>
+                      </div>
+                      <div className="space-y-3">
+                        {directores.map((director, index) => (
+                          <div key={index} className="bg-white rounded-lg p-3 border border-purple-200">
+                            <div className="flex items-start gap-3">
+                              {director.foto_preview ? (
+                                <img 
+                                  src={director.foto_preview} 
+                                  alt={`Director ${index + 1}`}
+                                  className="w-12 h-12 rounded-full object-cover border-2 border-purple-300"
+                                />
+                              ) : (
+                                <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center border-2 border-purple-300">
+                                  <User size={24} className="text-purple-600" />
+                                </div>
+                              )}
+                              <div className="flex-1">
+                                <p className="font-semibold text-gray-900">
+                                  {director.nombres} {director.apellidos}
+                                </p>
+                                <p className="text-sm text-purple-700 font-medium">
+                                  {director.cargo}
+                                </p>
+                                {director.jornada && (
+                                  <p className="text-xs text-gray-600 mt-1">
+                                    Jornada: {director.jornada}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Datos del Administrador */}
                   <div className="bg-green-50 rounded-lg p-4 border border-green-200">
                     <div className="flex items-center justify-between mb-3">
@@ -936,22 +1275,35 @@ export default function SetupWizard({ onComplete }) {
                         Editar
                       </button>
                     </div>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Nombre:</span>
-                        <span className="font-medium text-gray-900">{formData.admin_nombres} {formData.admin_apellidos}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Cargo:</span>
-                        <span className="font-medium text-gray-900">{formData.admin_cargo} ({formData.admin_jornada})</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Email:</span>
-                        <span className="font-medium text-gray-900">{formData.admin_email}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Contraseña:</span>
-                        <span className="font-medium text-gray-900">••••••••</span>
+                    <div className="bg-white rounded-lg p-3 border border-green-200">
+                      <div className="flex items-start gap-3">
+                        {formData.admin_foto_preview ? (
+                          <img 
+                            src={formData.admin_foto_preview} 
+                            alt="Administrador"
+                            className="w-12 h-12 rounded-full object-cover border-2 border-green-300"
+                          />
+                        ) : (
+                          <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center border-2 border-green-300">
+                            <User size={24} className="text-green-600" />
+                          </div>
+                        )}
+                        <div className="flex-1">
+                          <p className="font-semibold text-gray-900">
+                            {formData.admin_nombres} {formData.admin_apellidos}
+                          </p>
+                          <p className="text-sm text-green-700 font-medium">
+                            {formData.admin_cargo}
+                          </p>
+                          {formData.admin_jornada && (
+                            <p className="text-xs text-gray-600 mt-1">
+                              Jornada: {formData.admin_jornada}
+                            </p>
+                          )}
+                          <p className="text-xs text-gray-600 mt-1">
+                            Email: {formData.admin_email}
+                          </p>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -1010,6 +1362,48 @@ export default function SetupWizard({ onComplete }) {
                       ⚠️ **IMPORTANTE**: Necesitarás esta llave para recuperar el acceso si olvidas la contraseña del Administrador. <br/>
                       No se volverá a mostrar. Guárdala, imprímela o tómale una foto.
                     </p>
+                    
+                    {/* Botones de Copiar y Descargar */}
+                    <div className="flex gap-3 mt-4">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard.writeText(masterKey);
+                          toast.success('Llave copiada al portapapeles');
+                        }}
+                        className="flex-1 bg-amber-600 hover:bg-amber-700 text-white font-semibold py-2.5 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 shadow-md hover:shadow-lg"
+                      >
+                        <Copy size={18} />
+                        Copiar Llave
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const element = document.createElement('a');
+                          const content = `LLAVE MAESTRA DE RECUPERACIÓN\n` +
+                                        `================================\n\n` +
+                                        `Llave: ${masterKey}\n\n` +
+                                        `Fecha de creación: ${new Date().toLocaleString('es-GT')}\n\n` +
+                                        `IMPORTANTE:\n` +
+                                        `- Guarda esta llave en un lugar seguro\n` +
+                                        `- Necesitarás esta llave para recuperar el acceso si olvidas la contraseña\n` +
+                                        `- No compartas esta llave con nadie\n` +
+                                        `- No se volverá a mostrar después de cerrar esta ventana\n\n` +
+                                        `Sistema de Administración Educativa (SAE)\n`;
+                          const file = new Blob([content], { type: 'text/plain' });
+                          element.href = URL.createObjectURL(file);
+                          element.download = `llave-maestra-${Date.now()}.txt`;
+                          document.body.appendChild(element);
+                          element.click();
+                          document.body.removeChild(element);
+                          toast.success('Llave descargada como archivo .txt');
+                        }}
+                        className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-2.5 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 shadow-md hover:shadow-lg"
+                      >
+                        <Download size={18} />
+                        Descargar .txt
+                      </button>
+                    </div>
                   </div>
 
                   <button
@@ -1035,7 +1429,9 @@ export default function SetupWizard({ onComplete }) {
         isOpen={showConnectionModal}
         status={connectionStatus}
         onClose={handleCloseConnectionModal}
+        onCancel={cancelApprovalWait}
         errorMessage={connectionError}
+        approvalCheckCount={approvalCheckCount}
       />
     </div>
   );

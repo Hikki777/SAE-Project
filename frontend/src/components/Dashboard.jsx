@@ -8,6 +8,7 @@ import {
   Calendar,
   Wifi,
   WifiOff,
+  Briefcase,
 } from "lucide-react";
 import {
   LineChart,
@@ -463,129 +464,324 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Nuevos Gráficos - Fase 2 */}
+      {/* Nuevos Gráficos - Distribución de Alumnos */}
       {dashboardStats && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
-          {/* Gráfico: Alumnos por Nivel Académico */}
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg dark:shadow-gray-900/20 p-6 border border-gray-100 dark:border-gray-700">
-            <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-6">
-              Alumnos por Nivel
-            </h3>
-            {dashboardStats.totales.activos > 0 ? (
-              <>
-              <ResponsiveContainer width="100%" height={250}>
-                <PieChart>
-                  <Pie
-                    data={[
-                      { name: 'Primaria', value: dashboardStats.porNivel.primaria, color: '#3b82f6' },
-                      { name: 'Básicos', value: dashboardStats.porNivel.basicos, color: '#10b981' },
-                      { name: 'Diversificado', value: dashboardStats.porNivel.diversificado, color: '#f59e0b' },
-                    ]}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={80}
-                    paddingAngle={5}
-                    dataKey="value"
-                  >
-                    {[
-                      { name: 'Primaria', value: dashboardStats.porNivel.primaria, color: '#3b82f6' },
-                      { name: 'Básicos', value: dashboardStats.porNivel.basicos, color: '#10b981' },
-                      { name: 'Diversificado', value: dashboardStats.porNivel.diversificado, color: '#f59e0b' },
-                    ].map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                  <Legend layout="vertical" verticalAlign="middle" align="right" />
-                </PieChart>
-              </ResponsiveContainer>
-              <div className="mt-4 text-sm text-gray-500 text-center">
-                 Total: {dashboardStats.totales.activos} alumnos
+        <>
+          {/* Primera fila: Alumnos por Nivel y por Grado */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+            {/* Gráfico: Alumnos por Nivel Académico */}
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg dark:shadow-gray-900/20 p-6 border border-gray-100 dark:border-gray-700">
+              <div className="flex items-center gap-2 mb-6">
+                <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg text-blue-600 dark:text-blue-400">
+                  <Users size={24} />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">
+                  Alumnos por Nivel
+                </h3>
               </div>
-              </>
-            ) : (
-              <div className="h-[250px] flex flex-col items-center justify-center text-gray-400">
-                <Users size={40} className="mb-2 opacity-20" />
-                <p className="text-sm">No hay alumnos registrados</p>
-              </div>
-            )}
-          </div>
+              {dashboardStats.totales.activos > 0 && dashboardStats.porNivel && 
+                (dashboardStats.porNivel.primaria > 0 || dashboardStats.porNivel.basicos > 0 || dashboardStats.porNivel.diversificado > 0) ? (
+                <>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <PieChart>
+                      <Pie
+                        data={[
+                          { name: 'Primaria', value: dashboardStats.porNivel.primaria || 0, color: '#3b82f6' },
+                          { name: 'Básicos', value: dashboardStats.porNivel.basicos || 0, color: '#10b981' },
+                          { name: 'Diversificado', value: dashboardStats.porNivel.diversificado || 0, color: '#f59e0b' },
+                        ].filter(item => item.value > 0)}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={60}
+                        outerRadius={100}
+                        paddingAngle={5}
+                        dataKey="value"
+                        label={({ name, value }) => `${name}: ${value}`}
+                      >
+                        {[
+                          { name: 'Primaria', value: dashboardStats.porNivel.primaria || 0, color: '#3b82f6' },
+                          { name: 'Básicos', value: dashboardStats.porNivel.basicos || 0, color: '#10b981' },
+                          { name: 'Diversificado', value: dashboardStats.porNivel.diversificado || 0, color: '#f59e0b' },
+                        ].filter(item => item.value > 0).map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} stroke="white" strokeWidth={2} />
+                        ))}
+                      </Pie>
+                      <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                      <Legend wrapperStyle={{paddingTop: '20px'}} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <div className="mt-4 text-center">
+                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                      Total: <span className="font-bold text-gray-900 dark:text-gray-100">{dashboardStats.totales.activos}</span> alumnos activos
+                    </p>
+                  </div>
+                </>
+              ) : (
+                <div className="h-[300px] flex flex-col items-center justify-center text-gray-400 bg-gray-50 dark:bg-gray-800/50 rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-700">
+                  <Users size={48} className="mb-3 opacity-20" />
+                  <p className="font-medium text-gray-500 dark:text-gray-400">No hay alumnos registrados</p>
+                  <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">Los datos aparecerán aquí</p>
+                </div>
+              )}
+            </div>
 
-          {/* Gráfico: Alumnos por Grado */}
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg dark:shadow-gray-900/20 p-6 border border-gray-100 dark:border-gray-700">
-            <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-6">
-              Alumnos por Grado
-            </h3>
-             {dashboardStats.totales.activos > 0 ? (
-              <ResponsiveContainer width="100%" height={250}>
-                <BarChart
-                  data={Object.entries(dashboardStats.porGrado).map(([grado, count]) => ({
-                    grado,
-                    alumnos: count
-                  }))}
-                  layout="vertical"
-                  margin={{ top: 5, right: 30, left: 40, bottom: 5 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e5e7eb" />
-                  <XAxis type="number" hide />
-                  <YAxis dataKey="grado" type="category" width={100} tick={{fontSize: 12}} />
-                  <Tooltip cursor={{fill: 'transparent'}} />
-                  <Bar dataKey="alumnos" fill="#3b82f6" radius={[0, 4, 4, 0]} barSize={20} name="Alumnos" >
-                     {
+            {/* Gráfico: Alumnos por Grado */}
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg dark:shadow-gray-900/20 p-6 border border-gray-100 dark:border-gray-700">
+              <div className="flex items-center gap-2 mb-6">
+                <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg text-purple-600 dark:text-purple-400">
+                  <TrendingUp size={24} />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">
+                  Alumnos por Grado
+                </h3>
+              </div>
+              {dashboardStats.totales.activos > 0 && Object.keys(dashboardStats.porGrado).length > 0 ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart
+                    data={Object.entries(dashboardStats.porGrado).map(([grado, count]) => ({
+                      grado: grado.replace(/\. /g, '.\n'),
+                      alumnos: count
+                    }))}
+                    layout="horizontal"
+                    margin={{ top: 5, right: 30, left: 10, bottom: 60 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                    <XAxis 
+                      dataKey="grado" 
+                      type="category" 
+                      angle={-45}
+                      textAnchor="end"
+                      height={80}
+                      tick={{fontSize: 11, fill: '#6b7280'}}
+                    />
+                    <YAxis type="number" axisLine={false} tickLine={false} tick={{fill: '#9ca3af'}} />
+                    <Tooltip 
+                      contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                      cursor={{fill: 'transparent'}}
+                    />
+                    <Bar dataKey="alumnos" fill="#3b82f6" radius={[4, 4, 0, 0]} name="Alumnos">
+                      {
                         Object.entries(dashboardStats.porGrado).map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={index % 2 === 0 ? '#3b82f6' : '#60a5fa'} />
+                          <Cell key={`cell-${index}`} fill={index % 3 === 0 ? '#3b82f6' : index % 3 === 1 ? '#60a5fa' : '#93c5fd'} />
                         ))
-                     }
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-             ) : (
-               <div className="h-[250px] flex flex-col items-center justify-center text-gray-400">
-                <TrendingUp size={40} className="mb-2 opacity-20" />
-                <p className="text-sm">Sin datos de grados</p>
-              </div>
-             )}
+                      }
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-[300px] flex flex-col items-center justify-center text-gray-400 bg-gray-50 dark:bg-gray-800/50 rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-700">
+                  <TrendingUp size={48} className="mb-3 opacity-20" />
+                  <p className="font-medium text-gray-500 dark:text-gray-400">Sin datos de grados</p>
+                  <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">Registra alumnos para ver estadísticas</p>
+                </div>
+              )}
+            </div>
           </div>
 
-          {/* Gráfico: Distribución General*/}
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg dark:shadow-gray-900/20 p-6 border border-gray-100 dark:border-gray-700">
-            <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-6">
-              Distribución General
-            </h3>
-            {dashboardStats.totales.activos > 0 ? (
-              <ResponsiveContainer width="100%" height={250}>
-                <PieChart>
-                  <Pie
-                    data={[
-                      { name: 'Masculino', value: dashboardStats.porSexo.masculino, color: '#3b82f6' },
-                      { name: 'Femenino', value: dashboardStats.porSexo.femenino, color: '#ec4899' },
-                    ]}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={0}
-                    outerRadius={80}
-                    dataKey="value"
-                  >
-                    {[
-                      { name: 'Masculino', value: dashboardStats.porSexo.masculino, color: '#3b82f6' },
-                      { name: 'Femenino', value: dashboardStats.porSexo.femenino, color: '#ec4899' },
-                    ].map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} stroke="white" strokeWidth={2} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                  <Legend iconType="circle" />
-                </PieChart>
-              </ResponsiveContainer>
-            ) : (
-               <div className="h-[250px] flex flex-col items-center justify-center text-gray-400">
-                <Users size={40} className="mb-2 opacity-20" />
-                <p className="text-sm">No hay datos demográficos</p>
+          {/* Segunda fila: Distribución General (centrado) */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+            {/* Gráfico: Distribución General*/}
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg dark:shadow-gray-900/20 p-6 border border-gray-100 dark:border-gray-700">
+              <div className="flex items-center gap-2 mb-6">
+                <div className="p-2 bg-pink-100 dark:bg-pink-900/30 rounded-lg text-pink-600 dark:text-pink-400">
+                  <Users size={24} />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">
+                  Alumnos - Distribución General
+                </h3>
               </div>
-            )}
+              {dashboardStats.totales.activos > 0 && dashboardStats.porSexo &&
+                (dashboardStats.porSexo.masculino > 0 || dashboardStats.porSexo.femenino > 0) ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <PieChart>
+                    <Pie
+                      data={[
+                        { name: 'Masculino', value: dashboardStats.porSexo.masculino, color: '#3b82f6' },
+                        { name: 'Femenino', value: dashboardStats.porSexo.femenino, color: '#ec4899' },
+                      ]}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={0}
+                      outerRadius={100}
+                      dataKey="value"
+                      label={({ name, value, percent }) => `${name}: ${value} (${(percent * 100).toFixed(0)}%)`}
+                    >
+                      {[
+                        { name: 'Masculino', value: dashboardStats.porSexo.masculino, color: '#3b82f6' },
+                        { name: 'Femenino', value: dashboardStats.porSexo.femenino, color: '#ec4899' },
+                      ].map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} stroke="white" strokeWidth={2} />
+                      ))}
+                    </Pie>
+                    <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                    <Legend iconType="circle" wrapperStyle={{paddingTop: '20px'}} />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-[300px] flex flex-col items-center justify-center text-gray-400 bg-gray-50 dark:bg-gray-800/50 rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-700">
+                  <Users size={48} className="mb-3 opacity-20" />
+                  <p className="font-medium text-gray-500 dark:text-gray-400">No hay datos demográficos</p>
+                  <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">Los datos aparecerán aquí</p>
+                </div>
+              )}
+            </div>
+
+            {/* Gráfico: Distribución de Personal por Sexo */}
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg dark:shadow-gray-900/20 p-6 border border-gray-100 dark:border-gray-700">
+              <div className="flex items-center gap-2 mb-6">
+                <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg text-orange-600 dark:text-orange-400">
+                  <Users size={24} />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">
+                  Personal - Distribución General
+                </h3>
+              </div>
+              {dashboardStats.personalPorSexo && 
+                (dashboardStats.personalPorSexo.masculino > 0 || dashboardStats.personalPorSexo.femenino > 0) ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <PieChart>
+                    <Pie
+                      data={[
+                        { name: 'Masculino', value: dashboardStats.personalPorSexo.masculino || 0, color: '#3b82f6' },
+                        { name: 'Femenino', value: dashboardStats.personalPorSexo.femenino || 0, color: '#ec4899' },
+                      ].filter(item => item.value > 0)}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={0}
+                      outerRadius={100}
+                      dataKey="value"
+                      label={({ name, value, percent }) => `${name}: ${value} (${(percent * 100).toFixed(0)}%)`}
+                    >
+                      {[
+                        { name: 'Masculino', value: dashboardStats.personalPorSexo.masculino || 0, color: '#3b82f6' },
+                        { name: 'Femenino', value: dashboardStats.personalPorSexo.femenino || 0, color: '#ec4899' },
+                      ].filter(item => item.value > 0).map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} stroke="white" strokeWidth={2} />
+                      ))}
+                    </Pie>
+                    <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                    <Legend iconType="circle" wrapperStyle={{paddingTop: '20px'}} />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-[300px] flex flex-col items-center justify-center text-gray-400 bg-gray-50 dark:bg-gray-800/50 rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-700">
+                  <Users size={48} className="mb-3 opacity-20" />
+                  <p className="font-medium text-gray-500 dark:text-gray-400">No hay personal registrado</p>
+                  <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">Los datos aparecerán aquí</p>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
+
+          {/* Tercera fila: Personal por Cargo y Jornadas */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+            {/* Gráfico: Personal por Cargo */}
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg dark:shadow-gray-900/20 p-6 border border-gray-100 dark:border-gray-700">
+              <div className="flex items-center gap-2 mb-6">
+                <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg text-green-600 dark:text-green-400">
+                  <Briefcase size={24} />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">
+                  Personal por Cargo
+                </h3>
+              </div>
+              {dashboardStats.personalPorCargo && Object.keys(dashboardStats.personalPorCargo).length > 0 ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart
+                    data={Object.entries(dashboardStats.personalPorCargo).map(([cargo, count]) => ({
+                      cargo,
+                      cantidad: count
+                    }))}
+                    layout="horizontal"
+                    margin={{ top: 5, right: 30, left: 10, bottom: 60 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                    <XAxis 
+                      dataKey="cargo" 
+                      type="category" 
+                      angle={-45}
+                      textAnchor="end"
+                      height={80}
+                      tick={{fontSize: 11, fill: '#6b7280'}}
+                    />
+                    <YAxis type="number" axisLine={false} tickLine={false} tick={{fill: '#9ca3af'}} />
+                    <Tooltip 
+                      contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                      cursor={{fill: 'transparent'}}
+                    />
+                    <Bar dataKey="cantidad" fill="#10b981" radius={[4, 4, 0, 0]} name="Personal">
+                      {
+                        Object.entries(dashboardStats.personalPorCargo).map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={index % 3 === 0 ? '#10b981' : index % 3 === 1 ? '#34d399' : '#6ee7b7'} />
+                        ))
+                      }
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-[300px] flex flex-col items-center justify-center text-gray-400 bg-gray-50 dark:bg-gray-800/50 rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-700">
+                  <Briefcase size={48} className="mb-3 opacity-20" />
+                  <p className="font-medium text-gray-500 dark:text-gray-400">Sin datos de cargos</p>
+                  <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">Registra personal para ver estadísticas</p>
+                </div>
+              )}
+            </div>
+
+            {/* Gráfico: Usuarios por Jornada (Alumnos + Personal) */}
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg dark:shadow-gray-900/20 p-6 border border-gray-100 dark:border-gray-700">
+              <div className="flex items-center gap-2 mb-6">
+                <div className="p-2 bg-amber-100 dark:bg-amber-900/30 rounded-lg text-amber-600 dark:text-amber-400">
+                  <Calendar size={24} />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">
+                  Usuarios por Jornada
+                </h3>
+              </div>
+              {(dashboardStats.alumnosPorJornada && Object.keys(dashboardStats.alumnosPorJornada).length > 0) ||
+               (dashboardStats.personalPorJornada && Object.keys(dashboardStats.personalPorJornada).length > 0) ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart
+                    data={(() => {
+                      const jornadas = new Set([
+                        ...Object.keys(dashboardStats.alumnosPorJornada || {}),
+                        ...Object.keys(dashboardStats.personalPorJornada || {})
+                      ]);
+                      return Array.from(jornadas).map(jornada => ({
+                        jornada,
+                        alumnos: dashboardStats.alumnosPorJornada?.[jornada] || 0,
+                        personal: dashboardStats.personalPorJornada?.[jornada] || 0
+                      }));
+                    })()}
+                    margin={{ top: 5, right: 30, left: 10, bottom: 60 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                    <XAxis 
+                      dataKey="jornada" 
+                      angle={-45}
+                      textAnchor="end"
+                      height={80}
+                      tick={{fontSize: 11, fill: '#6b7280'}}
+                    />
+                    <YAxis axisLine={false} tickLine={false} tick={{fill: '#9ca3af'}} />
+                    <Tooltip 
+                      contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                      cursor={{fill: 'transparent'}}
+                    />
+                    <Legend wrapperStyle={{paddingTop: '20px'}} />
+                    <Bar dataKey="alumnos" fill="#3b82f6" radius={[4, 4, 0, 0]} name="Alumnos" />
+                    <Bar dataKey="personal" fill="#f59e0b" radius={[4, 4, 0, 0]} name="Personal" />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-[300px] flex flex-col items-center justify-center text-gray-400 bg-gray-50 dark:bg-gray-800/50 rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-700">
+                  <Calendar size={48} className="mb-3 opacity-20" />
+                  <p className="font-medium text-gray-500 dark:text-gray-400">Sin datos de jornadas</p>
+                  <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">Los datos aparecerán aquí</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </>
       )}
 
       {/* Toast notifications */}

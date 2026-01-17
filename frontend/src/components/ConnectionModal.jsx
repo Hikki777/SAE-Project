@@ -6,7 +6,7 @@ import { Wifi, RefreshCw, CheckCircle, XCircle, Loader } from 'lucide-react';
  * ConnectionModal - Modal profesional para mostrar estados de conexión
  * Estados: 'connecting' | 'synchronizing' | 'connected' | 'error'
  */
-export default function ConnectionModal({ isOpen, status, onClose, errorMessage }) {
+export default function ConnectionModal({ isOpen, status, onClose, onCancel, errorMessage, approvalCheckCount }) {
   useEffect(() => {
     if (!isOpen) return;
 
@@ -57,6 +57,15 @@ export default function ConnectionModal({ isOpen, status, onClose, errorMessage 
           bgColor: 'bg-yellow-100',
           title: 'Sincronizando...',
           description: 'Enviando información del equipo y esperando aprobación',
+          showSpinner: true
+        };
+      case 'waiting-approval':
+        return {
+          icon: RefreshCw,
+          iconColor: 'text-orange-600',
+          bgColor: 'bg-orange-100',
+          title: 'Esperando Aprobación...',
+          description: 'El administrador del servidor debe aprobar este equipo para continuar',
           showSpinner: true
         };
       case 'connected':
@@ -147,8 +156,8 @@ export default function ConnectionModal({ isOpen, status, onClose, errorMessage 
                 {config.description}
               </motion.p>
 
-              {/* Progress bar for synchronizing */}
-              {status === 'synchronizing' && (
+              {/* Progress bar for synchronizing and waiting-approval */}
+              {(status === 'synchronizing' || status === 'waiting-approval') && (
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
@@ -158,12 +167,31 @@ export default function ConnectionModal({ isOpen, status, onClose, errorMessage 
                     initial={{ width: '0%' }}
                     animate={{ width: '100%' }}
                     transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
-                    className="h-full bg-yellow-500 rounded-full"
+                    className={`h-full ${status === 'waiting-approval' ? 'bg-orange-500' : 'bg-yellow-500'} rounded-full`}
                   ></motion.div>
                 </motion.div>
               )}
 
+              {/* Check count for waiting-approval */}
+              {status === 'waiting-approval' && approvalCheckCount > 0 && (
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                  Verificando aprobación... ({approvalCheckCount} intentos)
+                </p>
+              )}
+
               {/* Action buttons */}
+              {status === 'waiting-approval' && onCancel && (
+                <motion.button
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 }}
+                  onClick={onCancel}
+                  className="w-full bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 rounded-xl transition-all shadow-lg hover:shadow-xl"
+                >
+                  Cancelar
+                </motion.button>
+              )}
+
               {status === 'error' && (
                 <motion.button
                   initial={{ opacity: 0, y: 10 }}

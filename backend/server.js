@@ -83,7 +83,7 @@ const PORT = process.env.PORT || 5000;
 // Hacer caché accesible desde las rutas
 app.locals.cache = cache;
 
-// Configuración para Railway/Proxies
+// Configuración para proxies
 app.set('trust proxy', 1);
 
 // ============ MIDDLEWARE DE LOGGING ============
@@ -107,8 +107,6 @@ const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:5174',
   'http://localhost:3000',
-  'https://sistema-asistencias-30769.web.app',
-  'https://sistema-asistencias-30769.firebaseapp.com',
   process.env.FRONTEND_URL,
 ].filter(Boolean);
 
@@ -206,10 +204,10 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Fallback root route (para que Railway Health Check en '/' no falle)
+// Fallback root route
 app.get('/', (req, res, next) => {
   // Si existe el frontend, express.static lo servirá antes.
-  // Si no, respondemos esto para evitar 404 y que Railway no mate el servicio.
+  // Si no, respondemos esto para evitar 404.
   res.send('Backend de Sistema de Asistencia Institucional - Funcionando [READY]');
 });
 
@@ -234,6 +232,7 @@ app.use('/api/dashboard', dashboardRoutes); // Mount Dashboard Routes
 app.use('/api/documentos', documentosRoutes); // Mount Documentos Routes
 app.use('/api/equipos', require('./routes/equipos'));
 app.use('/api/backup', require('./routes/backup'));
+app.use('/api/sync', require('./routes/sync'));
 
 // ============ ERROR HANDLER ============
 
@@ -271,9 +270,19 @@ async function iniciar() {
     await prisma.$queryRaw`SELECT 1`;
     logger.info('[OK] Base de datos conectada correctamente');
 
-    // Iniciar servidor con Promise
+    // Iniciar servidor HTTP con Promise
     return new Promise((resolve, reject) => {
-      const server = app.listen(PORT, '0.0.0.0', () => {
+      const http = require('http');
+      const server = http.createServer(app);
+      
+      // Inicializar Socket.IO
+      const { initializeSocketServer } = require('./socketServer');
+      const io = initializeSocketServer(server);
+      
+      // Hacer io accesible desde las rutas
+      app.set('io', io);
+      
+      server.listen(PORT, '0.0.0.0', () => {
         logSystemStart({
           port: PORT,
           databaseUrl: process.env.DATABASE_URL,
@@ -281,6 +290,7 @@ async function iniciar() {
 
         logger.info(`[API] Health: http://localhost:${PORT}/api/health`);
         logger.info(`[API] Docs: http://localhost:${PORT}/api-docs`);
+        logger.info(`[WS] Socket.IO server running on port ${PORT}`);
 
         resolve(server);
       });

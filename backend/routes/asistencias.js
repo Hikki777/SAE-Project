@@ -303,6 +303,142 @@ router.get('/hoy', async (req, res) => {
 });
 
 /**
+ * GET /api/asistencias/ausentes
+ * Detectar personas que no marcaron asistencia en una fecha específica
+ * Query params:
+ *   - fecha: YYYY-MM-DD (opcional, default: hoy)
+ *   - tipo: 'alumno' | 'personal' | 'todos' (opcional, default: 'todos')
+ */
+router.get('/ausentes', async (req, res) => {
+  try {
+    const fechaParam = req.query.fecha;
+    const tipo = req.query.tipo || 'todos';
+
+    // Determinar rango de fecha
+    let fechaInicio, fechaFin;
+    if (fechaParam) {
+      fechaInicio = new Date(fechaParam);
+      fechaInicio.setHours(0, 0, 0, 0);
+      fechaFin = new Date(fechaParam);
+      fechaFin.setHours(23, 59, 59, 999);
+    } else {
+      // Hoy por defecto
+      fechaInicio = new Date();
+      fechaInicio.setHours(0, 0, 0, 0);
+      fechaFin = new Date();
+      fechaFin.setHours(23, 59, 59, 999);
+    }
+
+    // Obtener todas las asistencias del día (solo entradas)
+    const asistenciasDelDia = await prisma.asistencia.findMany({
+      where: {
+        timestamp: {
+          gte: fechaInicio,
+          lte: fechaFin
+        },
+        tipo_evento: 'entrada' // Solo considerar entradas
+      },
+      select: {
+        alumno_id: true,
+        personal_id: true,
+        persona_tipo: true
+      }
+    });
+
+    // Crear sets de IDs que SÍ asistieron
+    const alumnosQueAsistieron = new Set(
+      asistenciasDelDia
+        .filter(a => a.alumno_id)
+        .map(a => a.alumno_id)
+    );
+
+    const personalQueAsistio = new Set(
+      asistenciasDelDia
+        .filter(a => a.personal_id)
+        .map(a => a.personal_id)
+    );
+
+    const ausentes = [];
+
+    // Detectar alumnos ausentes
+    if (tipo === 'todos' || tipo === 'alumno') {
+      const alumnosActivos = await prisma.alumno.findMany({
+        where: {
+          estado: 'activo'
+        },
+        select: {
+          id: true,
+          carnet: true,
+          nombres: true,
+          apellidos: true,
+          grado: true,
+          seccion: true,
+          jornada: true
+        }
+      });
+
+      alumnosActivos.forEach(alumno => {
+        if (!alumnosQueAsistieron.has(alumno.id)) {
+          ausentes.push({
+            ...alumno,
+            tipo: 'alumno',
+            estadoRevision: 'pendiente'
+          });
+        }
+      });
+    }
+
+    // Detectar personal ausente
+    if (tipo === 'todos' || tipo === 'personal') {
+      const personalActivo = await prisma.personal.findMany({
+        where: {
+          estado: 'activo'
+        },
+        select: {
+          id: true,
+          carnet: true,
+          nombres: true,
+          apellidos: true,
+          cargo: true,
+          departamento: true,
+          jornada: true
+        }
+      });
+
+      personalActivo.forEach(persona => {
+        if (!personalQueAsistio.has(persona.id)) {
+          ausentes.push({
+            ...persona,
+            tipo: 'personal',
+            estadoRevision: 'pendiente'
+          });
+        }
+      });
+    }
+
+    logger.info({ 
+      fecha: fechaInicio.toISOString().split('T')[0], 
+      totalAusentes: ausentes.length,
+      alumnos: ausentes.filter(a => a.tipo === 'alumno').length,
+      personal: ausentes.filter(a => a.tipo === 'personal').length
+    }, '[OK] Ausentes detectados');
+
+    res.json({
+      fecha: fechaInicio.toISOString().split('T')[0],
+      total: ausentes.length,
+      ausentes,
+      stats: {
+        alumnos: ausentes.filter(a => a.tipo === 'alumno').length,
+        personal: ausentes.filter(a => a.tipo === 'personal').length
+      }
+    });
+  } catch (error) {
+    logger.error({ err: error, query: req.query }, '[ERROR] Error detectando ausentes');
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
  * GET /api/asistencias/stats
  * Obtener estadísticas de asistencias
  */

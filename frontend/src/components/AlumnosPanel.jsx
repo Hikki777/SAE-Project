@@ -39,6 +39,16 @@ export default function AlumnosPanel() {
     preview: null
   });
 
+  // Sistema híbrido de carnets
+  const [carnetMode, setCarnetMode] = useState('auto');
+  const [suggestedCarnet, setSuggestedCarnet] = useState('');
+  const [carnetValidation, setCarnetValidation] = useState({ valid: true, error: null });
+
+  // Estados para reasignación de carnet
+  const [showReasignarModal, setShowReasignarModal] = useState(false);
+  const [nuevoCarnet, setNuevoCarnet] = useState('');
+  const [reasignandoCarnet, setReasignandoCarnet] = useState(false);
+
   useEffect(() => {
     fetchData();
   }, []);
@@ -71,6 +81,45 @@ export default function AlumnosPanel() {
     setPosiblesGrados(grados);
   };
 
+  // Fetch next carnet preview
+  const fetchNextCarnet = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/alumnos/next-carnet`, {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      });
+      setSuggestedCarnet(response.data.carnet);
+      if (carnetMode === 'auto' && !editingAlumno) {
+        setFormData(prev => ({ ...prev, carnet: response.data.carnet }));
+      }
+    } catch (error) {
+      console.error('Error fetching next carnet:', error);
+    }
+  };
+
+  // Validate manual carnet
+  const validateManualCarnet = async (carnet) => {
+    if (!carnet) {
+      setCarnetValidation({ valid: true, error: null });
+      return;
+    }
+    try {
+      const response = await axios.post(`${API_URL}/alumnos/validate-carnet`,
+        { carnet, excludeId: editingAlumno?.id },
+        { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } }
+      );
+      setCarnetValidation(response.data);
+    } catch (error) {
+      setCarnetValidation({ valid: false, error: 'Error validando carnet' });
+    }
+  };
+
+  // Effect para cargar carnet sugerido cuando se abre el modal o cambia a modo auto
+  useEffect(() => {
+    if (showModal && !editingAlumno && carnetMode === 'auto') {
+      fetchNextCarnet();
+    }
+  }, [showModal, editingAlumno, carnetMode]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     const toastId = toast.loading(editingAlumno ? 'Actualizando alumno...' : 'Creando alumno...');
@@ -87,7 +136,8 @@ export default function AlumnosPanel() {
         toast.success('Datos actualizados', { id: toastId });
       } else {
         const { foto, preview, ...dataToSend } = formData;
-        const res = await alumnosAPI.create(dataToSend);
+        // Agregar carnetMode al payload
+        const res = await alumnosAPI.create({ ...dataToSend, carnetMode });
         alumnoId = res.data.id;
         toast.success('Alumno creado', { id: toastId });
       }
@@ -113,6 +163,9 @@ export default function AlumnosPanel() {
       setShowModal(false);
       setEditingAlumno(null);
       setFormData({ carnet: '', nombres: '', apellidos: '', grado: '', especialidad: '', jornada: '', sexo: '', foto: null, preview: null });
+      setCarnetMode('auto');
+      setSuggestedCarnet('');
+      setCarnetValidation({ valid: true, error: null });
       fetchData(); // Recargar todo
     } catch (error) {
       console.error('❌ Error:', error);
@@ -134,7 +187,56 @@ export default function AlumnosPanel() {
       foto: null,
       preview: alumno.foto_path ? (alumno.foto_path.startsWith('http') ? alumno.foto_path : `${BASE_URL}/uploads/${alumno.foto_path}`) : null
     });
+    setCarnetMode('manual'); // En edición siempre es manual
     setShowModal(true);
+  };
+
+  const handleReasignarCarnet = async () => {
+    if (!nuevoCarnet.trim()) {
+      toast.error('Ingresa un carnet válido');
+      return;
+    }
+
+    if (!carnetValidation.valid) {
+      toast.error('El carnet ingresado no es válido o ya existe');
+      return;
+    }
+
+    const toastId = toast.loading('Reasignando carnet...');
+    setReasignandoCarnet(true);
+
+    try {
+      // 1. Actualizar el carnet
+      await alumnosAPI.update(editingAlumno.id, { carnet: nuevoCarnet });
+      
+      // 2. Regenerar QR automáticamente
+      try {
+        await axios.post(
+          `${API_URL}/alumnos/${editingAlumno.id}/regenerar-qr`,
+          {},
+          { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } }
+        );
+        toast.success('Carnet reasignado y QR regenerado', { id: toastId });
+      } catch (qrError) {
+        console.warn('Error regenerando QR:', qrError);
+        toast.success('Carnet reasignado (QR pendiente)', { id: toastId });
+      }
+
+      // 3. Actualizar el alumno en edición
+      setEditingAlumno({ ...editingAlumno, carnet: nuevoCarnet });
+      setFormData({ ...formData, carnet: nuevoCarnet });
+      
+      // 4. Cerrar modal y recargar datos
+      setShowReasignarModal(false);
+      setNuevoCarnet('');
+      setCarnetValidation({ valid: true, error: null });
+      fetchData();
+    } catch (error) {
+      console.error('Error reasignando carnet:', error);
+      toast.error('Error: ' + (error.response?.data?.error || error.message), { id: toastId });
+    } finally {
+      setReasignandoCarnet(false);
+    }
   };
 
   const handleToggleEstado = async (id, estadoActual, nombre) => {
@@ -421,7 +523,7 @@ export default function AlumnosPanel() {
                     <th className="px-3 py-3 text-left text-xs font-semibold">Nombre Completo</th>
                     <th className="px-3 py-3 text-left text-xs font-semibold w-28">Grado</th>
                     <th className="px-3 py-3 text-left text-xs font-semibold w-40">Carrera</th>
-                    <th className="px-3 py-3 text-left text-xs font-semibold w-32">Especialidad</th>
+                    <th className="px-3 py-3 text-left text-xs font-semibold w-48">Especialidad</th>
                     <th className="px-3 py-3 text-left text-xs font-semibold w-28">Jornada</th>
                     <th className="px-3 py-3 text-center text-xs font-semibold w-20">Estado</th>
                     <th className="px-3 py-3 text-center text-xs font-semibold w-28">Acciones</th>
@@ -477,8 +579,10 @@ export default function AlumnosPanel() {
                       <td className="px-3 py-3 text-xs text-gray-600 dark:text-gray-400">
                         {alumno.carrera || '-'}
                       </td>
-                      <td className="px-3 py-3 text-xs text-gray-600 dark:text-gray-400 truncate max-w-[120px]">
-                        {alumno.especialidad || '-'}
+                      <td className="px-3 py-3 text-xs text-gray-600 dark:text-gray-400 max-w-[200px]">
+                        <span className="line-clamp-2" title={alumno.especialidad}>
+                          {alumno.especialidad || '-'}
+                        </span>
                       </td>
                       <td className="px-3 py-3 whitespace-nowrap text-xs text-gray-600 dark:text-gray-400">
                         {alumno.jornada}
@@ -679,17 +783,90 @@ export default function AlumnosPanel() {
                   <span className="text-sm text-gray-500 dark:text-gray-400">Toca para subir foto</span>
               </div>
 
+              {/* Modo de Carnet - Solo visible al crear */}
+              {!editingAlumno && (
+                <div className="col-span-2 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Modo de Carnet</label>
+                  <div className="flex gap-4">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        checked={carnetMode === 'auto'}
+                        onChange={() => {
+                          setCarnetMode('auto');
+                          setFormData({ ...formData, carnet: suggestedCarnet });
+                          setCarnetValidation({ valid: true, error: null });
+                        }}
+                        className="w-4 h-4 text-primary-600"
+                      />
+                      <span className="text-sm text-gray-700 dark:text-gray-300">Automático</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        checked={carnetMode === 'manual'}
+                        onChange={() => {
+                          setCarnetMode('manual');
+                          setFormData({ ...formData, carnet: '' });
+                        }}
+                        className="w-4 h-4 text-primary-600"
+                      />
+                      <span className="text-sm text-gray-700 dark:text-gray-300">Manual</span>
+                    </label>
+                  </div>
+                </div>
+              )}
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Carnet *</label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.carnet}
-                    onChange={(e) => setFormData({ ...formData, carnet: e.target.value })}
-                    className="w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-primary-500 focus:border-transparent text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
-                    placeholder="A001"
-                  />
+                  {editingAlumno ? (
+                    // Modo edición: carnet bloqueado con botón de reasignación
+                    <div className="space-y-2">
+                      <div className="w-full bg-gray-100 dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2.5 flex items-center justify-between">
+                        <span className="font-mono font-bold text-gray-700 dark:text-gray-300">{formData.carnet}</span>
+                        <span className="text-xs text-gray-500 dark:text-gray-400">🔒 Bloqueado</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setNuevoCarnet(formData.carnet);
+                          setShowReasignarModal(true);
+                        }}
+                        className="w-full bg-orange-600 hover:bg-orange-700 text-white text-sm py-2 px-3 rounded-lg flex items-center justify-center gap-2 transition font-medium"
+                      >
+                        ⚠️ Reasignar Carnet
+                      </button>
+                    </div>
+                  ) : carnetMode === 'auto' ? (
+                    // Modo creación automático
+                    <div className="w-full bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-300 dark:border-blue-700 rounded-lg px-4 py-2.5 flex items-center justify-between">
+                      <span className="font-mono font-bold text-blue-700 dark:text-blue-300">{suggestedCarnet || 'Cargando...'}</span>
+                      <span className="text-xs text-blue-600 dark:text-blue-400">Auto</span>
+                    </div>
+                  ) : (
+                    // Modo creación manual
+                    <div>
+                      <input
+                        type="text"
+                        required
+                        value={formData.carnet}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          setFormData({ ...formData, carnet: value });
+                          validateManualCarnet(value);
+                        }}
+                        className={`w-full bg-white dark:bg-gray-700 border rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-primary-500 focus:border-transparent text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 ${
+                          carnetValidation.valid ? 'border-gray-300 dark:border-gray-600' : 'border-red-500'
+                        }`}
+                        placeholder="A-2026001"
+                      />
+                      {!carnetValidation.valid && (
+                        <p className="text-xs text-red-600 mt-1">{carnetValidation.error}</p>
+                      )}
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Formato: A-YYYYNNN</p>
+                    </div>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Grado *</label>
@@ -739,8 +916,8 @@ export default function AlumnosPanel() {
                     className="w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-primary-500 focus:border-transparent text-gray-900 dark:text-gray-100"
                   >
                     <option value="">-</option>
-                    <option value="M">M</option>
-                    <option value="F">F</option>
+                    <option value="Masculino">Masculino</option>
+                    <option value="Femenino">Femenino</option>
                   </select>
                 </div>
                 <div>
@@ -863,6 +1040,112 @@ export default function AlumnosPanel() {
             </div>
             <div className="flex justify-center">
               <img src={qrModalData} alt="Código QR" className="max-w-full h-auto" />
+            </div>
+          </motion.div>
+        </div>,
+        document.body
+      )}
+
+      {/* Modal de Reasignación de Carnet */}
+      {showReasignarModal && createPortal(
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[9999] p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-md w-full shadow-2xl border border-gray-200 dark:border-gray-700"
+          >
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
+                ⚠️ Reasignar Carnet
+              </h3>
+              <button
+                onClick={() => {
+                  setShowReasignarModal(false);
+                  setNuevoCarnet('');
+                  setCarnetValidation({ valid: true, error: null });
+                }}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition"
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            <div className="mb-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+              <p className="text-sm text-yellow-800 dark:text-yellow-200 font-medium">
+                🚨 <strong>Advertencia:</strong> Reasignar el carnet actualizará todos los registros asociados y regenerará el código QR automáticamente.
+              </p>
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Carnet Actual
+              </label>
+              <div className="w-full bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2.5">
+                <span className="font-mono font-bold text-gray-600 dark:text-gray-400">{formData.carnet}</span>
+              </div>
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Nuevo Carnet *
+              </label>
+              <input
+                type="text"
+                value={nuevoCarnet}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setNuevoCarnet(value);
+                  validateManualCarnet(value);
+                }}
+                className={`w-full bg-white dark:bg-gray-700 border rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-orange-500 focus:border-transparent text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 ${
+                  carnetValidation.valid ? 'border-gray-300 dark:border-gray-600' : 'border-red-500'
+                }`}
+                placeholder="A-2026001"
+                autoFocus
+              />
+              {!carnetValidation.valid && (
+                <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                  ❌ {carnetValidation.error}
+                </p>
+              )}
+              {carnetValidation.valid && nuevoCarnet && nuevoCarnet !== formData.carnet && (
+                <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
+                  ✅ Carnet disponible
+                </p>
+              )}
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Formato: A-YYYYNNN</p>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowReasignarModal(false);
+                  setNuevoCarnet('');
+                  setCarnetValidation({ valid: true, error: null });
+                }}
+                className="flex-1 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-medium py-2.5 px-4 rounded-lg transition"
+                disabled={reasignandoCarnet}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleReasignarCarnet}
+                disabled={reasignandoCarnet || !carnetValidation.valid || !nuevoCarnet || nuevoCarnet === formData.carnet}
+                className="flex-1 bg-orange-600 hover:bg-orange-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-bold py-2.5 px-4 rounded-lg transition flex items-center justify-center gap-2"
+              >
+                {reasignandoCarnet ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Reasignando...
+                  </>
+                ) : (
+                  <>
+                    ✅ Confirmar Reasignación
+                  </>
+                )}
+              </button>
             </div>
           </motion.div>
         </div>,

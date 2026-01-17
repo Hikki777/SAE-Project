@@ -42,7 +42,7 @@ const deleteImage = async (publicId) => {
   try {
     // Intentar buscar en todas las carpetas posibles si no se especifica
     // Esto es un fallback, idealmente deberíamos saber la carpeta
-    const folders = ['alumnos', 'docentes', 'qrs', 'logos'];
+    const folders = ['alumnos', 'directores', 'docentes', 'personal', 'usuarios', 'qrs', 'logos'];
     let deleted = false;
     
     for (const folder of folders) {

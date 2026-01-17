@@ -29,8 +29,8 @@ exports.handleValidationErrors = handleValidationErrors;
  */
 exports.validarCrearAlumno = [
   body('carnet')
+    .optional() // Ahora es opcional porque puede ser auto-generado
     .trim()
-    .notEmpty().withMessage('El carnet es requerido')
     .isLength({ min: 3, max: 20 }).withMessage('El carnet debe tener entre 3 y 20 caracteres')
     .matches(/^[A-Z0-9\-]+$/i).withMessage('El carnet solo puede contener letras, números y guiones'),
   
@@ -48,7 +48,7 @@ exports.validarCrearAlumno = [
   
   body('sexo')
     .optional()
-    .isIn(['M', 'F']).withMessage('El sexo debe ser M o F'),
+    .isIn(['Masculino', 'Femenino', 'M', 'F']).withMessage('El sexo debe ser Masculino o Femenino'),
   
   body('grado')
     .trim()
@@ -95,7 +95,7 @@ exports.validarActualizarAlumno = [
   
   body('sexo')
     .optional()
-    .isIn(['M', 'F']).withMessage('El sexo debe ser M o F'),
+    .isIn(['Masculino', 'Femenino', 'M', 'F']).withMessage('El sexo debe ser Masculino o Femenino'),
   
   body('grado')
     .optional()
@@ -124,8 +124,8 @@ exports.validarActualizarAlumno = [
  */
 exports.validarCrearDocente = [
   body('carnet')
+    .optional()
     .trim()
-    .notEmpty().withMessage('El carnet es requerido')
     .isLength({ min: 3, max: 20 }).withMessage('El carnet debe tener entre 3 y 20 caracteres')
     .matches(/^[A-Z0-9\-]+$/i).withMessage('El carnet solo puede contener letras, números y guiones'),
   
@@ -143,13 +143,13 @@ exports.validarCrearDocente = [
   
   body('sexo')
     .optional()
-    .isIn(['M', 'F']).withMessage('El sexo debe ser M o F'),
+    .isIn(['Masculino', 'Femenino', 'M', 'F']).withMessage('El sexo debe ser Masculino o Femenino'),
   
   body('cargo')
     .optional()
     .trim()
-    .isIn(['Director', 'Directora', 'Docente', 'Secretaria', 'Secretario', 'Operativo', 'Auxiliar'])
-    .withMessage('Cargo inválido. Debe ser: Director, Directora, Docente, Secretaria, Secretario, Operativo o Auxiliar'),
+    .isIn(['Director', 'Directora', 'Director General', 'Directora General', 'Subdirector', 'Subdirectora', 'Docente', 'Secretaria', 'Secretario', 'Operativo', 'Auxiliar'])
+    .withMessage('Cargo inválido'),
   
   body('jornada')
     .optional()
@@ -186,12 +186,12 @@ exports.validarActualizarDocente = [
   
   body('sexo')
     .optional()
-    .isIn(['M', 'F']).withMessage('El sexo debe ser M o F'),
+    .isIn(['Masculino', 'Femenino', 'M', 'F']).withMessage('El sexo debe ser Masculino o Femenino'),
   
   body('cargo')
     .optional()
     .trim()
-    .isIn(['Director', 'Directora', 'Docente', 'Secretaria', 'Secretario', 'Operativo', 'Auxiliar'])
+    .isIn(['Director', 'Directora', 'Director General', 'Directora General', 'Subdirector', 'Subdirectora', 'Docente', 'Secretaria', 'Secretario', 'Operativo', 'Auxiliar'])
     .withMessage('Cargo inválido'),
   
   body('jornada')

@@ -31,11 +31,22 @@ router.post('/reset-factory', async (req, res) => {
     }
 
     // Verificar clave usando bcrypt.compare (ahora se almacena hasheada)
-    const isValid = await bcrypt.compare(masterKey.trim(), institucion.master_recovery_key);
+    console.log('[DEBUG_RESET] Recibido:', masterKey);
+    console.log('[DEBUG_RESET] Stored Hash:', institucion.master_recovery_key);
     
+    const isValid = await bcrypt.compare(masterKey.trim(), institucion.master_recovery_key);
+    console.log('[DEBUG_RESET] Is Valid:', isValid);
+
     if (!isValid) {
       logger.warn({ user: req.user.id }, '[WARNING] Intento de reset de fábrica con Clave Maestra incorrecta');
-      return res.status(401).json({ error: 'Clave Maestra incorrecta' });
+      return res.status(401).json({ 
+        error: 'Clave Maestra incorrecta',
+        debug: {
+          received: masterKey,
+          storedHashPrefix: institucion.master_recovery_key ? institucion.master_recovery_key.substring(0, 10) : 'NULL',
+          storedHashLength: institucion.master_recovery_key ? institucion.master_recovery_key.length : 0
+        }
+      });
     }
 
     logger.warn({ user: req.user.id }, '[WARNING] INICIANDO RESET DE FÁBRICA CON CLAVE MAESTRA');

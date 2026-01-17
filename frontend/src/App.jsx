@@ -19,6 +19,8 @@ import SetupWizard from './components/SetupWizard';
 import LoginPage from './pages/LoginPage';
 import client from './api/client';
 import offlineQueueService from './services/offlineQueue';
+import notificationService from './services/notificationService';
+import syncService from './services/syncService';
 import { Toaster, toast } from 'react-hot-toast';
 import './App.css';
 
@@ -32,6 +34,7 @@ function App() {
   const [isInitialized, setIsInitialized] = useState(null); // null=loading, false=setup needed, true=ready
 
   const [institucion, setInstitucion] = useState(null);
+  const [pendingEquipmentCount, setPendingEquipmentCount] = useState(0);
 
   useEffect(() => {
     checkInitialization();
@@ -211,6 +214,21 @@ function App() {
     }
   }, [isLoggedIn, user]);
 
+  // Iniciar servicio de notificaciones para admins
+  useEffect(() => {
+    if (isLoggedIn && user && user.rol === 'admin') {
+      // Iniciar polling de equipos pendientes
+      notificationService.startPolling((count) => {
+        setPendingEquipmentCount(count);
+      });
+
+      return () => {
+        notificationService.stopPolling();
+      };
+    }
+  }, [isLoggedIn, user]);
+
+
   const handleLogout = () => {
     // Play logout sound
     const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3');
@@ -311,8 +329,8 @@ function App() {
                   />
               </div>
               <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">
-                <h1 className="text-xl font-bold text-white dark:bg-clip-text dark:text-transparent dark:bg-gradient-to-r dark:from-blue-400 dark:to-emerald-400 truncate max-w-[150px]">
-                  SAE
+                <h1 className="text-xs font-bold text-white dark:bg-clip-text dark:text-transparent dark:bg-gradient-to-r dark:from-blue-400 dark:to-emerald-400 truncate max-w-[200px] whitespace-normal leading-tight">
+                  Sistema de Administración Educativa - SAE
                 </h1>
               </div>
             </div>
@@ -355,7 +373,7 @@ function App() {
 
             <NavLink to="/reportes" icon={FileText} label="Reportes" />
             <NavLink to="/metricas" icon={Activity} label="Métricas" />
-            <NavLink to="/configuracion" icon={Settings} label="Configuración" />
+            <NavLink to="/configuracion" icon={Settings} label="Configuración" badge={pendingEquipmentCount} />
           </nav>
 
           <div className="absolute bottom-16 left-3 right-3 overflow-hidden flex justify-center py-2">
@@ -442,14 +460,19 @@ function App() {
 }
 
 /* eslint-disable no-unused-vars */
-function NavLink({ to, icon: Icon, label }) {
+function NavLink({ to, icon: Icon, label, badge }) {
   return (
     <Link
       to={to}
-      className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-blue-800/30 dark:hover:bg-slate-700/50 transition-colors font-medium text-white dark:text-slate-300 hover:text-white dark:hover:text-white group/item min-w-max"
+      className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-blue-800/30 dark:hover:bg-slate-700/50 transition-colors font-medium text-white dark:text-slate-300 hover:text-white dark:hover:text-white group/item min-w-max relative"
     >
-      <div className="w-8 flex justify-center flex-shrink-0">
+      <div className="w-8 flex justify-center flex-shrink-0 relative">
         <Icon size={20} />
+        {badge > 0 && (
+          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center animate-pulse">
+            {badge > 9 ? '9+' : badge}
+          </span>
+        )}
       </div>
       <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap delay-75">
         {label}

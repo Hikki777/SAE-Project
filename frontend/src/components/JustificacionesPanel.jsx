@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { excusasAPI, alumnosAPI, docentesAPI } from '../api/endpoints';
 import { FileText, Plus, Check, X, Eye, Calendar, User, Filter } from 'lucide-react';
+import RevisionRapidaView from './RevisionRapidaView';
 import './JustificacionesPanel.css';
 
 const ExcusasPanel = () => {
@@ -22,6 +23,11 @@ const ExcusasPanel = () => {
   const [alumnos, setAlumnos] = useState([]);
   const [docentes, setDocentes] = useState([]);
   
+  // Estados para modo revisión rápida
+  const [modoRevision, setModoRevision] = useState(false);
+  const [ausentesRevision, setAusentesRevision] = useState([]);
+  const [fechaRevision, setFechaRevision] = useState(null);
+  
   const [formData, setFormData] = useState({
     persona_tipo: 'alumno',
     alumno_id: '',
@@ -31,6 +37,21 @@ const ExcusasPanel = () => {
     descripcion: '',
     documento_url: ''
   });
+
+  // Detectar modo de revisión desde URL
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('modo') === 'revision') {
+      const ausentes = JSON.parse(sessionStorage.getItem('ausentes_revision') || '[]');
+      const fecha = sessionStorage.getItem('fecha_revision') || new Date().toISOString();
+      
+      if (ausentes.length > 0) {
+        setModoRevision(true);
+        setAusentesRevision(ausentes);
+        setFechaRevision(fecha);
+      }
+    }
+  }, []);
 
   // Cargar listas de personas solo al montar
   useEffect(() => {
@@ -233,6 +254,27 @@ const ExcusasPanel = () => {
     }
   };
 
+  const handleVolverAAsistencias = () => {
+    // Limpiar sessionStorage
+    sessionStorage.removeItem('ausentes_revision');
+    sessionStorage.removeItem('fecha_revision');
+    
+    // Redirigir a asistencias
+    window.location.hash = '#/asistencias';
+  };
+
+  // Si está en modo revisión, mostrar vista especial
+  if (modoRevision) {
+    return (
+      <RevisionRapidaView
+        ausentesIniciales={ausentesRevision}
+        fecha={fechaRevision}
+        onVolver={handleVolverAAsistencias}
+      />
+    );
+  }
+
+  // Vista tradicional de gestión de excusas
   return (
     <div className="excusas-panel">
       {/* Header */}

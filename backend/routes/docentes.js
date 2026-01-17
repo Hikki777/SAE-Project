@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const prisma = require('../prismaClient');
+const { generatePersonalCarnet, validateCarnet, getCarnetPrefix } = require('../utils/carnetGenerator');
 const multer = require('multer');
 const { 
   validarCrearDocente, 
@@ -10,11 +11,46 @@ const {
 const { logger } = require('../utils/logger');
 const { cacheMiddleware, invalidateCacheMiddleware } = require('../middlewares/cache');
 const { uploadBuffer } = require('../services/imageService');
+const { getFolderByCargo } = require('../utils/uploadHelpers');
 
 // Configurar multer para memoria (no guardar en disco)
 const upload = multer({ 
   storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 } // 5MB
+});
+
+/**
+ * GET /api/docentes/next-carnet
+ * Obtener el siguiente carnet disponible según cargo (preview)
+ */
+router.get('/next-carnet', async (req, res) => {
+  try {
+    const { cargo } = req.query;
+    if (!cargo) {
+      return res.status(400).json({ error: 'Cargo es requerido' });
+    }
+    const nextCarnet = await generatePersonalCarnet(cargo);
+    const prefix = getCarnetPrefix(cargo);
+    res.json({ carnet: nextCarnet, prefix });
+  } catch (error) {
+    logger.error({ err: error }, '[ERROR] Error generando preview de carnet');
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * POST /api/docentes/validate-carnet
+ * Validar un carnet (formato + disponibilidad)
+ */
+router.post('/validate-carnet', async (req, res) => {
+  try {
+    const { carnet, excludeId } = req.body;
+    const validation = await validateCarnet(carnet, 'personal', excludeId);
+    res.json(validation);
+  } catch (error) {
+    logger.error({ err: error }, '[ERROR] Error validando carnet');
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // GET /api/docentes - Listar todos los docentes con paginación cursor (sin caché temporalmente)
@@ -101,29 +137,34 @@ router.post('/', invalidateCacheMiddleware('/api/docentes'), (req, res, next) =>
   }
 }, validarCrearDocente, async (req, res) => {
   try {
-    const { carnet, nombres, apellidos, sexo, cargo, jornada, grado_guia, curso } = req.body;
+    let { carnet, nombres, apellidos, sexo, cargo, jornada, grado_guia, curso, carnetMode } = req.body;
 
     // Validar campos requeridos
-    if (!carnet || !nombres || !apellidos) {
-      return res.status(400).json({ error: 'Carnet, nombres y apellidos son obligatorios' });
+    if (!nombres || !apellidos) {
+      return res.status(400).json({ error: 'Nombres y apellidos son obligatorios' });
     }
 
-    // Verificar si ya existe el carnet
-    const existente = await prisma.personal.findUnique({
-      where: { carnet }
-    });
-
-    if (existente) {
-      return res.status(400).json({ error: 'Ya existe un docente con ese carnet' });
+    // Sistema híbrido de carnets
+    if (carnetMode === 'auto' || !carnet) {
+      // Generar carnet automáticamente según cargo
+      carnet = await generatePersonalCarnet(cargo || 'Docente');
+      logger.info({ carnet, cargo }, '[INFO] Carnet generado automáticamente');
+    } else {
+      // Validar carnet manual
+      const validation = await validateCarnet(carnet, 'personal');
+      if (!validation.valid) {
+        return res.status(400).json({ error: validation.error });
+      }
     }
 
     // Subir foto si existe
     let foto_url = null;
     if (req.file) {
-      // Subir imagen directamente
-      const publicId = `docente_${carnet}`;
-      const result = await uploadBuffer(req.file.buffer, 'personal', publicId);
-      foto_url = result.secure_url;
+      // Determinar carpeta según cargo
+      const folder = getFolderByCargo(cargo || 'Docente');
+      const publicId = `${folder}_${carnet}`;
+      const result = await uploadBuffer(req.file.buffer, folder, publicId);
+      foto_url = result.secure_url; // Es ruta relativa: "docentes/docentes_D-2026001.png"
     }
 
 const qrService = require('../services/qrService');
@@ -184,9 +225,11 @@ router.put('/:id', invalidateCacheMiddleware('/api/docentes'), (req, res, next) 
     // Subir nueva foto si existe
     let foto_url = docente.foto_path;
     if (req.file) {
-      // Subir imagen directamente
-      const publicId = `docente_${docente.carnet}`;
-      const result = await uploadBuffer(req.file.buffer, 'personal', publicId);
+      // Determinar carpeta según cargo (usar el nuevo si se cambió, sino el actual)
+      const cargoActual = cargo || docente.cargo;
+      const folder = getFolderByCargo(cargoActual);
+      const publicId = `${folder}_${docente.carnet}`;
+      const result = await uploadBuffer(req.file.buffer, folder, publicId);
       foto_url = result.secure_url;
     }
 

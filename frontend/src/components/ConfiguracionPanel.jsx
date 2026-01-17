@@ -60,7 +60,7 @@ const SettingsSidebar = ({ activeTab, setActiveTab }) => {
 };
 
 // --- SUBCOMPONENT: Institucion Settings ---
-const InstitucionSettings = ({ formData, setFormData, logoPreview, handleLogoChange, handleSubmit, saving }) => (
+const InstitucionSettings = ({ formData, setFormData, logoPreview, handleLogoChange, handleSubmit, saving, directores, loadingDirectores, onAddDirector, onEditDirector, onDeleteDirector }) => (
   <motion.div
     initial={{ opacity: 0, x: 20 }}
     animate={{ opacity: 1, x: 0 }}
@@ -234,8 +234,306 @@ const InstitucionSettings = ({ formData, setFormData, logoPreview, handleLogoCha
         </button>
       </div>
     </form>
+
+    {/* Gestión de Directores */}
+    <DirectoresList 
+      directores={directores}
+      loading={loadingDirectores}
+      onAdd={onAddDirector}
+      onEdit={onEditDirector}
+      onDelete={onDeleteDirector}
+    />
   </motion.div>
 );
+
+// --- SUBCOMPONENT: Directores List ---
+const DirectoresList = ({ directores, loading, onAdd, onEdit, onDelete }) => (
+  <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
+    <div className="flex items-center justify-between mb-4">
+      <h4 className="text-md font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+        <Users size={20} className="text-blue-600" />
+        Equipo Directivo
+      </h4>
+      <button
+        onClick={onAdd}
+        className="text-sm bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 px-3 py-1.5 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors flex items-center gap-1.5 font-medium"
+      >
+        <Plus size={16} />
+        Añadir Director
+      </button>
+    </div>
+
+    {loading ? (
+      <div className="flex justify-center py-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+      </div>
+    ) : directores.length === 0 ? (
+      <div className="bg-gray-50 dark:bg-gray-900/30 border border-dashed border-gray-300 dark:border-gray-700 rounded-xl p-8 text-center">
+        <Users size={32} className="mx-auto text-gray-400 mb-2 opacity-50" />
+        <p className="text-gray-500 dark:text-gray-400 text-sm">No se han registrado directores aún.</p>
+      </div>
+    ) : (
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {directores.map((director) => (
+          <div 
+            key={director.id}
+            className="group bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 flex items-center gap-4 hover:shadow-md transition-all duration-200"
+          >
+            <div className="relative">
+              {director.foto_path ? (
+                <img 
+                  src={`${BASE_URL}/uploads/${director.foto_path}`}
+                  alt={director.nombres}
+                  className="w-14 h-14 rounded-full object-cover border-2 border-blue-100 dark:border-blue-900"
+                />
+              ) : (
+                <div className="w-14 h-14 rounded-full bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center border-2 border-blue-100 dark:border-blue-900">
+                  <User size={24} className="text-blue-600 dark:text-blue-400" />
+                </div>
+              )}
+            </div>
+            
+            <div className="flex-1 min-w-0">
+              <h5 className="font-bold text-gray-900 dark:text-gray-100 truncate">
+                {director.nombres} {director.apellidos}
+              </h5>
+              <p className="text-xs font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wider">
+                {director.cargo}
+              </p>
+              <div className="flex items-center gap-2 mt-1">
+                <span className="text-[10px] bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 px-1.5 py-0.5 rounded">
+                  {director.jornada}
+                </span>
+                <span className="text-[10px] font-mono text-gray-400">
+                  {director.carnet}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+              <button 
+                onClick={() => onEdit(director)}
+                className="p-1.5 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
+                title="Editar"
+              >
+                <Edit size={16} />
+              </button>
+              <button 
+                onClick={() => onDelete(director.id)}
+                className="p-1.5 text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
+                title="Eliminar"
+              >
+                <Trash2 size={16} />
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    )}
+  </div>
+);
+
+// --- SUBCOMPONENT: Director Modal ---
+const DirectorModal = ({ isOpen, onClose, director, onSave, saving }) => {
+  const [localData, setLocalData] = React.useState({
+    nombres: '',
+    apellidos: '',
+    cargo: 'Director',
+    sexo: 'Masculino',
+    jornada: 'Matutina'
+  });
+  const [foto, setFoto] = React.useState(null);
+  const [preview, setPreview] = React.useState(null);
+  const fileInputRef = React.useRef(null);
+
+  React.useEffect(() => {
+    if (director) {
+      setLocalData({
+        nombres: director.nombres || '',
+        apellidos: director.apellidos || '',
+        cargo: director.cargo || 'Director',
+        sexo: director.sexo || 'Masculino',
+        jornada: director.jornada || 'Matutina'
+      });
+      setPreview(director.foto_path ? `${BASE_URL}/uploads/${director.foto_path}` : null);
+    } else {
+      setLocalData({
+        nombres: '',
+        apellidos: '',
+        cargo: 'Director',
+        sexo: 'Masculino',
+        jornada: 'Matutina'
+      });
+      setPreview(null);
+    }
+    setFoto(null);
+  }, [director, isOpen]);
+
+  if (!isOpen) return null;
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onSave(localData, foto);
+  };
+
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={onClose}
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+      />
+      <motion.div
+        initial={{ scale: 0.95, opacity: 0, y: 20 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        exit={{ scale: 0.95, opacity: 0, y: 20 }}
+        className="relative w-full max-w-lg bg-white dark:bg-gray-800 rounded-2xl shadow-2xl overflow-hidden"
+      >
+        <div className="bg-blue-600 p-6 text-white flex justify-between items-center">
+          <div>
+            <h3 className="text-xl font-bold">
+              {director ? 'Editar Director' : 'Nuevo Director'}
+            </h3>
+            <p className="text-blue-100 text-sm opacity-90">
+              Completa la información del directivo
+            </p>
+          </div>
+          <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors">
+            <X size={24} />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-6 space-y-6 max-h-[70vh] overflow-y-auto custom-scrollbar">
+          {/* Foto */}
+          <div className="flex flex-col items-center gap-3">
+            <div 
+              onClick={() => fileInputRef.current?.click()}
+              className="relative w-24 h-24 rounded-full bg-gray-100 dark:bg-gray-900 border-2 border-dashed border-gray-300 dark:border-gray-700 flex items-center justify-center cursor-pointer hover:border-blue-500 transition-colors group overflow-hidden"
+            >
+              {preview ? (
+                <img src={preview} alt="Preview" className="w-full h-full object-cover" />
+              ) : (
+                <Camera size={32} className="text-gray-400" />
+              )}
+              <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                <Upload size={20} className="text-white" />
+              </div>
+            </div>
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              className="hidden" 
+              onChange={(e) => {
+                const file = e.target.files[0];
+                if (file) {
+                  setFoto(file);
+                  setPreview(URL.createObjectURL(file));
+                }
+              }}
+              accept="image/*"
+            />
+            <span className="text-xs text-gray-500">Foto de perfil</span>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="col-span-2 md:col-span-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Nombres *</label>
+              <input
+                type="text"
+                required
+                value={localData.nombres}
+                onChange={(e) => setLocalData({ ...localData, nombres: e.target.value })}
+                className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none"
+                placeholder="Nombres"
+              />
+            </div>
+            <div className="col-span-2 md:col-span-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Apellidos *</label>
+              <input
+                type="text"
+                required
+                value={localData.apellidos}
+                onChange={(e) => setLocalData({ ...localData, apellidos: e.target.value })}
+                className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none"
+                placeholder="Apellidos"
+              />
+            </div>
+            
+            <div className="col-span-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Cargo *</label>
+              <select
+                required
+                value={localData.cargo}
+                onChange={(e) => setLocalData({ ...localData, cargo: e.target.value })}
+                className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 transition-all outline-none"
+              >
+                <option value="Director">Director</option>
+                <option value="Directora">Directora</option>
+                <option value="Director General">Director General</option>
+                <option value="Directora General">Directora General</option>
+                <option value="Subdirector">Subdirector</option>
+                <option value="Subdirectora">Subdirectora</option>
+              </select>
+            </div>
+
+            <div className="col-span-2 md:col-span-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Sexo *</label>
+              <select
+                required
+                value={localData.sexo}
+                onChange={(e) => setLocalData({ ...localData, sexo: e.target.value })}
+                className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 transition-all outline-none"
+              >
+                <option value="Masculino">Masculino</option>
+                <option value="Femenino">Femenino</option>
+              </select>
+            </div>
+
+            <div className="col-span-2 md:col-span-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Jornada *</label>
+              <select
+                required
+                value={localData.jornada}
+                onChange={(e) => setLocalData({ ...localData, jornada: e.target.value })}
+                className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 transition-all outline-none"
+              >
+                <option value="Matutina">Matutina</option>
+                <option value="Vespertina">Vespertina</option>
+                <option value="Nocturna">Nocturna</option>
+                <option value="Extendida">Extendida</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="flex gap-3 pt-4 pb-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-bold hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={saving}
+              className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold py-3 rounded-xl shadow-lg transition-all transform hover:-translate-y-0.5 flex items-center justify-center gap-2"
+            >
+              {saving ? (
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" />
+              ) : (
+                <Save size={20} />
+              )}
+              {director ? 'Guardar Cambios' : 'Crear Director'}
+            </button>
+          </div>
+        </form>
+      </motion.div>
+    </div>,
+    document.body
+  );
+};
 
 // --- SUBCOMPONENT: Usuario Settings ---
 const UsuarioSettings = ({ usuarios, loadingUsers, showUserModal, setShowUserModal, newUser, setNewUser, handleCreateUser, handleDeleteUser, fetchUsuarios, handlePhotoUpload, handleNewUserPhotoChange }) => {
@@ -450,7 +748,9 @@ const EquipoSettings = ({ equipos, loading, onApprove, onDelete, serverInfo }) =
           <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
             {equipos.length > 0 ? (
               equipos.map((eq) => (
-                <tr key={eq.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/30">
+                <tr key={eq.id} className={`hover:bg-gray-50 dark:hover:bg-gray-700/30 ${
+                  !eq.aprobado ? 'bg-yellow-50 dark:bg-yellow-900/10 border-l-4 border-yellow-500' : ''
+                }`}>
                   <td className="px-4 py-3">
                     <div className="font-medium text-gray-900 dark:text-gray-100">{eq.nombre || 'PC sin nombre'}</div>
                     <div className="text-xs text-gray-500">{eq.hostname || 'Desconocido'}</div>
@@ -509,6 +809,7 @@ const SistemaSettings = ({ currentUser }) => {
   const [masterKeyInput, setMasterKeyInput] = useState('');
   const [resetting, setResetting] = useState(false);
   const [systemInfo, setSystemInfo] = useState(null);
+  const [showResetConfirmModal, setShowResetConfirmModal] = useState(false);
   
   // Backup/Restore states
   const [showBackupModal, setShowBackupModal] = useState(false);
@@ -775,20 +1076,12 @@ const SistemaSettings = ({ currentUser }) => {
        toast.error('Ingrese la Clave Maestra');
        return;
     }
-
-    // Triple confirmación
-    const finalConfirm = window.confirm(
-      '⚠️ ÚLTIMA ADVERTENCIA ⚠️\\n\\n' +
-      'Esto eliminará PERMANENTEMENTE:\\n' +
-      '- Todos los alumnos\\n' +
-      '- Todo el personal\\n' +
-      '- Todas las asistencias\\n' +
-      '- Todos los códigos QR\\n\\n' +
-      '¿Estás ABSOLUTAMENTE seguro?'
-    );
     
-    if (!finalConfirm) return;
+    // Abrir modal de confirmación final
+    setShowResetConfirmModal(true);
+  };
 
+  const executeFactoryReset = async () => {
     setResetting(true);
     try {
       await client.post('/admin/reset-factory', { masterKey: masterKeyInput });
@@ -806,6 +1099,7 @@ const SistemaSettings = ({ currentUser }) => {
         toast.error('Error al resetear: ' + errorMsg);
       }
       setResetting(false);
+      setShowResetConfirmModal(false);
     }
   };
 
@@ -1261,6 +1555,65 @@ const SistemaSettings = ({ currentUser }) => {
         </div>,
         document.body
       )}
+
+      {/* Modal Confirmación Reset Final */}
+      {showResetConfirmModal && createPortal(
+        <div className="fixed inset-0 bg-red-900/60 backdrop-blur-sm flex items-center justify-center z-[9999] p-4">
+          <motion.div 
+            initial={{ scale: 0.9, opacity: 0, y: 20 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            className="bg-white dark:bg-gray-800 rounded-2xl p-8 max-w-lg w-full shadow-2xl border-4 border-red-600"
+          >
+            <div className="flex flex-col items-center text-center mb-6">
+              <div className="bg-red-100 dark:bg-red-900/50 p-4 rounded-full mb-4 animate-pulse">
+                <AlertOctagon size={48} className="text-red-600 dark:text-red-400" />
+              </div>
+              <h3 className="text-2xl font-black text-red-700 dark:text-red-400 uppercase tracking-wide">
+                ⚠️ Última Advertencia ⚠️
+              </h3>
+            </div>
+
+            <div className="bg-red-50 dark:bg-red-900/20 rounded-xl p-6 mb-8 border border-red-200 dark:border-red-800">
+              <p className="text-gray-800 dark:text-gray-200 font-medium mb-4">
+                Esta acción es <span className="font-bold text-red-600 underline">IRREVERSIBLE</span>.
+              </p>
+              <p className="text-gray-700 dark:text-gray-300 text-sm mb-2">
+                Se eliminarán permanentemente:
+              </p>
+              <ul className="text-left text-sm space-y-2 text-gray-800 dark:text-gray-200 list-disc pl-8 font-semibold">
+                <li>Todos los datos de alumnos</li>
+                <li>Todo el personal y directivos</li>
+                <li>Registros de asistencias completos</li>
+                <li>Códigos QR asignados</li>
+              </ul>
+            </div>
+
+            <div className="flex gap-4">
+              <button
+                onClick={() => setShowResetConfirmModal(false)}
+                className="flex-1 px-6 py-4 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-900 dark:text-white rounded-xl font-bold text-lg transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={executeFactoryReset}
+                disabled={resetting}
+                className="flex-1 px-6 py-4 bg-red-600 hover:bg-red-700 text-white rounded-xl font-black text-lg shadow-lg shadow-red-500/30 flex items-center justify-center gap-2 transition-all transform hover:scale-105"
+              >
+                {resetting ? (
+                   <div className="w-6 h-6 border-4 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                   <>
+                     <Trash2 size={24} />
+                     BORRAR TODO
+                   </>
+                )}
+              </button>
+            </div>
+          </motion.div>
+        </div>,
+        document.body
+      )}
     </motion.div>
   );
 };
@@ -1308,12 +1661,29 @@ export default function ConfiguracionPanel() {
   const [loadingEquipos, setLoadingEquipos] = useState(false);
   const [serverInfo, setServerInfo] = useState(null);
 
+  // Directores State
+  const [directores, setDirectores] = useState([]);
+  const [loadingDirectores, setLoadingDirectores] = useState(false);
+  const [showDirectorModal, setShowDirectorModal] = useState(false);
+  const [editingDirector, setEditingDirector] = useState(null);
+  const [newDirector, setNewDirector] = useState({
+    carnet: '',
+    nombres: '',
+    apellidos: '',
+    cargo: 'Director',
+    sexo: 'Masculino',
+    jornada: 'Matutina',
+    foto_file: null,
+    foto_preview: null
+  });
+
   useEffect(() => {
     fetchConfig();
     fetchUsuarios();
     fetchCurrentUser();
     fetchEquipos();
     fetchServerInfo();
+    fetchDirectores();
   }, []);
 
   const fetchCurrentUser = async () => {
@@ -1334,6 +1704,83 @@ export default function ConfiguracionPanel() {
       console.warn('Error fetching usuarios:', error);
     } finally {
       setLoadingUsers(false);
+    }
+  };
+
+  const fetchDirectores = async () => {
+    setLoadingDirectores(true);
+    try {
+      const response = await client.get('/docentes');
+      // Filtrar directores por cargo
+      const allPersonal = response.data.personal || [];
+      const filtered = allPersonal.filter(p => 
+        p.cargo.toLowerCase().includes('director') || 
+        p.cargo.toLowerCase().includes('directora') ||
+        p.cargo.toLowerCase().includes('subdirector') ||
+        p.cargo.toLowerCase().includes('subdirectora')
+      );
+      setDirectores(filtered);
+    } catch (error) {
+      console.error('Error fetching directores:', error);
+    } finally {
+      setLoadingDirectores(false);
+    }
+  };
+
+  const handleSaveDirector = async (directorData, fotoFile) => {
+    setSaving(true);
+    const toastId = toast.loading(editingDirector ? 'Actualizando director...' : 'Creando director...');
+    try {
+      const data = new FormData();
+      Object.entries(directorData).forEach(([key, value]) => {
+        data.append(key, value);
+      });
+      
+      if (!editingDirector) {
+        // Generar carnet sugerido temporal si es manual, o dejar que el backend lo maneje
+        // Dado que unificamos DIR, podemos usar una lógica simple o carnetMode
+        data.append('carnetMode', 'auto');
+        data.append('estado', 'activo');
+      }
+
+      if (fotoFile) {
+        data.append('foto', fotoFile);
+      }
+
+      if (editingDirector) {
+        await client.put(`/docentes/${editingDirector.id}`, data, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        toast.success('Director actualizado con éxito', { id: toastId });
+      } else {
+        await client.post('/docentes', data, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        toast.success('Director creado con éxito', { id: toastId });
+      }
+
+      setShowDirectorModal(false);
+      setEditingDirector(null);
+      fetchDirectores();
+    } catch (error) {
+      console.error('Error saving director:', error);
+      toast.error('Error al guardar director: ' + (error.response?.data?.error || error.message), { id: toastId });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteDirector = async (id) => {
+    if (!window.confirm('¿Está seguro de eliminar a este director? El registro se eliminará de la lista de personal.')) return;
+    
+    const toastId = toast.loading('Eliminando director...');
+    try {
+      await client.delete(`/docentes/${id}`);
+      toast.success('Director eliminado', { id: toastId });
+      fetchDirectores();
+    } catch (error) {
+      console.error('Error deleting director:', error);
+      toast.error('Error al eliminar director', { id: toastId });
     }
   };
 
@@ -1609,6 +2056,17 @@ export default function ConfiguracionPanel() {
                 handleLogoChange={handleLogoChange}
                 handleSubmit={handleSubmit}
                 saving={saving}
+                directores={directores}
+                loadingDirectores={loadingDirectores}
+                onAddDirector={() => {
+                  setEditingDirector(null);
+                  setShowDirectorModal(true);
+                }}
+                onEditDirector={(director) => {
+                  setEditingDirector(director);
+                  setShowDirectorModal(true);
+                }}
+                onDeleteDirector={handleDeleteDirector}
               />
             )}
             {activeTab === 'usuarios' && (
@@ -1795,6 +2253,12 @@ export default function ConfiguracionPanel() {
         </div>,
         document.body
       )}
+      <DirectorModal 
+        isOpen={showDirectorModal}
+        onClose={() => setShowDirectorModal(false)}
+        director={editingDirector}
+        saving={saving}
+      />
     </div>
   );
 }
