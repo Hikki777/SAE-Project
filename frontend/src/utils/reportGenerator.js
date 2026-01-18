@@ -30,22 +30,51 @@ export const generatePDF = async (data) => {
   const doc = new jsPDF();
 
   // 1. Logo Institucional (Izquierda)
+  let logoInstitucionalMain = null;
   if (institucion?.logo_base64) {
-    try {
-      doc.addImage(institucion.logo_base64, 'PNG', 15, 15, 25, 25);
-    } catch (e) {
-      console.warn('Error rendering institutional logo', e);
-    }
+    logoInstitucionalMain = institucion.logo_base64;
   }
 
-  // 2. Logo SAE (Derecha)
+  // 2. Logo SAE (App)
+  let logoApp = null;
   try {
-    const appLogoBase64 = await loadImageBase64('/logo.png');
-    if (appLogoBase64) {
-      doc.addImage(appLogoBase64, 'PNG', 170, 15, 25, 25);
-    }
+    // Usar ruta absoluta basada en el origen actual para evitar problemas de paths relativos
+    const appLogoUrl = `${window.location.origin}/logo.png`;
+    logoApp = await loadImageBase64(appLogoUrl);
   } catch (error) {
     console.warn('Error loading app logo', error);
+  }
+
+  // Lógica de renderizado de logos
+  // Si hay logo institucional, va a la izquierda (15, 15)
+  // Si NO hay logo institucional, el logo de la App va a la izquierda como fallback
+  // Si HAY logo institucional, el logo de la App va a la derecha (170, 15)
+  
+  // LOGICA DE LOGOS
+  
+  // 1. Logo del Sistema (Siempre a la derecha)
+  try {
+    const imgApp = new Image();
+    imgApp.src = `${window.location.origin}/logo.png`;
+    doc.addImage(imgApp, 'PNG', 170, 15, 25, 25);
+  } catch (e) {
+    console.error('Error cargando logo sistema:', e);
+  }
+
+  // 2. Logo Institucional (A la izquierda)
+  if (institucion?.logo_base64) {
+    try {
+        let logoData = institucion.logo_base64;
+        // Intentar arreglar base64 si viene sin header
+        if (!logoData.startsWith('data:image')) {
+            logoData = `data:image/png;base64,${logoData}`;
+        }
+        doc.addImage(logoData, 'PNG', 15, 15, 25, 25);
+    } catch (e) {
+        console.error('Error cargando logo institucional:', e);
+        // Si falla, podríamos poner un placeholder o dejar vacío
+        // Para no duplicar el logo del sistema, mejor dejar vacío si el usuario quiere esta estructura rígida
+    }
   }
 
   // Encabezado (Centrado)
@@ -88,8 +117,16 @@ export const generatePDF = async (data) => {
   // Filtros
   doc.setFontSize(9);
   const filterParts = [];
-  if (filtrosGenerated.fechaInicio) filterParts.push(`Desde: ${new Date(filtrosGenerated.fechaInicio).toLocaleDateString()}`);
-  if (filtrosGenerated.fechaFin) filterParts.push(`Hasta: ${new Date(filtrosGenerated.fechaFin).toLocaleDateString()}`);
+  
+  // Función helper para formatear YYYY-MM-DD a DD/MM/YYYY sin timezone shift
+  const formatDateStr = (dateStr) => {
+    if (!dateStr) return '';
+    const [y, m, d] = dateStr.split('-');
+    return `${d}/${m}/${y}`;
+  };
+
+  if (filtrosGenerated.fechaInicio) filterParts.push(`Desde: ${formatDateStr(filtrosGenerated.fechaInicio)}`);
+  if (filtrosGenerated.fechaFin) filterParts.push(`Hasta: ${formatDateStr(filtrosGenerated.fechaFin)}`);
   filterParts.push(`Total: ${stats.total} | Entradas: ${stats.entradas} | Salidas: ${stats.salidas} | Tardes: ${stats.tardes}`);
   
   doc.text(filterParts.join(' • '), 105, 62, { align: 'center' });
@@ -99,27 +136,62 @@ export const generatePDF = async (data) => {
     const persona = a.alumno || a.personal;
     const capitalize = (str) => str ? str.charAt(0).toUpperCase() + str.slice(1).toLowerCase() : '-';
     
+    // Formatear Fecha y Hora
+    const dateObj = new Date(a.timestamp);
+    const fecha = dateObj.toLocaleDateString();
+    const hora = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    // Lógica Tipo + Grado/Cargo (Con salto de línea para reporte)
+    const esAlumno = !!a.alumno;
+    const tipoStr = esAlumno ? 'Alumno' : 'Personal';
+    const gradoCargo = esAlumno ? (persona?.grado || '') : (persona?.cargo || '');
+    let gradoCargoFull = `${tipoStr}`;
+    if (gradoCargo) {
+      gradoCargoFull += `\n${gradoCargo}`;
+    }
+
+    // Sección y Jornada
+    const seccion = (a.alumno && persona?.seccion) ? persona.seccion : '-';
+    // Fallback agresivo para jornada
+    const jornadaRaw = persona?.jornada || 'Matutina'; // Asumir Matutina si falta (común en legacy data)
+    const jornada = capitalize(jornadaRaw);
+
     return [
-      new Date(a.timestamp).toLocaleString(),
+      fecha,
+      hora,
       persona?.carnet || 'N/A',
-      `${persona?.nombres} ${persona?.apellidos}`.trim(),
-      persona?.grado || (persona?.cargo || 'N/A'),
-      a.alumno ? 'Alumno' : 'Personal',
-      a.tipo_evento === 'entrada' ? 'Entrada' : 'Salida',
+      `${persona?.nombres || ''} ${persona?.apellidos || ''}`.trim(),
+      gradoCargoFull,
+      seccion,
+      jornada,
+      capitalize(a.tipo_evento),
       capitalize(a.estado_puntualidad)
     ];
   });
 
   autoTable(doc, {
-    startY: 70,
-    head: [['Fecha/Hora', 'Carnet', 'Nombre Completo', 'Grado/Cargo', 'Tipo', 'Evento', 'Puntualidad']],
+    startY: 65,
+    head: [['Fecha', 'Hora', 'Carnet', 'Nombre Completo', 'Tipo / Grado', 'Sección', 'Jornada', 'Evento', 'Puntualidad']],
     body: tableData,
-    headStyles: { fillColor: [31, 71, 136] },
-    alternateRowStyles: { fillColor: [245, 245, 245] },
-    styles: { fontSize: 8 },
+    theme: 'striped',
+    headStyles: { 
+      fillColor: [30, 58, 138], // Azul oscuro (#1e3a8a)
+      textColor: 255,
+      fontSize: 8,
+      halign: 'center'
+    },
+    styles: { 
+      fontSize: 7,
+      cellPadding: 2,
+      halign: 'center'
+    },
+    columnStyles: {
+      3: { halign: 'left' } // Nombre alineado a la izquierda
+    },
+    didDrawPage: function(data) {
+       // Footer si se desea
+    }
   });
-
-  // Footer
   const pageCount = doc.internal.getNumberOfPages();
   for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i);
@@ -159,9 +231,9 @@ export const generateExcel = async (data) => {
         base64: appLogoBase64,
         extension: 'png',
       });
-      // Ajustar posición a columna H (índice 7)
+      // Ajustar posición a columna I (índice 8) - Borde derecho
       sheet.addImage(imageId, {
-        tl: { col: 7, row: 0 }, 
+        tl: { col: 8, row: 0 }, 
         ext: { width: 80, height: 80 },
         editAs: 'absolute'
       });
@@ -176,15 +248,15 @@ export const generateExcel = async (data) => {
   sheet.getRow(3).height = 20;
   sheet.getRow(4).height = 25;
 
-  // Título Institución (Centrado C1:F1)
-  sheet.mergeCells('C1:F1');
+  // Título Institución (Centrado C1:G1) - Extendido
+  sheet.mergeCells('C1:G1');
   const titleCell = sheet.getCell('C1');
   titleCell.value = institucion?.nombre || 'Instituto Educativo';
   titleCell.font = { size: 16, bold: true, color: { argb: 'FF1F4788' } };
   titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
 
-  // Dirección y Teléfono (Centrado C2:F2)
-  sheet.mergeCells('C2:F2');
+  // Dirección y Teléfono
+  sheet.mergeCells('C2:G2');
   const addressCell = sheet.getCell('C2');
   const infoLine1 = [];
   if (institucion?.direccion) infoLine1.push(institucion.direccion);
@@ -192,8 +264,8 @@ export const generateExcel = async (data) => {
   addressCell.value = infoLine1.join(' | ');
   addressCell.alignment = { horizontal: 'center', vertical: 'middle' };
 
-  // Email y Ubicación (Centrado C3:F3)
-  sheet.mergeCells('C3:F3');
+  // Email y Ubicación
+  sheet.mergeCells('C3:G3');
   const locationCell = sheet.getCell('C3');
   const infoLine2 = [];
   if (institucion?.email) infoLine2.push(institucion.email);
@@ -203,65 +275,113 @@ export const generateExcel = async (data) => {
   locationCell.value = infoLine2.join(' | ');
   locationCell.alignment = { horizontal: 'center', vertical: 'middle' };
 
-  // Título Reporte
-  sheet.mergeCells('A5:H5');
+  // Título Reporte - Extendido a I
+  sheet.mergeCells('A5:I5');
   const reportCell = sheet.getCell('A5');
   reportCell.value = 'REPORTE DE ASISTENCIAS';
   reportCell.alignment = { horizontal: 'center', vertical: 'middle' };
-  reportCell.font = { bold: true, size: 14 };
-  reportCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEEEEEE' } };
+  reportCell.font = { size: 14 };
 
   // Filtros (Fila 6)
-  sheet.mergeCells('A6:H6');
+  sheet.mergeCells('A6:I6');
   const statsCell = sheet.getCell('A6');
   const filterParts = [];
-  if (filtrosGenerated.fechaInicio) filterParts.push(`Desde: ${new Date(filtrosGenerated.fechaInicio).toLocaleDateString()}`);
-  if (filtrosGenerated.fechaFin) filterParts.push(`Hasta: ${new Date(filtrosGenerated.fechaFin).toLocaleDateString()}`);
+  
+  // Helper local para fecha
+  const formatDateStr = (dateStr) => {
+    if (!dateStr) return '';
+    const [y, m, d] = dateStr.split('-');
+    return `${d}/${m}/${y}`;
+  };
+
+  if (filtrosGenerated.fechaInicio) filterParts.push(`Desde: ${formatDateStr(filtrosGenerated.fechaInicio)}`);
+  if (filtrosGenerated.fechaFin) filterParts.push(`Hasta: ${formatDateStr(filtrosGenerated.fechaFin)}`);
   filterParts.push(`Total: ${stats.total} | Entradas: ${stats.entradas} | Salidas: ${stats.salidas} | Tardes: ${stats.tardes}`);
   statsCell.value = filterParts.join(' • ');
   statsCell.alignment = { horizontal: 'center', vertical: 'middle' };
   statsCell.font = { size: 10, italic: true };
   sheet.getRow(6).height = 20;
 
-
+  // Estilo de borde compartido
+  const thinBorder = {
+    top: { style: 'thin' },
+    left: { style: 'thin' },
+    bottom: { style: 'thin' },
+    right: { style: 'thin' }
+  };
 
   // Headers
-  const headers = ['Fecha', 'Hora', 'Carnet', 'Nombre', 'Grado/Cargo', 'Tipo', 'Evento', 'Puntualidad'];
+  const headers = ['Fecha', 'Hora', 'Carnet', 'Nombre', 'Tipo / Grado', 'Sección', 'Jornada', 'Evento', 'Puntualidad'];
   const headerRow = sheet.getRow(7);
   headers.forEach((h, i) => {
     const cell = headerRow.getCell(i + 1);
     cell.value = h;
-    cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
-    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1F4788' } };
-    cell.alignment = { horizontal: 'center' };
+    cell.font = { bold: true, size: 10, color: { argb: 'FFFFFFFF' } }; // Size 10
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E3A8A' } }; // Color Exacto PDF
+    cell.alignment = { horizontal: 'center', vertical: 'middle' };
+    cell.border = thinBorder; // Borde header
   });
 
   // Datos
   asistencias.forEach((a, index) => {
+    const capitalize = (str) => str ? str.charAt(0).toUpperCase() + str.slice(1).toLowerCase() : '-';
+    
     const persona = a.alumno || a.personal;
     const row = sheet.getRow(8 + index);
     
+    // Fecha y Hora
     row.getCell(1).value = new Date(a.timestamp).toLocaleDateString();
     row.getCell(2).value = new Date(a.timestamp).toLocaleTimeString();
-    row.getCell(3).value = persona?.carnet || '';
-    row.getCell(4).value = `${persona?.nombres} ${persona?.apellidos}`;
-    row.getCell(5).value = persona?.grado || persona?.cargo || '';
-    row.getCell(6).value = a.alumno ? 'Alumno' : 'Personal';
-    row.getCell(7).value = a.tipo_evento === 'entrada' ? 'Entrada' : 'Salida';
     
-    const capitalize = (str) => str ? str.charAt(0).toUpperCase() + str.slice(1).toLowerCase() : '-';
-    row.getCell(8).value = capitalize(a.estado_puntualidad);
+    // Identidad
+    row.getCell(3).value = persona?.carnet || '';
+    row.getCell(4).value = `${persona?.nombres || ''} ${persona?.apellidos || ''}`.trim();
+    
+    // Tipo / Grado 
+    const esAlumno = !!a.alumno;
+    const tipoStr = esAlumno ? 'Alumno' : 'Personal';
+    const gradoCargo = esAlumno ? (persona?.grado || '') : (persona?.cargo || '');
+    let gradoCargoFull = `${tipoStr}`;
+    if (gradoCargo) {
+        gradoCargoFull += `\n${gradoCargo}`;
+    }
+    row.getCell(5).value = gradoCargoFull;
+    row.getCell(5).alignment = { wrapText: true, vertical: 'middle', horizontal: 'center' };
 
-    // Colores condicionales
-    if (a.estado_puntualidad === 'tarde') {
-      row.getCell(8).font = { color: { argb: 'FFFF0000' } };
+    // Sección
+    row.getCell(6).value = (esAlumno && persona?.seccion) ? persona.seccion : '-';
+    row.getCell(6).alignment = { horizontal: 'center', vertical: 'middle' };
+
+    // Jornada
+    const jornadaRaw = persona?.jornada || 'Matutina';
+    row.getCell(7).value = capitalize(jornadaRaw);
+    row.getCell(7).alignment = { horizontal: 'center', vertical: 'middle' };
+
+    // Evento
+    row.getCell(8).value = a.tipo_evento === 'entrada' ? 'Entrada' : 'Salida';
+    row.getCell(8).alignment = { horizontal: 'center', vertical: 'middle' };
+    
+    // Puntualidad
+    row.getCell(9).value = capitalize(a.estado_puntualidad);
+    row.getCell(9).alignment = { horizontal: 'center', vertical: 'middle' };
+
+    // Aplicar bordes a toda la fila y fuente
+    for(let i=1; i<=9; i++) {
+        const cell = row.getCell(i);
+        cell.border = thinBorder;
+        // Mantener color rojo si es tarde, sino negro default
+        if (i === 9 && a.estado_puntualidad === 'tarde') {
+             cell.font = { size: 9, color: { argb: 'FFFF0000' } };
+        } else {
+             cell.font = { size: 9 };
+        }
     }
   });
 
   // Ajustar anchos
   sheet.columns = [
     { width: 12 }, { width: 10 }, { width: 15 }, { width: 30 }, 
-    { width: 15 }, { width: 10 }, { width: 10 }, { width: 12 }
+    { width: 25 }, { width: 10 }, { width: 15 }, { width: 10 }, { width: 12 }
   ];
 
   const buffer = await workbook.xlsx.writeBuffer();

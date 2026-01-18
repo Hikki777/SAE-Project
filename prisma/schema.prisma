@@ -36,6 +36,7 @@ model Alumno {
   apellidos       String
   sexo            String?
   grado           String
+  seccion         String?
   carrera         String?
   especialidad    String?
   jornada         String?

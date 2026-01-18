@@ -370,10 +370,9 @@ export default function AsistenciasPanel() {
                 // QrScanner a veces acepta lo que le da el navegador (480p), aquí exigimos calidad.
                 const stream = await navigator.mediaDevices.getUserMedia({
                     video: {
-                        facingMode: 'environment', // Trasera en móviles
-                        width: { min: 1280, ideal: 1920 }, // Forzar HD
-                        height: { min: 720, ideal: 1080 },
-                        focusMode: { ideal: 'continuous' } // Pedir enfoque constante
+                        facingMode: 'environment',
+                        width: { ideal: 1280 }, // 720p es suficiente y más rápido de procesar
+                        height: { ideal: 720 }
                     }
                 });
 
@@ -401,19 +400,14 @@ export default function AsistenciasPanel() {
                             handleQRScanSuccess(text);
                         },
                         {
+                            maxScansPerSecond: 10, // 10 scans/seg es suficiente y satura menos
+                            returnDetailedScanResult: true,
                             highlightScanRegion: true,
                             highlightCodeOutline: true,
-                            overlay: undefined, 
-                            maxScansPerSecond: 25,
-                            returnDetailedScanResult: true,
-                            calculateScanRegion: (v) => ({ 
-                                x: 0, 
-                                y: 0, 
-                                width: v.videoWidth, 
-                                height: v.videoHeight,
-                                downScaledWidth: v.videoWidth, 
-                                downScaledHeight: v.videoHeight 
-                            }),
+                            // Permitir inversión (útil para QRs con fondo oscuro o iluminación rara)
+                            inversionAttempts: 'attemptBoth', 
+                            // Escanear TODO el video (más seguro que calcular región manual)
+                            calculateScanRegion: undefined, 
                             alsoTryWithoutScanRegion: true
                         }
                     );
@@ -1242,7 +1236,7 @@ export default function AsistenciasPanel() {
         </div>
 
         {loading ? (
-          <TableSkeleton rows={5} columns={7} />
+          <TableSkeleton rows={5} columns={9} />
         ) : asistenciasHoy.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
             No hay asistencias registradas hoy
@@ -1252,10 +1246,12 @@ export default function AsistenciasPanel() {
             <table className="w-full text-sm">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
+                  <th className="text-left px-3 py-2">Fecha</th>
                   <th className="text-left px-3 py-2">Hora</th>
                   <th className="text-left px-3 py-2">Carnet</th>
                   <th className="text-left px-3 py-2">Nombre Completo</th>
                   <th className="text-center px-3 py-2">Tipo / Grado</th>
+                  <th className="text-center px-3 py-2">Sección</th>
                   <th className="text-center px-3 py-2">Evento</th>
                   <th className="text-center px-3 py-2">Origen</th>
                   <th className="text-center px-3 py-2">Estado</th>
@@ -1265,10 +1261,9 @@ export default function AsistenciasPanel() {
                 {asistenciasHoy.map((asistencia) => {
                   const persona = asistencia.alumno || asistencia.docente || asistencia.personal;
                   const esAlumno = !!asistencia.alumno;
-                  // Para personal, mostrar el cargo directamente (Directora, Docente, etc.)
                   const tipoYGrado = esAlumno 
                     ? { tipo: 'Alumno', detalle: persona?.grado }
-                    : { tipo: persona?.cargo || 'Personal', detalle: null };
+                    : { tipo: 'Personal', detalle: persona?.cargo || 'Personal' };
                   
                   return (
                     <motion.tr
@@ -1277,6 +1272,9 @@ export default function AsistenciasPanel() {
                       animate={{ opacity: 1 }}
                       className="border-b hover:bg-gray-50 transition"
                     >
+                      <td className="px-3 py-2 font-medium text-gray-700">
+                        {new Date(asistencia.timestamp || asistencia.created_at).toLocaleDateString()}
+                      </td>
                       <td className="px-3 py-2 font-medium text-gray-700">
                         {formatTime(asistencia.timestamp || asistencia.created_at)}
                       </td>
@@ -1291,7 +1289,7 @@ export default function AsistenciasPanel() {
                           <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
                             esAlumno
                               ? 'bg-blue-100 text-blue-800'
-                              : 'bg-purple-100 text-purple-800'
+                              : 'bg-green-100 text-green-800'
                           }`}>
                             {tipoYGrado.tipo}
                           </span>
@@ -1301,6 +1299,9 @@ export default function AsistenciasPanel() {
                             </span>
                           )}
                         </div>
+                      </td>
+                      <td className="px-3 py-2 text-center font-bold text-gray-700 dark:text-gray-300">
+                        {esAlumno ? (persona?.seccion || '-') : '-'}
                       </td>
                       <td className="px-3 py-2 text-center">
                         <span className={`px-2 py-1 rounded-full text-xs font-bold ${

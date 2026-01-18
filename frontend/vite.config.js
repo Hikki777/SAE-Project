@@ -136,4 +136,7 @@ export default defineConfig({
       },
     },
   },
+  optimizeDeps: {
+    exclude: ['qr-scanner'] // Evitar que Vite optimice/pre-bundlee qr-scanner para que el worker cargue correctamente
+  }
 });

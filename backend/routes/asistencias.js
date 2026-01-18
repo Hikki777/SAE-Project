@@ -109,6 +109,7 @@ router.post('/', invalidateCacheMiddleware('/api/asistencias'), async (req, res)
             nombres: true,
             apellidos: true,
             grado: true,
+            seccion: true,
             jornada: true
           }
         } : false,
@@ -193,6 +194,7 @@ router.get('/', cacheMiddleware('list'), async (req, res) => {
             nombres: true,
             apellidos: true,
             grado: true,
+            seccion: true,
             jornada: true
           }
         },
@@ -258,6 +260,7 @@ router.get('/hoy', async (req, res) => {
             nombres: true,
             apellidos: true,
             grado: true,
+            seccion: true, // SECCION ASEGURADA
             jornada: true
           }
         },
@@ -291,14 +294,9 @@ router.get('/hoy', async (req, res) => {
   } catch (error) {
     logger.error({
       err: error,
-      route: '/api/asistencias/hoy',
-      details: {
-        message: error?.message,
-        stack: error?.stack?.split('\n').slice(0, 3).join(' | ')
-      },
-      user: req.user || null
+      route: '/api/asistencias/hoy'
     }, '[ERROR] Error obteniendo asistencias de hoy');
-    res.status(500).json({ error: error?.message || 'Error interno al obtener asistencias de hoy' });
+    res.status(500).json({ error: error?.message || 'Error interno' });
   }
 });
 
@@ -317,9 +315,16 @@ router.get('/ausentes', async (req, res) => {
     // Determinar rango de fecha
     let fechaInicio, fechaFin;
     if (fechaParam) {
-      fechaInicio = new Date(fechaParam);
+      // Parse manual para evitar UTC offset
+      if (fechaParam.includes('-')) {
+          const [y, m, d] = fechaParam.split('-').map(Number);
+          fechaInicio = new Date(y, m - 1, d);
+      } else {
+          fechaInicio = new Date(fechaParam);
+      }
       fechaInicio.setHours(0, 0, 0, 0);
-      fechaFin = new Date(fechaParam);
+      
+      fechaFin = new Date(fechaInicio);
       fechaFin.setHours(23, 59, 59, 999);
     } else {
       // Hoy por defecto
@@ -372,7 +377,6 @@ router.get('/ausentes', async (req, res) => {
           nombres: true,
           apellidos: true,
           grado: true,
-          seccion: true,
           jornada: true
         }
       });
@@ -400,7 +404,7 @@ router.get('/ausentes', async (req, res) => {
           nombres: true,
           apellidos: true,
           cargo: true,
-          departamento: true,
+          // departamento: true, // ERROR: Campo no existe en schema
           jornada: true
         }
       });
@@ -509,3 +513,4 @@ router.delete('/:id', async (req, res) => {
 
 module.exports = router;
 
+// FORCE RESTART

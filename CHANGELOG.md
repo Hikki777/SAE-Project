@@ -5,7 +5,34 @@ Todos los cambios notables en este proyecto serán documentados en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
-## [0.9.2-beta] - 2026-01-17
+## [0.9.3-beta] - 2026-01-17 (Fixes Reportes y Ausentes)
+
+### 🐛 Corregido
+
+#### Reportes de Asistencias (Excel y PDF)
+- **Sincronización Excel/PDF:**
+  - Layout de columnas unificado (Fecha, Hora, Carnet, Nombre, Tipo/Grado, Sección, Jornada, Evento, Puntualidad).
+  - Estilos visuales de Excel ajustados (Color header exacto `#1E3A8A`, fuente compacta 9pt/10pt).
+  - Logos posicionados correctamente (Institución Izquierda, SAE Derecha).
+- **Logos:**
+  - Solucionado error donde el logo institucional no aparecía en PDF (ahora lee base64 de disco).
+  - Logo SAE ahora usa ruta absoluta para evitar errores 404 en PDF.
+- **Fechas y Filtros:**
+  - **Filtro "Hoy":** Implementado parsing manual de fecha para evitar desfase de zona horaria UTC (falsos positivos de día anterior).
+  - **Botón "Hoy":** Agregado acceso directo en Panel de Reportes.
+
+#### Panel de Asistencias
+- **Bug 500 en `/api/asistencias/ausentes`:**
+  - Eliminado campo `departamento` de la consulta de Personal (campo inexistente en schema).
+  - Aplicado fix de fecha local para cálculo de ausentes.
+- **Visualización:**
+  - Nueva columna "Sección" visible para alumnos.
+  - Distinción visual clara: Alumnos (Badge Azul) vs Personal (Badge Verde).
+  - Formato unificado "Tipo / Cargo" para personal.
+
+### ✨ Agregado
+- **Soporte de Sección:** Backend, DB y Frontend actualizados para manejar y mostrar `seccion` en asistencias.
+
 
 ### ✨ Agregado
 

@@ -1,5 +1,8 @@
 const prisma = require('../prismaClient');
 const { logger } = require('../utils/logger');
+const fs = require('fs-extra');
+const path = require('path');
+const { UPLOADS_DIR } = require('../utils/paths');
 
 class ReportService {
   /**
@@ -23,6 +26,7 @@ class ReportService {
             nombres: true,
             apellidos: true,
             grado: true,
+            seccion: true,
             jornada: true
           }
         },
@@ -40,6 +44,25 @@ class ReportService {
 
     // Obtener institución
     const institucion = await prisma.institucion.findUnique({ where: { id: 1 } });
+    
+    // Inyectar logo en base64 para el reporte PDF
+    if (institucion && institucion.logo_path) {
+        try {
+            const logoFullPath = path.join(UPLOADS_DIR, institucion.logo_path);
+            if (await fs.pathExists(logoFullPath)) {
+                const ext = path.extname(logoFullPath).toLowerCase().replace('.', '');
+                const mime = ext === 'png' ? 'image/png' : 'image/jpeg';
+                const fileData = await fs.readFile(logoFullPath);
+                const base64Data = fileData.toString('base64');
+                institucion.logo_base64 = `data:${mime};base64,${base64Data}`;
+                logger.info('[REPORT] Logo institucional cargado en memoria para PDF');
+            } else {
+                logger.warn({ path: logoFullPath }, '[REPORT] Archivo de logo no encontrado en disco');
+            }
+        } catch (imgErr) {
+            logger.error({ err: imgErr }, '[REPORT] Error leyendo archivo de logo');
+        }
+    }
     
     // Estadísticas
     const stats = this.calcularEstadisticas(asistencias);
@@ -98,12 +121,26 @@ class ReportService {
     if (filtros.fechaInicio || filtros.fechaFin) {
       where.timestamp = {};
       if (filtros.fechaInicio) {
-        const inicio = new Date(filtros.fechaInicio);
+        // Parsear fecha local manualmente YYYY-MM-DD
+        const parts = filtros.fechaInicio.split('-');
+        let inicio;
+        if (parts.length === 3) {
+            inicio = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+        } else {
+            inicio = new Date(filtros.fechaInicio);
+        }
         inicio.setHours(0, 0, 0, 0);
         where.timestamp.gte = inicio;
       }
       if (filtros.fechaFin) {
-        const fin = new Date(filtros.fechaFin);
+        // Parsear fecha local manualmente YYYY-MM-DD
+        const parts = filtros.fechaFin.split('-');
+        let fin;
+        if (parts.length === 3) {
+            fin = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+        } else {
+            fin = new Date(filtros.fechaFin);
+        }
         fin.setHours(23, 59, 59, 999);
         where.timestamp.lte = fin;
       }

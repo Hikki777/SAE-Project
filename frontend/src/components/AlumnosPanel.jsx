@@ -31,6 +31,7 @@ export default function AlumnosPanel() {
     nombres: '',
     apellidos: '',
     grado: '',
+    seccion: '',
     carrera: '',
     especialidad: '',
     jornada: '',
@@ -180,6 +181,7 @@ export default function AlumnosPanel() {
       nombres: alumno.nombres,
       apellidos: alumno.apellidos,
       grado: alumno.grado || '',
+      seccion: alumno.seccion || '',
       carrera: alumno.carrera || '', // Fix: Cargar carrera
       especialidad: alumno.especialidad || '',
       jornada: alumno.jornada || '',
@@ -522,6 +524,7 @@ export default function AlumnosPanel() {
                     <th className="px-3 py-3 text-left text-xs font-semibold w-24">Carnet</th>
                     <th className="px-3 py-3 text-left text-xs font-semibold">Nombre Completo</th>
                     <th className="px-3 py-3 text-left text-xs font-semibold w-28">Grado</th>
+                    <th className="px-3 py-3 text-center text-xs font-semibold w-16">Sección</th>
                     <th className="px-3 py-3 text-left text-xs font-semibold w-40">Carrera</th>
                     <th className="px-3 py-3 text-left text-xs font-semibold w-48">Especialidad</th>
                     <th className="px-3 py-3 text-left text-xs font-semibold w-28">Jornada</th>
@@ -575,6 +578,9 @@ export default function AlumnosPanel() {
                       </td>
                       <td className="px-3 py-3 whitespace-nowrap text-xs text-gray-600 dark:text-gray-400">
                         {alumno.grado}
+                      </td>
+                      <td className="px-3 py-3 text-center text-xs font-bold text-gray-700 dark:text-gray-300">
+                        {alumno.seccion || '-'}
                       </td>
                       <td className="px-3 py-3 text-xs text-gray-600 dark:text-gray-400">
                         {alumno.carrera || '-'}
@@ -868,8 +874,12 @@ export default function AlumnosPanel() {
                     </div>
                   )}
                 </div>
+
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Grado *</label>
+                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Grado *</label>
                    <select
                     required
                     value={formData.grado}
@@ -881,6 +891,17 @@ export default function AlumnosPanel() {
                       <option key={g} value={g}>{g}</option>
                     ))}
                   </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Sección</label>
+                  <input
+                    type="text"
+                    maxLength={2}
+                    value={formData.seccion}
+                    onChange={(e) => setFormData({ ...formData, seccion: e.target.value.toUpperCase() })}
+                    className="w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-primary-500 focus:border-transparent text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 uppercase text-center font-bold"
+                    placeholder="A"
+                  />
                 </div>
               </div>
 

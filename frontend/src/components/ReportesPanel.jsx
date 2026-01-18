@@ -37,15 +37,26 @@ export default function ReportesPanel({ initialTab = 'asistencias' }) {
     fetchAlumnos();
     fetchPersonal();
     
-    // Establecer fechas por defecto (último mes)
+    // Establecer fechas por defecto (último mes) usando hora local manual para evitar UTC
     const hoy = new Date();
     const haceUnMes = new Date();
     haceUnMes.setMonth(haceUnMes.getMonth() - 1);
     
+    // Función robusta para YYYY-MM-DD local
+    const getLocalISOString = (date) => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+    
+    const fechaHoyLocal = getLocalISOString(hoy);
+    const fechaMesLocal = getLocalISOString(haceUnMes);
+    
     setFiltros(prev => ({
       ...prev,
-      fechaInicio: haceUnMes.toISOString().split('T')[0],
-      fechaFin: hoy.toISOString().split('T')[0]
+      fechaInicio: fechaMesLocal,
+      fechaFin: fechaHoyLocal
     }));
   }, []);
 
@@ -109,9 +120,16 @@ export default function ReportesPanel({ initialTab = 'asistencias' }) {
     const haceUnMes = new Date();
     haceUnMes.setMonth(haceUnMes.getMonth() - 1);
     
+    const getLocalISOString = (date) => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+    
     setFiltros({
-      fechaInicio: haceUnMes.toISOString().split('T')[0],
-      fechaFin: hoy.toISOString().split('T')[0],
+      fechaInicio: getLocalISOString(haceUnMes),
+      fechaFin: getLocalISOString(hoy),
       personaTipo: '',
       grado: '',
       tipoEvento: ''
@@ -120,13 +138,32 @@ export default function ReportesPanel({ initialTab = 'asistencias' }) {
 
   const establecerRangoRapido = (dias) => {
     const hoy = new Date();
+    
+    const getLocalISOString = (date) => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+
+    if (dias === 0) {
+        // Hoy
+        const hoyStr = getLocalISOString(hoy);
+        setFiltros(prev => ({
+            ...prev,
+            fechaInicio: hoyStr,
+            fechaFin: hoyStr
+        }));
+        return;
+    }
+
     const inicio = new Date();
     inicio.setDate(inicio.getDate() - dias);
     
     setFiltros(prev => ({
       ...prev,
-      fechaInicio: inicio.toISOString().split('T')[0],
-      fechaFin: hoy.toISOString().split('T')[0]
+      fechaInicio: getLocalISOString(inicio),
+      fechaFin: getLocalISOString(hoy)
     }));
   };
 
@@ -292,6 +329,12 @@ export default function ReportesPanel({ initialTab = 'asistencias' }) {
                   Rangos rápidos:
                 </label>
                 <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => establecerRangoRapido(0)}
+                    className="px-3 py-1 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 rounded-lg text-sm transition font-bold text-blue-600 dark:text-blue-400"
+                  >
+                    Hoy
+                  </button>
                   <button
                     onClick={() => establecerRangoRapido(7)}
                     className="px-3 py-1 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200 rounded-lg text-sm transition"
