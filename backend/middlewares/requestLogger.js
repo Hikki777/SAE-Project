@@ -1,5 +1,6 @@
 const { logger } = require('../utils/logger');
 const { v4: uuidv4 } = require('uuid');
+const { incrementMetric } = require('../routes/metrics');
 
 /**
  * Middleware para logging de requests HTTP
@@ -17,6 +18,10 @@ const requestLogger = (req, res, next) => {
   res.send = function(data) {
     res.send = originalSend;
     
+    // Increment metrics
+    incrementMetric('request', req.path || req.url.split('?')[0]);
+    incrementMetric('status', res.statusCode);
+
     const responseTime = Date.now() - startTime;
     const logData = {
       requestId: req.id,

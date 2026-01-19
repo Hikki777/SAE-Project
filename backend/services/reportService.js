@@ -35,7 +35,8 @@ class ReportService {
             carnet: true,
             nombres: true,
             apellidos: true,
-            cargo: true
+            cargo: true,
+            jornada: true
           }
         }
       },
@@ -67,10 +68,70 @@ class ReportService {
     // Estadísticas
     const stats = this.calcularEstadisticas(asistencias);
 
-    logger.info({ count: asistencias.length }, `[OK] Datos obtenidos exitosamente`);
+    // Obtener ausentes para el rango de fechas
+    let ausentes = [];
+    
+    if (fechaInicio && fechaFin) {
+      // Parsear fechas manualmente para evitar UTC offset
+      const parseLocalDate = (dateStr) => {
+        const [y, m, d] = dateStr.split('-').map(Number);
+        return new Date(y, m - 1, d);
+      };
+      
+      const inicio = parseLocalDate(fechaInicio);
+      const fin = parseLocalDate(fechaFin);
+      const diffTime = Math.abs(fin - inicio);
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+      
+      // Solo calcular ausentes si el rango es <= 31 días (evitar sobrecarga)
+      if (diffDays <= 31) {
+        logger.info({ dias: diffDays, fechaInicio, fechaFin }, '[REPORT] Obteniendo ausentes para rango de fechas...');
+        
+        try {
+          // Obtener ausentes para cada día del rango
+          const fechaActual = new Date(inicio);
+          const ausentesMap = new Map(); // Usar Map para evitar duplicados
+          
+          while (fechaActual <= fin) {
+            const year = fechaActual.getFullYear();
+            const month = String(fechaActual.getMonth() + 1).padStart(2, '0');
+            const day = String(fechaActual.getDate()).padStart(2, '0');
+            const fechaStr = `${year}-${month}-${day}`;
+            
+            logger.info({ fechaStr }, '[REPORT] Obteniendo ausentes para día...');
+            const ausentesDia = await this.obtenerAusentesPorFecha(fechaStr, personaTipo);
+            logger.info({ fechaStr, count: ausentesDia.length }, '[REPORT] Ausentes del día obtenidos');
+            
+            // Agregar ausentes con la fecha correspondiente
+            ausentesDia.forEach(ausente => {
+              const key = `${ausente.id}-${fechaStr}`;
+              if (!ausentesMap.has(key)) {
+                ausentesMap.set(key, {
+                  ...ausente,
+                  fechaAusencia: fechaStr
+                });
+              }
+            });
+            
+            fechaActual.setDate(fechaActual.getDate() + 1);
+          }
+          
+          ausentes = Array.from(ausentesMap.values());
+          logger.info({ count: ausentes.length }, '[REPORT] Ausentes obtenidos para rango');
+        } catch (err) {
+          logger.error({ err }, '[ERROR] Error obteniendo ausentes para reporte');
+          // No fallar el reporte si falla la detección de ausentes
+        }
+      } else {
+        logger.warn({ dias: diffDays }, '[REPORT] Rango muy grande, omitiendo cálculo de ausentes');
+      }
+    }
+
+    logger.info({ count: asistencias.length, ausentes: ausentes.length }, `[OK] Datos obtenidos exitosamente`);
 
     return { 
       asistencias, 
+      ausentes, // Incluir ausentes (vacío si rango > 31 días)
       institucion, 
       stats, 
       filtrosGenerated: {
@@ -168,6 +229,123 @@ class ReportService {
     }
 
     return where;
+  }
+
+  /**
+   * Obtener ausentes para una fecha específica
+   */
+  async obtenerAusentesPorFecha(fechaStr, personaTipo = 'todos') {
+    logger.info({ fechaStr, personaTipo }, '[REPORT] obtenerAusentesPorFecha llamado');
+    
+    // Parse manual para evitar UTC offset
+    let fechaInicio, fechaFin;
+    if (fechaStr.includes('-')) {
+      const [y, m, d] = fechaStr.split('-').map(Number);
+      fechaInicio = new Date(y, m - 1, d);
+    } else {
+      fechaInicio = new Date(fechaStr);
+    }
+    fechaInicio.setHours(0, 0, 0, 0);
+    
+    fechaFin = new Date(fechaInicio);
+    fechaFin.setHours(23, 59, 59, 999);
+
+    // Obtener todas las asistencias del día (solo entradas)
+    const asistenciasDelDia = await prisma.asistencia.findMany({
+      where: {
+        timestamp: {
+          gte: fechaInicio,
+          lte: fechaFin
+        },
+        tipo_evento: 'entrada' // Solo considerar entradas
+      },
+      select: {
+        alumno_id: true,
+        personal_id: true
+      }
+    });
+
+    logger.info({ count: asistenciasDelDia.length }, '[REPORT] Asistencias del día encontradas');
+
+    // Crear sets de IDs que SÍ asistieron
+    const alumnosQueAsistieron = new Set(
+      asistenciasDelDia
+        .filter(a => a.alumno_id)
+        .map(a => a.alumno_id)
+    );
+
+    const personalQueAsistio = new Set(
+      asistenciasDelDia
+        .filter(a => a.personal_id)
+        .map(a => a.personal_id)
+    );
+
+    logger.info({ 
+      alumnosQueAsistieron: alumnosQueAsistieron.size, 
+      personalQueAsistio: personalQueAsistio.size 
+    }, '[REPORT] Sets de asistentes creados');
+
+    const ausentes = [];
+
+    // Detectar alumnos ausentes
+    if (personaTipo === 'todos' || personaTipo === 'alumno') {
+      const alumnosActivos = await prisma.alumno.findMany({
+        where: {
+          estado: 'activo'
+        },
+        select: {
+          id: true,
+          carnet: true,
+          nombres: true,
+          apellidos: true,
+          grado: true,
+          seccion: true,
+          jornada: true
+        }
+      });
+
+      logger.info({ count: alumnosActivos.length }, '[REPORT] Alumnos activos encontrados');
+
+      alumnosActivos.forEach(alumno => {
+        if (!alumnosQueAsistieron.has(alumno.id)) {
+          ausentes.push({
+            ...alumno,
+            tipo: 'alumno'
+          });
+        }
+      });
+    }
+
+    // Detectar personal ausente
+    if (personaTipo === 'todos' || personaTipo === 'personal' || personaTipo === 'docente') {
+      const personalActivo = await prisma.personal.findMany({
+        where: {
+          estado: 'activo'
+        },
+        select: {
+          id: true,
+          carnet: true,
+          nombres: true,
+          apellidos: true,
+          cargo: true,
+          jornada: true
+        }
+      });
+
+      logger.info({ count: personalActivo.length }, '[REPORT] Personal activo encontrado');
+
+      personalActivo.forEach(persona => {
+        if (!personalQueAsistio.has(persona.id)) {
+          ausentes.push({
+            ...persona,
+            tipo: 'personal'
+          });
+        }
+      });
+    }
+
+    logger.info({ count: ausentes.length }, '[REPORT] Total ausentes detectados');
+    return ausentes;
   }
 
   /**

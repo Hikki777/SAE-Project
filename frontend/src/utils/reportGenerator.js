@@ -26,7 +26,7 @@ const loadImageBase64 = async (src) => {
 };
 
 export const generatePDF = async (data) => {
-  const { asistencias, institucion, stats, filtrosGenerated } = data;
+  const { asistencias, ausentes = [], institucion, stats, filtrosGenerated } = data;
   const doc = new jsPDF();
 
   // 1. Logo Institucional (Izquierda)
@@ -127,14 +127,22 @@ export const generatePDF = async (data) => {
 
   if (filtrosGenerated.fechaInicio) filterParts.push(`Desde: ${formatDateStr(filtrosGenerated.fechaInicio)}`);
   if (filtrosGenerated.fechaFin) filterParts.push(`Hasta: ${formatDateStr(filtrosGenerated.fechaFin)}`);
-  filterParts.push(`Total: ${stats.total} | Entradas: ${stats.entradas} | Salidas: ${stats.salidas} | Tardes: ${stats.tardes}`);
+  if (filterParts.length === 0) filterParts.push(`Fecha: ${new Date().toLocaleDateString()}`);
   
   doc.text(filterParts.join(' • '), 105, 62, { align: 'center' });
 
-  // Tabla
+  // Estadísticas (Línea separada)
+  const puntuales = Math.max(0, (stats.entradas || 0) - (stats.tardes || 0));
+  const statsStr = `Total: ${stats.total} | Entradas: ${stats.entradas} (Puntuales: ${puntuales}, Tardes: ${stats.tardes}) | Salidas: ${stats.salidas} | Ausentes: ${ausentes.length}`;
+  
+  doc.setFontSize(9);
+  doc.text(statsStr, 105, 69, { align: 'center' });
+
+  // Tabla - Combinar asistencias y ausentes
+  const capitalize = (str) => str ? str.charAt(0).toUpperCase() + str.slice(1).toLowerCase() : '-';
+  
   const tableData = asistencias.map(a => {
     const persona = a.alumno || a.personal;
-    const capitalize = (str) => str ? str.charAt(0).toUpperCase() + str.slice(1).toLowerCase() : '-';
     
     // Formatear Fecha y Hora
     const dateObj = new Date(a.timestamp);
@@ -156,23 +164,63 @@ export const generatePDF = async (data) => {
     const jornadaRaw = persona?.jornada || 'Matutina'; // Asumir Matutina si falta (común en legacy data)
     const jornada = capitalize(jornadaRaw);
 
-    return [
-      fecha,
-      hora,
-      persona?.carnet || 'N/A',
-      `${persona?.nombres || ''} ${persona?.apellidos || ''}`.trim(),
-      gradoCargoFull,
-      seccion,
-      jornada,
-      capitalize(a.tipo_evento),
-      capitalize(a.estado_puntualidad)
-    ];
+    return {
+      data: [
+        fecha,
+        hora,
+        persona?.carnet || 'N/A',
+        `${persona?.nombres || ''} ${persona?.apellidos || ''}`.trim(),
+        gradoCargoFull,
+        seccion,
+        jornada,
+        capitalize(a.tipo_evento),
+        a.tipo_evento === 'salida' ? '-' : capitalize(a.estado_puntualidad)
+      ],
+      esAusente: false
+    };
   });
 
+  // Agregar ausentes si existen
+  if (ausentes && ausentes.length > 0) {
+    ausentes.forEach(ausente => {
+      const esAlumno = ausente.tipo === 'alumno';
+      const tipoStr = esAlumno ? 'Alumno' : 'Personal';
+      const gradoCargo = esAlumno ? (ausente.grado || '') : (ausente.cargo || '');
+      let gradoCargoFull = `${tipoStr}`;
+      if (gradoCargo) {
+        gradoCargoFull += `\n${gradoCargo}`;
+      }
+
+      const seccion = esAlumno ? (ausente.seccion || '-') : '-';
+      const jornadaRaw = ausente.jornada || 'Matutina';
+      const jornada = capitalize(jornadaRaw);
+      
+      // Usar fechaAusencia si está disponible (para rangos múltiples), sino usar fechaInicio
+      const fechaAusente = ausente.fechaAusencia 
+        ? formatDateStr(ausente.fechaAusencia) 
+        : (filtrosGenerated.fechaInicio ? formatDateStr(filtrosGenerated.fechaInicio) : new Date().toLocaleDateString());
+
+      tableData.push({
+        data: [
+          fechaAusente,
+          'N/A',
+          ausente.carnet || 'N/A',
+          `${ausente.nombres || ''} ${ausente.apellidos || ''}`.trim(),
+          gradoCargoFull,
+          seccion,
+          jornada,
+          'N/A',
+          'Ausente'
+        ],
+        esAusente: true
+      });
+    });
+  }
+
   autoTable(doc, {
-    startY: 65,
-    head: [['Fecha', 'Hora', 'Carnet', 'Nombre Completo', 'Tipo / Grado', 'Sección', 'Jornada', 'Evento', 'Puntualidad']],
-    body: tableData,
+    startY: 75,
+    head: [['Fecha', 'Hora', 'Carnet', 'Nombre Completo', 'Tipo / Grado', 'Sección', 'Jornada', 'Evento', 'Estado']],
+    body: tableData.map(row => row.data),
     theme: 'striped',
     headStyles: { 
       fillColor: [30, 58, 138], // Azul oscuro (#1e3a8a)
@@ -203,7 +251,7 @@ export const generatePDF = async (data) => {
 };
 
 export const generateExcel = async (data) => {
-  const { asistencias, institucion, stats, filtrosGenerated } = data;
+  const { asistencias, ausentes = [], institucion, stats, filtrosGenerated } = data;
   const workbook = new ExcelJS.Workbook();
   const sheet = workbook.addWorksheet('Asistencias');
 
@@ -296,11 +344,21 @@ export const generateExcel = async (data) => {
 
   if (filtrosGenerated.fechaInicio) filterParts.push(`Desde: ${formatDateStr(filtrosGenerated.fechaInicio)}`);
   if (filtrosGenerated.fechaFin) filterParts.push(`Hasta: ${formatDateStr(filtrosGenerated.fechaFin)}`);
-  filterParts.push(`Total: ${stats.total} | Entradas: ${stats.entradas} | Salidas: ${stats.salidas} | Tardes: ${stats.tardes}`);
+  if (filterParts.length === 0) filterParts.push(`Fecha: ${new Date().toLocaleDateString()}`);
+  
   statsCell.value = filterParts.join(' • ');
   statsCell.alignment = { horizontal: 'center', vertical: 'middle' };
   statsCell.font = { size: 10, italic: true };
   sheet.getRow(6).height = 20;
+
+  // Estadísticas (Fila 7)
+  sheet.mergeCells('A7:I7');
+  const statsRowCell = sheet.getCell('A7');
+  const puntuales = Math.max(0, (stats.entradas || 0) - (stats.tardes || 0));
+  statsRowCell.value = `Total: ${stats.total} | Entradas: ${stats.entradas} (Puntuales: ${puntuales}, Tardes: ${stats.tardes}) | Salidas: ${stats.salidas} | Ausentes: ${ausentes.length}`;
+  statsRowCell.alignment = { horizontal: 'center', vertical: 'middle' };
+  statsRowCell.font = { size: 10, bold: true };
+  sheet.getRow(7).height = 20;
 
   // Estilo de borde compartido
   const thinBorder = {
@@ -311,8 +369,8 @@ export const generateExcel = async (data) => {
   };
 
   // Headers
-  const headers = ['Fecha', 'Hora', 'Carnet', 'Nombre', 'Tipo / Grado', 'Sección', 'Jornada', 'Evento', 'Puntualidad'];
-  const headerRow = sheet.getRow(7);
+  const headers = ['Fecha', 'Hora', 'Carnet', 'Nombre', 'Tipo / Grado', 'Sección', 'Jornada', 'Evento', 'Estado'];
+  const headerRow = sheet.getRow(8);
   headers.forEach((h, i) => {
     const cell = headerRow.getCell(i + 1);
     cell.value = h;
@@ -322,12 +380,13 @@ export const generateExcel = async (data) => {
     cell.border = thinBorder; // Borde header
   });
 
-  // Datos
-  asistencias.forEach((a, index) => {
-    const capitalize = (str) => str ? str.charAt(0).toUpperCase() + str.slice(1).toLowerCase() : '-';
-    
+  // Datos - Asistencias
+  const capitalize = (str) => str ? str.charAt(0).toUpperCase() + str.slice(1).toLowerCase() : '-';
+  
+  let currentRow = 9;
+  asistencias.forEach((a) => {
     const persona = a.alumno || a.personal;
-    const row = sheet.getRow(8 + index);
+    const row = sheet.getRow(currentRow);
     
     // Fecha y Hora
     row.getCell(1).value = new Date(a.timestamp).toLocaleDateString();
@@ -362,13 +421,19 @@ export const generateExcel = async (data) => {
     row.getCell(8).alignment = { horizontal: 'center', vertical: 'middle' };
     
     // Puntualidad
-    row.getCell(9).value = capitalize(a.estado_puntualidad);
+    row.getCell(9).value = a.tipo_evento === 'salida' ? '-' : capitalize(a.estado_puntualidad);
     row.getCell(9).alignment = { horizontal: 'center', vertical: 'middle' };
 
     // Aplicar bordes a toda la fila y fuente
     for(let i=1; i<=9; i++) {
         const cell = row.getCell(i);
         cell.border = thinBorder;
+        
+        // Zebra Striping (Filas pares: Gris claro)
+        if (currentRow % 2 === 0) {
+           cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF2F2F2' } };
+        }
+
         // Mantener color rojo si es tarde, sino negro default
         if (i === 9 && a.estado_puntualidad === 'tarde') {
              cell.font = { size: 9, color: { argb: 'FFFF0000' } };
@@ -376,7 +441,72 @@ export const generateExcel = async (data) => {
              cell.font = { size: 9 };
         }
     }
+    
+    currentRow++;
   });
+
+  // Agregar ausentes si existen
+  if (ausentes && ausentes.length > 0) {
+    const formatDateStr = (dateStr) => {
+      if (!dateStr) return '';
+      const [y, m, d] = dateStr.split('-');
+      return `${d}/${m}/${y}`;
+    };
+    const fechaReporte = filtrosGenerated.fechaInicio ? formatDateStr(filtrosGenerated.fechaInicio) : new Date().toLocaleDateString();
+    
+    ausentes.forEach((ausente) => {
+      const row = sheet.getRow(currentRow);
+      
+      const esAlumno = ausente.tipo === 'alumno';
+      const tipoStr = esAlumno ? 'Alumno' : 'Personal';
+      const gradoCargo = esAlumno ? (ausente.grado || '') : (ausente.cargo || '');
+      let gradoCargoFull = `${tipoStr}`;
+      if (gradoCargo) {
+        gradoCargoFull += `\n${gradoCargo}`;
+      }
+
+      const seccion = esAlumno ? (ausente.seccion || '-') : '-';
+      const jornadaRaw = ausente.jornada || 'Matutina';
+      const jornada = capitalize(jornadaRaw);
+      
+      // Usar fechaAusencia si está disponible (para rangos múltiples), sino usar fechaInicio
+      const fechaAusente = ausente.fechaAusencia 
+        ? formatDateStr(ausente.fechaAusencia) 
+        : (filtrosGenerated.fechaInicio ? formatDateStr(filtrosGenerated.fechaInicio) : new Date().toLocaleDateString());
+
+      // Datos de ausente
+      row.getCell(1).value = fechaAusente;
+      row.getCell(2).value = 'N/A';
+      row.getCell(3).value = ausente.carnet || 'N/A';
+      row.getCell(4).value = `${ausente.nombres || ''} ${ausente.apellidos || ''}`.trim();
+      row.getCell(5).value = gradoCargoFull;
+      row.getCell(5).alignment = { wrapText: true, vertical: 'middle', horizontal: 'center' };
+      row.getCell(6).value = seccion;
+      row.getCell(6).alignment = { horizontal: 'center', vertical: 'middle' };
+      row.getCell(7).value = jornada;
+      row.getCell(7).alignment = { horizontal: 'center', vertical: 'middle' };
+      row.getCell(8).value = 'N/A';
+      row.getCell(8).alignment = { horizontal: 'center', vertical: 'middle' };
+      row.getCell(9).value = 'Ausente';
+      row.getCell(9).alignment = { horizontal: 'center', vertical: 'middle' };
+
+      // Aplicar bordes y formato especial para ausentes
+      for(let i=1; i<=9; i++) {
+        const cell = row.getCell(i);
+        cell.border = thinBorder;
+        
+        // Formato especial para columna "Ausente"
+        if (i === 9) {
+          cell.font = { size: 9, bold: true, color: { argb: 'FFDC2626' } }; // Rojo
+          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFECACA' } }; // Fondo rojo claro
+        } else {
+          cell.font = { size: 9 };
+        }
+      }
+      
+      currentRow++;
+    });
+  }
 
   // Ajustar anchos
   sheet.columns = [

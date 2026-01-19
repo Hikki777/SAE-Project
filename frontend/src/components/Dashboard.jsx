@@ -370,6 +370,7 @@ export default function Dashboard() {
                       total: data.total,
                       puntuales: data.puntuales,
                       tardes: data.tardes,
+                      ausentes: data.ausentes || 0,
                     })
                   )}
                 >
@@ -404,6 +405,14 @@ export default function Dashboard() {
                     strokeWidth={3}
                     dot={{r: 4, fill: '#ef4444', strokeWidth: 2, stroke: '#fff'}}
                     name="Tardes"
+                  />
+                  <Line
+                    type="natural"
+                    dataKey="ausentes"
+                    stroke="#f97316"
+                    strokeWidth={3}
+                    dot={{r: 4, fill: '#f97316', strokeWidth: 2, stroke: '#fff'}}
+                    name="Ausentes"
                   />
                 </LineChart>
               </ResponsiveContainer>

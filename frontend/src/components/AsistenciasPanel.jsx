@@ -1,16 +1,21 @@
 /* eslint-disable no-unused-vars */
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Clock, UserCheck, UserX, Search, Calendar, TrendingUp, QrCode, Camera, CameraOff } from 'lucide-react';
+import { Clock, UserCheck, UserX, Search, Calendar, TrendingUp, QrCode, Camera, CameraOff, XCircle } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 import client from '../api/client';
 import QrScanner from 'qr-scanner';
 import { TableSkeleton } from './LoadingSpinner';
+import ModalSinSalida from './ModalSinSalida';
 
 // Usamos el cliente API compartido (con baseURL '/api' e interceptor JWT)
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const BASE_URL = API_URL.replace('/api', '');
 
 export default function AsistenciasPanel() {
+  const navigate = useNavigate();
       const [showAusentesModal, setShowAusentesModal] = useState(false);
       const [excusaInput, setExcusaInput] = useState('');
       const [personaExcusa, setPersonaExcusa] = useState(null);
@@ -18,6 +23,9 @@ export default function AsistenciasPanel() {
     const [tomaIniciada, setTomaIniciada] = useState(false);
     const [horaInternet, setHoraInternet] = useState('');
   const [asistenciasHoy, setAsistenciasHoy] = useState([]);
+  const [ausentes, setAusentes] = useState([]);
+  const [mostrarModalSinSalida, setMostrarModalSinSalida] = useState(false);
+  const [personasSinSalida, setPersonasSinSalida] = useState([]);
   const [stats, setStats] = useState(null);
   const [alumnos, setAlumnos] = useState([]);
   const [docentes, setDocentes] = useState([]);
@@ -40,6 +48,39 @@ export default function AsistenciasPanel() {
   const lastScannedQRRef = useRef('');
   const processingTimeoutRef = useRef(null);
 
+  // Sonido de error sintetizado (Mejorado: onda cuadrada tipo 'buzzer')
+  const playErrorSound = useCallback(() => {
+    try {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContext) return;
+      
+      const ctx = new AudioContext();
+      
+      // Asegurar que el contexto esté activo
+      if (ctx.state === 'suspended') {
+        ctx.resume();
+      }
+
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      
+      osc.type = 'square'; // Más audible para errores
+      osc.frequency.setValueAtTime(330, ctx.currentTime); 
+      osc.frequency.exponentialRampToValueAtTime(110, ctx.currentTime + 0.4);
+      
+      gain.gain.setValueAtTime(0.3, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
+      
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      
+      osc.start();
+      osc.stop(ctx.currentTime + 0.4);
+    } catch (e) {
+      console.warn("Audio error", e);
+    }
+  }, []);
+
   // Optimización: Filtrar listas con useMemo para evitar re-cálculos innecesarios
   const alumnosFiltrados = useMemo(() => {
     if (!searchTerm) return alumnos;
@@ -60,6 +101,46 @@ export default function AsistenciasPanel() {
       d.carnet.toLowerCase().includes(term)
     );
   }, [docentes, searchTerm]);
+
+  // Helper function to get user photo URL
+  const getUserPhotoUrl = useCallback((tipo, carnet, personaObj = null) => {
+    // 1. Prioridad: Objeto persona con foto_path
+    if (personaObj && personaObj.foto_path) {
+         return personaObj.foto_path.startsWith('http') 
+            ? personaObj.foto_path 
+            : `${BASE_URL}/uploads/${personaObj.foto_path}`;
+    }
+
+    if (!carnet) return null;
+    
+    // Limpiar carnet de espacios accidentales
+    const cleanCarnet = String(carnet).trim();
+    
+    // Determinar el directorio según el tipo
+    let directory = '';
+    let prefix = '';
+    
+    if (tipo === 'alumno' || tipo === 'Alumno') {
+      directory = 'alumnos';
+      prefix = 'alumno';
+    } else {
+      // Para personal, determinar subdirectorio por prefijo de carnet
+      if (cleanCarnet.startsWith('DIR-') || cleanCarnet.startsWith('SDIR-')) {
+        directory = 'directores';
+        prefix = 'director';
+      } else if (cleanCarnet.startsWith('D-')) {
+        directory = 'docentes';
+        prefix = 'docentes';
+      } else {
+        directory = 'personal';
+        prefix = 'personal';
+      }
+    }
+    
+    // Construir URL: /uploads/{directory}/{prefix}_{carnet}.png
+    // Asegurar que no haya espacios en la URL generada
+    return `/uploads/${directory}/${prefix}_${cleanCarnet}.png`;
+  }, []);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -121,6 +202,28 @@ export default function AsistenciasPanel() {
       
       const asistencias = response.data.asistencias || [];
       setAsistenciasHoy(asistencias);
+      
+      // Obtener ausentes del día
+      try {
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+        const fechaHoy = `${year}-${month}-${day}`;
+        
+        console.log('🔍 Fetching ausentes para fecha:', fechaHoy);
+        
+        const ausentesResponse = await client.get('/asistencias/ausentes', {
+          params: { fecha: fechaHoy }
+        });
+        
+        const ausentesData = ausentesResponse.data.ausentes || [];
+        console.log('✅ Ausentes obtenidos:', ausentesData.length, ausentesData);
+        setAusentes(ausentesData);
+      } catch (err) {
+        console.error('❌ Error fetching ausentes:', err);
+        setAusentes([]);
+      }
       
       // Calcular stats localmente si el endpoint general no los devuelve pre-calculados
       const stats = {
@@ -204,7 +307,7 @@ export default function AsistenciasPanel() {
       toast.success(`📋 ${total} ausente${total !== 1 ? 's' : ''} detectado${total !== 1 ? 's' : ''}. Redirigiendo...`);
       
       setTimeout(() => {
-        window.location.hash = '#/justificaciones?modo=revision';
+        navigate('/justificaciones?modo=revision');
       }, 1000);
     } catch (error) {
       console.error('Error detectando ausentes:', error);
@@ -212,8 +315,32 @@ export default function AsistenciasPanel() {
     }
   };
 
+  const handleFinalizarTomaSalidas = async () => {
+    try {
+      // Llamar al endpoint para detectar personas sin salida
+      const response = await client.get('/asistencias/sin-salida');
+      const { sinSalida, total } = response.data;
+
+      if (total === 0) {
+        toast.success('✅ ¡Perfecto! Todos marcaron salida.');
+        setTomaIniciada(false);
+        return;
+      }
+
+      // Mostrar modal con personas sin salida
+      setPersonasSinSalida(sinSalida);
+      setMostrarModalSinSalida(true);
+      toast.warning(`⚠️ ${total} persona${total !== 1 ? 's' : ''} sin marcar salida`);
+    } catch (error) {
+      console.error('Error detectando personas sin salida:', error);
+      toast.error('Error al detectar salidas faltantes: ' + (error.response?.data?.error || error.message));
+    }
+  };
+
+
   const handleRegistrarAsistencia = async (e) => {
     e.preventDefault();
+    if (isProcessingRef.current) return;
     
     const personaId = tipoPersona === 'alumno' ? selectedAlumno : selectedDocente;
     
@@ -230,13 +357,15 @@ export default function AsistenciasPanel() {
       return;
     }
 
+    isProcessingRef.current = true;
+
     // Backup para rollback
     const previousAsistencias = [...asistenciasHoy];
+    let personaData = null;
 
     try {
       // Buscar datos completos de la persona ANTES de la llamada API
       console.log('🔍 Buscando datos para modal de registro manual...');
-      let personaData = null;
       
       if (tipoPersona === 'alumno') {
         const alumno = alumnos.find(a => a.id === parseInt(selectedAlumno));
@@ -257,7 +386,8 @@ export default function AsistenciasPanel() {
           apellidos: alumno?.apellido || alumno?.apellidos || '',
           carnet: alumno?.carnet || `ID: ${selectedAlumno}`,
           grado: alumno?.grado || 'N/A',
-          seccion: alumno?.seccion || 'N/A'
+          seccion: alumno?.seccion || 'N/A',
+          foto_url: getUserPhotoUrl('alumno', alumno?.carnet, alumno)
         };
       } else {
         const docente = docentes.find(d => d.id === parseInt(selectedDocente));
@@ -279,7 +409,8 @@ export default function AsistenciasPanel() {
           apellidos: docente?.apellido || docente?.apellidos || '',
           carnet: docente?.carnet || `ID: ${selectedDocente}`,
           cargo: docente?.cargo || 'N/A',
-          departamento: docente?.departamento || 'N/A'
+          departamento: docente?.departamento || 'N/A',
+          foto_url: getUserPhotoUrl('personal', docente?.carnet, docente)
         };
       }
 
@@ -294,29 +425,6 @@ export default function AsistenciasPanel() {
         alumno: tipoPersona === 'alumno' ? personaData : null,
         docente: tipoPersona === 'docente' ? personaData : null
       };
-
-      // Actualizar UI inmediatamente
-      setAsistenciasHoy(prev => [optimisticAsistencia, ...prev]);
-
-      // Limpiar formulario y mostrar modal inmediatamente
-      setSelectedAlumno('');
-      setSelectedDocente('');
-      setSearchTerm('');
-
-      setModalData({
-        ...personaData,
-        tipoEvento: tipoEvento === 'entrada' ? 'ENTRADA' : 'SALIDA',
-        hora: new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
-      });
-      setShowModal(true);
-
-      // Cerrar modal automáticamente después de 3 segundos
-      setTimeout(() => {
-        setShowModal(false);
-      }, 3000);
-
-      // Reproducir sonido de confirmación inmediatamente
-      playBeepSound();
 
       // Llamada API asíncrona
       const requestData = {
@@ -335,19 +443,70 @@ export default function AsistenciasPanel() {
 
       const response = await client.post('/asistencias', requestData);
 
-      // Reemplazar ID temporal con ID real
-      setAsistenciasHoy(prev => prev.map(a => 
-        a.id === optimisticAsistencia.id ? { ...a, id: response.data.id } : a
-      ));
+      // Si llegamos aquí, fue exitoso. AHORA mostramos el modal.
+      
+      // Actualizar UI con ID real
+      setAsistenciasHoy(prev => [
+        { ...optimisticAsistencia, id: response.data.id }, 
+        ...prev
+      ]);
+      
+      // Limpiar formulario
+      setSelectedAlumno('');
+      setSelectedDocente('');
+      setSearchTerm('');
+
+      // Mostrar modal DE ÉXITO
+      setModalData({
+        ...personaData,
+        tipoEvento: tipoEvento === 'entrada' ? 'ENTRADA' : 'SALIDA',
+        hora: new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+        isError: false
+      });
+      setShowModal(true);
+
+      // Reproducir sonido de confirmación
+      playBeepSound();
+
+      // Cerrar modal automáticamente después de 3 segundos
+      setTimeout(() => {
+        setShowModal(false);
+      }, 3000);
 
       toast.success('Asistencia registrada exitosamente');
-      fetchAsistenciasHoy(); // Sincronizar con backend para obtener estado y datos completos
+      fetchAsistenciasHoy(); // Sincronizar con backend
 
     } catch (error) {
-      // Rollback en caso de error
+      // Rollback UI (quitar la asistencia optimista)
       setAsistenciasHoy(previousAsistencias);
-      console.error('❌ Error completo:', error.response?.data || error.message);
-      toast.error('Error: ' + (error.response?.data?.error || error.message));
+      
+      console.error('❌ Error registro manual:', error);
+
+      if (error.response?.status === 409) {
+        // ERROR DE DUPLICADO -> Mostrar Modal de Error
+        const { registroExistente } = error.response.data;
+        
+        setModalData({
+          ...personaData,
+          tipoEvento: tipoEvento === 'entrada' ? 'ENTRADA' : 'SALIDA',
+          hora: registroExistente?.hora || 'N/A',
+          isError: true,
+          errorMessage: `Esta persona ya registró su ${tipoEvento} hoy a las ${registroExistente?.hora || '??:??'}.`
+        });
+
+        setShowModal(true);
+        playErrorSound(); // Reproducir sonido de error
+        
+        // Cerrar modal automáticamente
+        setTimeout(() => {
+          setShowModal(false);
+        }, 4000);
+
+      } else {
+        toast.error('Error: ' + (error.response?.data?.error || error.message));
+      }
+    } finally {
+      isProcessingRef.current = false;
     }
   };
 
@@ -743,11 +902,13 @@ export default function AsistenciasPanel() {
   */ // FIN DEL COMENTARIO stopScannerOLD
 
   const handleQRScan = async (qrData) => {
+    let parsedData = null;
+    let personaData = null;
+
     try {
       console.log('🔍 handleQRScan recibido:', qrData);
       
       // Parsear QR JSON: {"tipo":"alumno","id":1,"carnet":"A001"}
-      let parsedData;
       try {
         parsedData = JSON.parse(qrData);
         console.log('✅ QR parseado:', parsedData);
@@ -774,43 +935,9 @@ export default function AsistenciasPanel() {
         return;
       }
 
-      const requestData = {
-        tipo_evento: tipoEvento,
-        origen: 'QR'
-      };
-
-      if (parsedData.tipo === 'alumno') {
-        requestData.alumno_id = parseInt(parsedData.id);
-        console.log('👨‍🎓 Registrando alumno ID:', parsedData.id);
-      } else if (parsedData.tipo === 'docente' || parsedData.tipo === 'personal') {
-        // Backend espera personal_id
-        requestData.personal_id = parseInt(parsedData.id);
-        console.log('👨‍🏫 Registrando personal ID:', parsedData.id);
-      } else {
-        console.error('❌ Tipo desconocido:', parsedData.tipo);
-        setScanMessage('❌ Tipo de QR desconocido');
-        return;
-      }
-      
-      console.log('📤 Enviando a backend:', requestData);
-      const response = await client.post('/asistencias', requestData);
-      console.log('✅ Respuesta del servidor:', response.data);
-
-      // Reproducir sonido de beep tipo escáner
-      playBeepSound();
-
-      // Buscar datos completos de la persona
-      console.log('🔍 Buscando datos de la persona...');
-      console.log('📊 Alumnos disponibles:', alumnos.length);
-      console.log('📊 Docentes disponibles:', docentes.length);
-      console.log('🎯 Buscando ID:', parseInt(parsedData.id), 'Tipo:', parsedData.tipo);
-      
-      let personaData = null;
+      // PRE-CALCULO: Buscar datos de la persona ANTES de enviar
       if (parsedData.tipo === 'alumno') {
         const alumno = alumnos.find(a => a.id === parseInt(parsedData.id));
-        console.log('👨‍🎓 Alumno encontrado:', alumno);
-        
-        // Validar que el alumno esté activo
         if (!alumno) {
           toast.error('Alumno no encontrado');
           setScanMessage('❌ Alumno no encontrado');
@@ -823,17 +950,15 @@ export default function AsistenciasPanel() {
         }
         personaData = {
           tipo: 'Alumno',
-          nombres: alumno?.nombre || alumno?.nombres || 'Desconocido', // Unificando nombres
+          nombres: alumno?.nombre || alumno?.nombres || 'Desconocido',
           apellidos: alumno?.apellido || alumno?.apellidos || '',
           carnet: alumno?.carnet || parsedData.carnet || `ID: ${parsedData.id}`,
           grado: alumno?.grado || 'N/A',
-          seccion: alumno?.seccion || 'N/A'
+          seccion: alumno?.seccion || 'N/A',
+          foto_url: getUserPhotoUrl('alumno', alumno?.carnet, alumno)
         };
       } else {
         const docente = docentes.find(d => d.id === parseInt(parsedData.id));
-        console.log('👨‍🏫 Docente encontrado:', docente);
-        
-        // Validar que el docente esté activo
         if (!docente) {
           toast.error('Docente no encontrado');
           setScanMessage('❌ Docente no encontrado');
@@ -844,28 +969,49 @@ export default function AsistenciasPanel() {
           setScanMessage(`❌ Usuario INACTIVO: ${docente.nombres}`);
           return;
         }
-        
         personaData = {
           tipo: docente?.cargo || 'Docente',
           nombres: docente?.nombre || docente?.nombres || 'Desconocido',
           apellidos: docente?.apellido || docente?.apellidos || '',
           carnet: docente?.carnet || parsedData.carnet || `ID: ${parsedData.id}`,
           cargo: docente?.cargo || 'N/A',
-          departamento: docente?.departamento || 'N/A'
+          departamento: docente?.departamento || 'N/A',
+          foto_url: getUserPhotoUrl('personal', docente?.carnet, docente)
         };
       }
 
-      console.log('📋 Datos del modal:', personaData);
+      const requestData = {
+        tipo_evento: tipoEvento,
+        origen: 'QR'
+      };
 
-      // Mostrar modal con los datos
+      if (parsedData.tipo === 'alumno') {
+        requestData.alumno_id = parseInt(parsedData.id);
+      } else if (parsedData.tipo === 'docente' || parsedData.tipo === 'personal') {
+        requestData.personal_id = parseInt(parsedData.id);
+      } else {
+        console.error('❌ Tipo desconocido:', parsedData.tipo);
+        return;
+      }
+      
+      console.log('📤 Enviando a backend:', requestData);
+      
+      // ENVIAR REQUEST
+      const response = await client.post('/asistencias', requestData);
+      console.log('✅ Respuesta del servidor:', response.data);
+
+      // ÉXITO
+      playBeepSound();
+
+      // Mostrar modal ÉXITO
       setModalData({
         ...personaData,
         tipoEvento: tipoEvento === 'entrada' ? 'ENTRADA' : 'SALIDA',
-        hora: new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+        hora: new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+        isError: false
       });
       setShowModal(true);
 
-      // Cerrar modal automáticamente después de 3 segundos
       setTimeout(() => {
         setShowModal(false);
       }, 3000);
@@ -874,10 +1020,42 @@ export default function AsistenciasPanel() {
       
       setTimeout(() => setScanMessage('✅ Cámara lista. Escaneando códigos QR...'), 2000);
       fetchAsistenciasHoy();
+
     } catch (error) {
+      setShowModal(false); 
       console.error('❌ Error en handleQRScan:', error);
-      console.error('❌ Detalles:', error.response?.data);
-      setScanMessage('❌ Error: ' + (error.response?.data?.error || error.message));
+
+      if (error.response?.status === 409) {
+        // DUPLICADO: Mostrar Modal de Error
+        const { registroExistente } = error.response.data;
+        
+        // Si tenemos los datos de la persona (deberíamos tenerlos por el pre-cálculo)
+        if (personaData) {
+            setModalData({
+                ...personaData,
+                tipoEvento: tipoEvento === 'entrada' ? 'ENTRADA' : 'SALIDA',
+                hora: registroExistente?.hora || 'N/A',
+                isError: true,
+                errorMessage: `Esta persona ya registró su ${tipoEvento} hoy a las ${registroExistente?.hora || '??:??'}.`
+            });
+            setShowModal(true);
+            playErrorSound();
+            setTimeout(() => { setShowModal(false); }, 4000); // Un poco más de tiempo para leer error
+        } else {
+            // Fallback si no hay personaData
+             const tipoEventoTexto = tipoEvento === 'entrada' ? 'entrada' : 'salida';
+             toast.error(
+              `⚠️ Ya registró ${tipoEventoTexto} hoy a las ${registroExistente?.hora || 'N/A'}`,
+              { duration: 5000 }
+            );
+        }
+        
+        setScanMessage(`❌ DUPLICADO: Ya registrada`);
+      } else {
+        setScanMessage('❌ Error: ' + (error.response?.data?.error || error.message));
+        toast.error('Error procesando QR');
+      }
+      
       setTimeout(() => setScanMessage('✅ Cámara lista. Escaneando códigos QR...'), 3000);
     }
   };
@@ -979,9 +1157,9 @@ export default function AsistenciasPanel() {
           ) : (
             <button
               className="min-w-[220px] text-lg bg-orange-600 hover:bg-orange-700 font-bold py-3 px-6 rounded-xl shadow transition text-white"
-              onClick={handleFinalizarTomaAsistencias}
+              onClick={tipoEvento === 'entrada' ? handleFinalizarTomaAsistencias : handleFinalizarTomaSalidas}
             >
-              Finalizar toma de asistencias
+              {tipoEvento === 'entrada' ? 'Finalizar toma de asistencias' : 'Finalizar toma de salidas'}
             </button>
           )}
         </div>
@@ -1104,7 +1282,14 @@ export default function AsistenciasPanel() {
                 onChange={(e) => {
                   const term = e.target.value;
                   setSearchTerm(term);
-                  setShowSuggestions(true); // Mostrar sugerencias al escribir
+                  
+                  if (term.trim() === '') {
+                    setSelectedAlumno('');
+                    setSelectedDocente('');
+                    setShowSuggestions(false);
+                  } else {
+                    setShowSuggestions(true);
+                  }
                   
                   // Auto-detectar tipo buscando en ambas listas
                   if (term.length > 0) {
@@ -1207,8 +1392,8 @@ export default function AsistenciasPanel() {
 
             <button
               type="submit"
-              className={`w-full bg-emerald-500 hover:bg-emerald-600 text-white py-3 rounded-lg font-bold shadow-md shadow-emerald-200 dark:shadow-none transition active:scale-95 ${!tomaIniciada ? 'opacity-50 cursor-not-allowed' : ''}`}
-              disabled={!tomaIniciada}
+              className={`w-full bg-emerald-500 hover:bg-emerald-600 text-white py-3 rounded-lg font-bold shadow-md shadow-emerald-200 dark:shadow-none transition active:scale-95 ${(!tomaIniciada || (!selectedAlumno && !selectedDocente)) ? 'opacity-50 cursor-not-allowed' : ''}`}
+              disabled={!tomaIniciada || (!selectedAlumno && !selectedDocente)}
             >
               Registrar {tipoEvento === 'entrada' ? 'Entrada' : 'Salida'}
             </button>
@@ -1236,28 +1421,30 @@ export default function AsistenciasPanel() {
         </div>
 
         {loading ? (
-          <TableSkeleton rows={5} columns={9} />
-        ) : asistenciasHoy.length === 0 ? (
+          <TableSkeleton rows={5} columns={10} />
+        ) : (asistenciasHoy.length === 0 && ausentes.length === 0) ? (
           <div className="text-center py-8 text-gray-500">
             No hay asistencias registradas hoy
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-gray-50 border-b border-gray-200">
+              <thead className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
                 <tr>
-                  <th className="text-left px-3 py-2">Fecha</th>
-                  <th className="text-left px-3 py-2">Hora</th>
-                  <th className="text-left px-3 py-2">Carnet</th>
-                  <th className="text-left px-3 py-2">Nombre Completo</th>
-                  <th className="text-center px-3 py-2">Tipo / Grado</th>
-                  <th className="text-center px-3 py-2">Sección</th>
-                  <th className="text-center px-3 py-2">Evento</th>
-                  <th className="text-center px-3 py-2">Origen</th>
-                  <th className="text-center px-3 py-2">Estado</th>
+                  <th className="text-left px-3 py-2 text-gray-700 dark:text-gray-300">Fecha</th>
+                  <th className="text-left px-3 py-2 text-gray-700 dark:text-gray-300">Hora</th>
+                  <th className="text-left px-3 py-2 text-gray-700 dark:text-gray-300">Carnet</th>
+                  <th className="text-left px-3 py-2 text-gray-700 dark:text-gray-300">Nombre Completo</th>
+                  <th className="text-center px-3 py-2 text-gray-700 dark:text-gray-300">Tipo / Grado</th>
+                  <th className="text-center px-3 py-2 text-gray-700 dark:text-gray-300">Sección</th>
+                  <th className="text-center px-3 py-2 text-gray-700 dark:text-gray-300">Jornada</th>
+                  <th className="text-center px-3 py-2 text-gray-700 dark:text-gray-300">Evento</th>
+                  <th className="text-center px-3 py-2 text-gray-700 dark:text-gray-300">Origen</th>
+                  <th className="text-center px-3 py-2 text-gray-700 dark:text-gray-300">Estado</th>
                 </tr>
               </thead>
               <tbody>
+                {/* Asistencias registradas */}
                 {asistenciasHoy.map((asistencia) => {
                   const persona = asistencia.alumno || asistencia.docente || asistencia.personal;
                   const esAlumno = !!asistencia.alumno;
@@ -1265,17 +1452,19 @@ export default function AsistenciasPanel() {
                     ? { tipo: 'Alumno', detalle: persona?.grado }
                     : { tipo: 'Personal', detalle: persona?.cargo || 'Personal' };
                   
+                  const capitalize = (str) => str ? str.charAt(0).toUpperCase() + str.slice(1).toLowerCase() : '-';
+                  
                   return (
                     <motion.tr
                       key={asistencia.id}
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
-                      className="border-b hover:bg-gray-50 transition"
+                      className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition"
                     >
-                      <td className="px-3 py-2 font-medium text-gray-700">
+                      <td className="px-3 py-2 font-medium text-gray-700 dark:text-gray-300">
                         {new Date(asistencia.timestamp || asistencia.created_at).toLocaleDateString()}
                       </td>
-                      <td className="px-3 py-2 font-medium text-gray-700">
+                      <td className="px-3 py-2 font-medium text-gray-700 dark:text-gray-300">
                         {formatTime(asistencia.timestamp || asistencia.created_at)}
                       </td>
                       <td className="px-3 py-2 text-gray-600 dark:text-gray-400 font-medium">
@@ -1288,13 +1477,13 @@ export default function AsistenciasPanel() {
                         <div className="flex flex-col items-center gap-1">
                           <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
                             esAlumno
-                              ? 'bg-blue-100 text-blue-800'
-                              : 'bg-green-100 text-green-800'
+                              ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'
+                              : 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
                           }`}>
                             {tipoYGrado.tipo}
                           </span>
                           {tipoYGrado.detalle && (
-                            <span className="px-2 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-700">
+                            <span className="px-2 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300">
                               {tipoYGrado.detalle}
                             </span>
                           )}
@@ -1303,11 +1492,14 @@ export default function AsistenciasPanel() {
                       <td className="px-3 py-2 text-center font-bold text-gray-700 dark:text-gray-300">
                         {esAlumno ? (persona?.seccion || '-') : '-'}
                       </td>
+                      <td className="px-3 py-2 text-center font-medium text-gray-700 dark:text-gray-300">
+                        {capitalize(persona?.jornada || 'Matutina')}
+                      </td>
                       <td className="px-3 py-2 text-center">
                         <span className={`px-2 py-1 rounded-full text-xs font-bold ${
                           asistencia.tipo_evento === 'entrada'
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-orange-100 text-orange-800'
+                            ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+                            : 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300'
                         }`}>
                           {asistencia.tipo_evento === 'entrada' ? 'ENTRADA' : 'SALIDA'}
                         </span>
@@ -1315,22 +1507,89 @@ export default function AsistenciasPanel() {
                       <td className="px-3 py-2 text-center">
                         <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
                           asistencia.origen === 'QR'
-                            ? 'bg-blue-100 text-blue-700'
-                            : 'bg-green-100 text-green-700'
+                            ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
+                            : 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
                         }`}>
                           {asistencia.origen === 'QR' ? '📱 QR' : '✍️ Manual'}
                         </span>
                       </td>
                       <td className="px-3 py-2 text-center">
-                        {asistencia.estado_puntualidad && (
+                        {asistencia.tipo_evento === 'salida' ? (
+                          <span className="text-gray-400 font-bold">-</span>
+                        ) : asistencia.estado_puntualidad && (
                           <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
                             asistencia.estado_puntualidad === 'puntual'
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-red-100 text-red-800'
+                              ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+                              : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
                           }`}>
                             {asistencia.estado_puntualidad === 'puntual' ? '✓ Puntual' : '⚠ Tarde'}
                           </span>
                         )}
+                      </td>
+                    </motion.tr>
+                  );
+                })}
+                
+                {/* Ausentes */}
+                {ausentes.map((ausente) => {
+                  const esAlumno = ausente.tipo === 'alumno';
+                  const tipoYGrado = esAlumno 
+                    ? { tipo: 'Alumno', detalle: ausente.grado }
+                    : { tipo: 'Personal', detalle: ausente.cargo || 'Personal' };
+                  
+                  const capitalize = (str) => str ? str.charAt(0).toUpperCase() + str.slice(1).toLowerCase() : '-';
+                  
+                  return (
+                    <motion.tr
+                      key={`ausente-${ausente.id}`}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="border-b dark:border-gray-700 bg-red-50 dark:bg-red-900/10 hover:bg-red-100 dark:hover:bg-red-900/20 transition"
+                    >
+                      <td className="px-3 py-2 font-medium text-gray-700 dark:text-gray-300">
+                        {new Date().toLocaleDateString()}
+                      </td>
+                      <td className="px-3 py-2 font-medium text-gray-500 dark:text-gray-500">
+                        N/A
+                      </td>
+                      <td className="px-3 py-2 text-gray-600 dark:text-gray-400 font-medium">
+                        {ausente.carnet}
+                      </td>
+                      <td className="px-3 py-2 font-medium text-gray-900 dark:text-gray-100">
+                        {ausente.nombres} {ausente.apellidos}
+                      </td>
+                      <td className="px-3 py-2">
+                        <div className="flex flex-col items-center gap-1">
+                          <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                            esAlumno
+                              ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'
+                              : 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+                          }`}>
+                            {tipoYGrado.tipo}
+                          </span>
+                          {tipoYGrado.detalle && (
+                            <span className="px-2 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300">
+                              {tipoYGrado.detalle}
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-3 py-2 text-center font-bold text-gray-700 dark:text-gray-300">
+                        {esAlumno ? (ausente.seccion || '-') : '-'}
+                      </td>
+                      <td className="px-3 py-2 text-center font-medium text-gray-700 dark:text-gray-300">
+                        {capitalize(ausente.jornada || 'Matutina')}
+                      </td>
+                      <td className="px-3 py-2 text-center font-medium text-gray-500 dark:text-gray-500">
+                        N/A
+                      </td>
+                      <td className="px-3 py-2 text-center font-medium text-gray-500 dark:text-gray-500">
+                        N/A
+                      </td>
+                      <td className="px-3 py-2 text-center">
+                        <span className="px-2 py-1 rounded-full text-xs font-bold bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300">
+                          ⚠ Ausente
+                        </span>
                       </td>
                     </motion.tr>
                   );
@@ -1357,83 +1616,131 @@ export default function AsistenciasPanel() {
             className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl dark:shadow-gray-900/50 border border-gray-200 dark:border-gray-700 p-8 max-w-md w-full mx-4"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Icono de éxito */}
-            <div className="flex justify-center mb-4">
-              <div className={`rounded-full p-4 ${modalData.tipoEvento === 'ENTRADA' ? 'bg-green-100' : 'bg-orange-100'}`}>
-                {modalData.tipoEvento === 'ENTRADA' ? (
-                  <UserCheck className={`text-green-600 w-16 h-16`} />
-                ) : (
-                  <UserX className={`text-orange-600 w-16 h-16`} />
-                )}
+            {/* Icono de éxito y foto de usuario */}
+            <div className="flex flex-col items-center mb-6">
+              {/* Badge de tipo de evento */}
+              <div className={`mb-4 px-4 py-2 rounded-full ${
+                modalData.isError 
+                  ? 'bg-red-100 text-red-700'
+                  : (modalData.tipoEvento === 'ENTRADA' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700')
+              }`}>
+                <span className="text-sm font-bold flex items-center gap-2">
+                  {modalData.isError ? (
+                    <><XCircle size={18} /> YA REGISTRADO</>
+                  ) : modalData.tipoEvento === 'ENTRADA' ? (
+                    <><UserCheck size={18} /> ENTRADA</>
+                  ) : (
+                    <><UserX size={18} /> SALIDA</>
+                  )}
+                </span>
+              </div>
+
+              {/* Foto del usuario */}
+              <div className="relative mb-4">
+                <div className={`w-32 h-32 rounded-full overflow-hidden border-4 shadow-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center ${
+                  modalData.isError ? 'border-red-200 dark:border-red-800' : 'border-gray-200 dark:border-gray-600'
+                }`}>
+                  {modalData.foto_url ? (
+                    <img 
+                      src={modalData.foto_url} 
+                      alt={`${modalData.nombres} ${modalData.apellidos}`}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        // Fallback a emoji si la imagen no carga
+                        e.target.style.display = 'none';
+                        e.target.nextElementSibling.style.display = 'flex';
+                      }}
+                    />
+                  ) : null}
+                  <div 
+                    className="w-full h-full flex items-center justify-center text-6xl"
+                    style={{ display: modalData.foto_url ? 'none' : 'flex' }}
+                  >
+                    {modalData.tipo === 'Alumno' ? '👨‍🎓' : '👨‍🏫'}
+                  </div>
+                </div>
+                {/* Indicador de éxito/error */}
+                <div className={`absolute -bottom-2 -right-2 rounded-full p-2 ${
+                  modalData.isError 
+                    ? 'bg-red-500' 
+                    : (modalData.tipoEvento === 'ENTRADA' ? 'bg-green-500' : 'bg-orange-500')
+                }`}>
+                  {modalData.isError ? (
+                    <XCircle className="text-white w-6 h-6" />
+                  ) : (
+                    <UserCheck className="text-white w-6 h-6" />
+                  )}
+                </div>
               </div>
             </div>
 
-            {/* Tipo de evento */}
-            <h3 className={`text-3xl font-bold text-center mb-6 ${modalData.tipoEvento === 'ENTRADA' ? 'text-green-600' : 'text-orange-600'}`}>
-              {modalData.tipoEvento}
-            </h3>
-
-            {/* Información de la persona - Orden según formularios */}
-            <div className="space-y-4 text-center">
-              {/* 1. Tipo */}
+            {/* Información de la persona */}
+            <div className="space-y-3 text-center mb-6">
+              {/* Nombre completo */}
               <div>
-                <p className="text-gray-500 text-sm">Tipo</p>
-                <p className="text-xl font-semibold text-gray-900 dark:text-gray-100">{modalData.tipo}</p>
+                <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
+                  {modalData.nombres || modalData.nombre} {modalData.apellidos || modalData.apellido}
+                </h3>
               </div>
 
-              {/* 2. Carnet */}
-              <div>
-                <p className="text-gray-500 text-sm">Carnet</p>
-                <p className="text-xl font-semibold text-blue-600">{modalData.carnet}</p>
+              {/* Carnet */}
+              <div className="flex items-center justify-center gap-2">
+                <span className="px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg font-mono font-semibold text-sm">
+                  {modalData.carnet}
+                </span>
               </div>
 
-              {/* 3 y 4. Nombres y Apellidos */}
-              <div>
-                <p className="text-gray-500 text-sm">Nombre Completo</p>
-                <p className="text-2xl font-bold text-gray-900">{modalData.nombres || modalData.nombre} {modalData.apellidos || modalData.apellido}</p>
-              </div>
-
-              {/* 5. Grado/Sección (para Alumnos) */}
-              {modalData.grado && (
-                <div className="flex justify-center gap-8">
-                  <div>
-                    <p className="text-gray-500 text-sm">Grado</p>
-                    <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">{modalData.grado}</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-500 text-sm">Sección</p>
-                    <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">{modalData.seccion}</p>
-                  </div>
-                </div>
-              )}
-
-              {/* 5. Cargo y Departamento (para Personal) */}
-              {modalData.cargo && (
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-gray-500 text-sm">Cargo</p>
-                    <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">{modalData.cargo}</p>
-                  </div>
-                  {modalData.departamento && modalData.departamento !== 'N/A' && (
-                    <div>
-                      <p className="text-gray-500 text-sm">Departamento</p>
-                      <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">{modalData.departamento}</p>
+              {/* Tipo y detalles específicos */}
+              <div className="pt-3 border-t border-gray-200 dark:border-gray-700">
+                {modalData.grado ? (
+                  // Para alumnos
+                  <div className="flex justify-center gap-4 text-sm">
+                    <div className="flex items-center gap-1">
+                      <span className="text-gray-500 dark:text-gray-400">Grado:</span>
+                      <span className="font-semibold text-gray-900 dark:text-white">{modalData.grado}</span>
                     </div>
-                  )}
-                </div>
-              )}
+                    {modalData.seccion && modalData.seccion !== 'N/A' && (
+                      <div className="flex items-center gap-1">
+                        <span className="text-gray-500 dark:text-gray-400">Sección:</span>
+                        <span className="font-semibold text-gray-900 dark:text-white">{modalData.seccion}</span>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  // Para personal
+                  <div className="flex flex-col items-center gap-1 text-sm">
+                    <div className="flex items-center gap-1">
+                      <span className="text-gray-500 dark:text-gray-400">Cargo:</span>
+                      <span className="font-semibold text-gray-900 dark:text-white">{modalData.cargo || modalData.tipo}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
 
-              {/* 6. Hora de registro */}
-              <div className="pt-4 border-t border-gray-200">
-                <p className="text-gray-500 text-sm">Hora de registro</p>
-                <p className="text-2xl font-bold text-gray-900">{modalData.hora}</p>
+              {/* Hora de registro o MEnsaje Error */}
+              <div className="pt-3 border-t border-gray-200 dark:border-gray-700">
+                {modalData.isError ? (
+                  <div className="animate-pulse">
+                    <p className="text-red-500 text-sm font-bold uppercase tracking-wider mb-1">
+                      REGISTRO PREVIO DETECTADO
+                    </p>
+                    <p className="text-gray-900 dark:text-white font-medium">
+                      {modalData.errorMessage || `Ya marcó a las ${modalData.hora}`}
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    <p className="text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wider mb-1">Hora de registro</p>
+                    <p className="text-3xl font-bold text-gray-900 dark:text-white">{modalData.hora}</p>
+                  </>
+                )}
               </div>
             </div>
 
             {/* Botón de cerrar */}
             <button
               onClick={() => setShowModal(false)}
-              className="mt-6 w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition-colors"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition-colors shadow-md"
             >
               Cerrar
             </button>
@@ -1442,7 +1749,18 @@ export default function AsistenciasPanel() {
         document.body
       )}
 
-
+      {/* Modal de Personas Sin Salida */}
+      {mostrarModalSinSalida && (
+        <ModalSinSalida
+          personas={personasSinSalida}
+          fecha={new Date().toISOString().split('T')[0]}
+          onCerrar={() => {
+            setMostrarModalSinSalida(false);
+            setTomaIniciada(false);
+          }}
+          onActualizar={fetchAsistenciasHoy}
+        />
+      )}
 
       <Toaster 
         position="top-right"

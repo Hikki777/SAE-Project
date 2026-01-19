@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { useNavigate } from 'react-router-dom';
 import { excusasAPI, alumnosAPI, docentesAPI } from '../api/endpoints';
 import { FileText, Plus, Check, X, Eye, Calendar, User, Filter } from 'lucide-react';
 import RevisionRapidaView from './RevisionRapidaView';
 import './JustificacionesPanel.css';
 
 const ExcusasPanel = () => {
+  const navigate = useNavigate();
   const [excusas, setExcusas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filtros, setFiltros] = useState({
@@ -260,7 +262,7 @@ const ExcusasPanel = () => {
     sessionStorage.removeItem('fecha_revision');
     
     // Redirigir a asistencias
-    window.location.hash = '#/asistencias';
+    navigate('/asistencias');
   };
 
   // Si está en modo revisión, mostrar vista especial

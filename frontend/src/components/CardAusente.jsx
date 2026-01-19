@@ -2,6 +2,9 @@ import { motion } from 'framer-motion';
 import { Check, SkipForward } from 'lucide-react';
 
 export default function CardAusente({ persona, onJustificar, onOmitir }) {
+  // Construct photo URL from foto_path if available
+  const fotoUrl = persona.foto_path ? `/uploads/${persona.foto_path}` : null;
+  
   return (
     <motion.div
       layout
@@ -12,9 +15,26 @@ export default function CardAusente({ persona, onJustificar, onOmitir }) {
       className="card-ausente"
     >
       <div className="card-content">
-        {/* Icono de persona */}
+        {/* Foto de persona */}
         <div className="persona-avatar">
-          {persona.tipo === 'alumno' ? '👨‍🎓' : '👨‍🏫'}
+          {fotoUrl ? (
+            <img 
+              src={fotoUrl} 
+              alt={`${persona.nombres} ${persona.apellidos}`}
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                // Fallback a emoji si la imagen no carga
+                e.target.style.display = 'none';
+                e.target.nextElementSibling.style.display = 'block';
+              }}
+            />
+          ) : null}
+          <div 
+            className="text-4xl flex items-center justify-center w-full h-full"
+            style={{ display: fotoUrl ? 'none' : 'flex' }}
+          >
+            {persona.tipo === 'alumno' ? '👨‍🎓' : '👨‍🏫'}
+          </div>
         </div>
 
         {/* Información */}

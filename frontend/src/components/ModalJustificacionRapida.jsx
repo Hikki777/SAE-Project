@@ -25,7 +25,7 @@ export default function ModalJustificacionRapida({ persona, fecha, onGuardar, on
 
     try {
       const data = new FormData();
-      data.append('persona_tipo', persona.tipo);
+      data.append('tipo', persona.tipo); // Changed from persona_tipo to tipo
       data.append('motivo', formData.motivo);
       data.append('fecha_ausencia', fecha);
       
@@ -90,7 +90,34 @@ export default function ModalJustificacionRapida({ persona, fecha, onGuardar, on
         {/* Información de la persona */}
         <div className="persona-info-header">
           <div className="persona-avatar-large">
-            {persona.tipo === 'alumno' ? '👨‍🎓' : '👨‍🏫'}
+            {(() => {
+              // Use foto_path from backend if available
+              const fotoUrl = persona.foto_path ? `/uploads/${persona.foto_path}` : null;
+              
+              return fotoUrl ? (
+                <>
+                  <img 
+                    src={fotoUrl} 
+                    alt={`${persona.nombres} ${persona.apellidos}`}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                      e.target.nextElementSibling.style.display = 'block';
+                    }}
+                  />
+                  <div 
+                    className="text-5xl flex items-center justify-center w-full h-full"
+                    style={{ display: 'none' }}
+                  >
+                    {persona.tipo === 'alumno' ? '👨‍🎓' : '👨‍🏫'}
+                  </div>
+                </>
+              ) : (
+                <div className="text-5xl">
+                  {persona.tipo === 'alumno' ? '👨‍🎓' : '👨‍🏫'}
+                </div>
+              );
+            })()}
           </div>
           <div>
             <h4 className="text-lg font-bold text-gray-900 dark:text-white">

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { FileText, Download, Calendar, Filter, FileSpreadsheet, Users, TrendingUp, Clock, Award, CreditCard, User, Search, Loader, FileCheck } from 'lucide-react';
+import { FileText, Download, Calendar, Filter, FileSpreadsheet, Users, TrendingUp, Clock, Award, CreditCard, User, Search, Loader, FileCheck, Construction } from 'lucide-react';
 import client from '../api/client';
 import { generatePDF, generateExcel } from '../utils/reportGenerator';
 import { documentosAPI } from '../api/endpoints';
@@ -76,8 +76,8 @@ export default function ReportesPanel({ initialTab = 'asistencias' }) {
 
   const fetchPersonal = async () => {
     try {
-      const response = await client.get('/personal');
-      setPersonal(response.data.personal || []);
+      const response = await client.get('/docentes');
+      setPersonal(response.data.personal || response.data.docentes || []);
     } catch (error) {
       console.error('Error fetching personal:', error);
     }
@@ -514,208 +514,33 @@ export default function ReportesPanel({ initialTab = 'asistencias' }) {
 
         {/* TAB 3: DOCUMENTOS */}
         {activeTab === 'documentos' && (
-          <div className="space-y-6">
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-              <div className="space-y-4">
-                {/* Selector de Alumno */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    <User className="inline w-4 h-4 mr-1" />
-                    Seleccionar Estudiante
-                  </label>
-                  <select
-                    value={alumnoSeleccionado}
-                    onChange={(e) => setAlumnoSeleccionado(e.target.value)}
-                    className="w-full bg-white dark:bg-gray-900/50 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">-- Selecciona un estudiante --</option>
-                    {alumnos.map(alumno => (
-                      <option key={alumno.id} value={alumno.id}>
-                        {alumno.nombres} {alumno.apellidos} - {alumno.carnet} ({alumno.grado})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Tipo de Documento */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    <FileText className="inline w-4 h-4 mr-1" />
-                    Tipo de Documento
-                  </label>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <button
-                      onClick={() => setTipoDocumento('constancia')}
-                      className={`p-4 rounded-lg border-2 transition ${
-                        tipoDocumento === 'constancia'
-                          ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/20'
-                          : 'border-gray-300 dark:border-gray-600 hover:border-blue-400'
-                      }`}
-                    >
-                      <div className="font-semibold text-gray-900 dark:text-gray-100">📄 Constancia de Inscripción</div>
-                      <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">Certifica inscripción actual</div>
-                    </button>
-
-                    <button
-                      onClick={() => setTipoDocumento('carta')}
-                      className={`p-4 rounded-lg border-2 transition ${
-                        tipoDocumento === 'carta'
-                          ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/20'
-                          : 'border-gray-300 dark:border-gray-600 hover:border-blue-400'
-                      }`}
-                    >
-                      <div className="font-semibold text-gray-900 dark:text-gray-100">📜 Carta de Buena Conducta</div>
-                      <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">Certifica comportamiento</div>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Botón Generar */}
-                <button
-                  onClick={handleGenerarDocumento}
-                  disabled={generandoDoc || !alumnoSeleccionado}
-                  className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white font-bold py-4 rounded-lg transition-all shadow-lg hover:shadow-xl disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                >
-                  {generandoDoc ? (
-                    <>
-                      <Loader className="animate-spin" size={20} />
-                      Generando...
-                    </>
-                  ) : (
-                    <>
-                      <Download size={20} />
-                      Generar Documento
-                    </>
-                  )}
-                </button>
-              </div>
+          <div className="flex flex-col items-center justify-center h-[400px] text-center p-8 bg-gray-50 dark:bg-gray-800/50 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-700">
+            <div className="bg-blue-100 dark:bg-blue-900/30 p-6 rounded-full mb-6">
+              <Construction className="w-16 h-16 text-blue-600 dark:text-blue-400" />
             </div>
-
-            {/* Info sobre Certificado de Estudios */}
-            <div className="bg-amber-50 dark:bg-amber-900/20 border-l-4 border-amber-500 p-4 rounded-lg">
-              <div className="flex items-start gap-3">
-                <Award className="text-amber-600 dark:text-amber-400 w-5 h-5 mt-0.5" />
-                <div>
-                  <h3 className="font-bold text-amber-900 dark:text-amber-100">Certificado de Estudios</h3>
-                  <p className="text-sm text-amber-800 dark:text-amber-200 mt-1">
-                    Esta función estará disponible en la próxima actualización. Estamos trabajando en mejorar el formato y los datos incluidos.
-                  </p>
-                </div>
-              </div>
-            </div>
+            <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+              Próximamente, función en desarrollo
+            </h3>
+            <p className="text-gray-500 dark:text-gray-400 max-w-md text-lg">
+              Estamos trabajando en el módulo de <strong>Documentos Oficiales</strong>. <br/>
+              Esta funcionalidad estará disponible en futuras actualizaciones.
+            </p>
           </div>
         )}
 
         {/* TAB 4: CARNETS */}
         {activeTab === 'carnets' && (
-          <div className="space-y-6">
-            {/* Carnets de Alumnos */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
-                <CreditCard className="text-blue-600" size={24} />
-                Carnets de Estudiantes
-              </h2>
-
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Seleccionar Estudiante
-                  </label>
-                  <select
-                    value={alumnoCarnet}
-                    onChange={(e) => setAlumnoCarnet(e.target.value)}
-                    className="w-full bg-white dark:bg-gray-900/50 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">-- Selecciona un estudiante --</option>
-                    {alumnos.map(alumno => (
-                      <option key={alumno.id} value={alumno.id}>
-                        {alumno.nombres} {alumno.apellidos} - {alumno.carnet}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <button
-                  onClick={handleGenerarCarnetAlumno}
-                  disabled={generandoCarnet || !alumnoCarnet}
-                  className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white font-bold py-3 rounded-lg transition-all shadow-lg hover:shadow-xl disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                >
-                  {generandoCarnet ? (
-                    <>
-                      <Loader className="animate-spin" size={20} />
-                      Generando...
-                    </>
-                  ) : (
-                    <>
-                      <Download size={20} />
-                      Generar Carnet
-                    </>
-                  )}
-                </button>
-              </div>
+          <div className="flex flex-col items-center justify-center h-[400px] text-center p-8 bg-gray-50 dark:bg-gray-800/50 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-700">
+            <div className="bg-indigo-100 dark:bg-indigo-900/30 p-6 rounded-full mb-6">
+              <Construction className="w-16 h-16 text-indigo-600 dark:text-indigo-400" />
             </div>
-
-            {/* Carnets de Personal */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
-                <CreditCard className="text-green-600" size={24} />
-                Carnets de Personal
-              </h2>
-
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Seleccionar Personal
-                  </label>
-                  <select
-                    value={personalCarnet}
-                    onChange={(e) => setPersonalCarnet(e.target.value)}
-                    className="w-full bg-white dark:bg-gray-900/50 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-green-500"
-                  >
-                    <option value="">-- Selecciona un miembro del personal --</option>
-                    {personal.map(p => (
-                      <option key={p.id} value={p.id}>
-                        {p.nombres} {p.apellidos} - {p.cargo}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <button
-                  onClick={handleGenerarCarnetPersonal}
-                  disabled={generandoCarnet || !personalCarnet}
-                  className="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-300 text-white font-bold py-3 rounded-lg transition-all shadow-lg hover:shadow-xl disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                >
-                  {generandoCarnet ? (
-                    <>
-                      <Loader className="animate-spin" size={20} />
-                      Generando...
-                    </>
-                  ) : (
-                    <>
-                      <Download size={20} />
-                      Generar Carnet
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-
-            {/* Info */}
-            <div className="bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500 p-4 rounded-lg">
-              <div className="flex items-start gap-3">
-                <CreditCard className="text-blue-600 dark:text-blue-400 w-5 h-5 mt-0.5" />
-                <div>
-                  <h3 className="font-bold text-blue-900 dark:text-blue-100">Especificaciones Técnicas</h3>
-                  <ul className="text-sm text-blue-800 dark:text-blue-200 mt-1 space-y-1">
-                    <li>• <strong>Formato:</strong> PNG de alta calidad</li>
-                    <li>• <strong>Dimensiones:</strong> 1011×638 píxeles (CR80 estándar)</li>
-                    <li>• <strong>Resolución:</strong> 300 DPI</li>
-                    <li>• <strong>Listo para:</strong> Impresión en PVC en centros especializados</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
+            <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+              Próximamente, función en desarrollo
+            </h3>
+            <p className="text-gray-500 dark:text-gray-400 max-w-md text-lg">
+              Estamos trabajando en el módulo de <strong>Generación de Carnets</strong>. <br/>
+              Esta funcionalidad estará disponible en futuras actualizaciones.
+            </p>
           </div>
         )}
       </div>

@@ -69,6 +69,55 @@ router.post('/', invalidateCacheMiddleware('/api/asistencias'), async (req, res)
     // Usar timestamp proporcionado o fecha actual
     const fechaAsistencia = timestamp ? new Date(timestamp) : new Date();
 
+    // ===== VALIDACIÓN DE DUPLICADOS =====
+    // VALIDACION ESTRICTA: Solo 1 Entrada y 1 Salida por día
+    // (Bloquea múltiples entradas o salidas, incluso si no son consecutivas)
+    
+    const hoyInicio = new Date(fechaAsistencia);
+    hoyInicio.setHours(0, 0, 0, 0);
+    const hoyFin = new Date(fechaAsistencia);
+    hoyFin.setHours(23, 59, 59, 999);
+
+    const registroExistente = await prisma.asistencia.findFirst({
+      where: {
+        AND: [
+          hasAlumnoId ? { alumno_id: parseInt(alumno_id) } : { personal_id: parseInt(personal_id) },
+          { tipo_evento }, // Buscar registro del MISMO tipo
+          {
+            timestamp: {
+              gte: hoyInicio,
+              lte: hoyFin
+            }
+          }
+        ]
+      }
+    });
+
+    // Permitir si es corrección de 'Sin Salida'
+    const isCorrection = origen === 'Manual - Sin Salida';
+
+    if (!isCorrection && registroExistente) {
+      logger.warn({ 
+        personaId: hasAlumnoId ? alumno_id : personal_id,
+        personaTipo: persona_tipo,
+        tipoEvento: tipo_evento,
+        registroExistenteId: registroExistente.id
+      }, '[WARN] Intento de registro duplicado (Estricto) detectado');
+      
+      return res.status(409).json({
+        error: `Ya existe un registro de ${tipo_evento} para esta persona hoy. (Política de Un Registro Diario)`,
+        registroExistente: {
+          id: registroExistente.id,
+          timestamp: registroExistente.timestamp,
+          hora: registroExistente.timestamp.toLocaleTimeString('es-ES', { 
+            hour: '2-digit', 
+            minute: '2-digit' 
+          })
+        }
+      });
+    }
+    // ===== FIN VALIDACIÓN DE DUPLICADOS =====
+
     // Calcular estado de puntualidad (solo para entradas)
     let estado_puntualidad = null;
     if (tipo_evento === 'entrada') {
@@ -277,13 +326,29 @@ router.get('/hoy', async (req, res) => {
       }
     });
 
-    // Estadísticas del día
+    // Estadísticas del día (PERSONAS ÚNICAS)
+    const uniqueEntradas = new Set(
+        asistencias.filter(a => a.tipo_evento === 'entrada').map(a => `${a.persona_tipo}-${a.alumno_id || a.personal_id}`)
+    ).size;
+    
+    const uniqueSalidas = new Set(
+        asistencias.filter(a => a.tipo_evento === 'salida').map(a => `${a.persona_tipo}-${a.alumno_id || a.personal_id}`)
+    ).size;
+
+    const uniquePuntuales = new Set(
+        asistencias.filter(a => a.tipo_evento === 'entrada' && a.estado_puntualidad === 'puntual').map(a => `${a.persona_tipo}-${a.alumno_id || a.personal_id}`)
+    ).size;
+
+    const uniqueTardes = new Set(
+        asistencias.filter(a => a.tipo_evento === 'entrada' && a.estado_puntualidad === 'tarde').map(a => `${a.persona_tipo}-${a.alumno_id || a.personal_id}`)
+    ).size;
+
     const stats = {
       total: asistencias.length,
-      entradas: asistencias.filter(a => a.tipo_evento === 'entrada').length,
-      salidas: asistencias.filter(a => a.tipo_evento === 'salida').length,
-      puntuales: asistencias.filter(a => a.estado_puntualidad === 'puntual').length,
-      tardes: asistencias.filter(a => a.estado_puntualidad === 'tarde').length
+      entradas: uniqueEntradas,
+      salidas: uniqueSalidas,
+      puntuales: uniquePuntuales,
+      tardes: uniqueTardes
     };
 
     res.json({
@@ -377,7 +442,9 @@ router.get('/ausentes', async (req, res) => {
           nombres: true,
           apellidos: true,
           grado: true,
-          jornada: true
+          seccion: true,
+          jornada: true,
+          foto_path: true // Added for photo display
         }
       });
 
@@ -405,7 +472,8 @@ router.get('/ausentes', async (req, res) => {
           apellidos: true,
           cargo: true,
           // departamento: true, // ERROR: Campo no existe en schema
-          jornada: true
+          jornada: true,
+          foto_path: true // Added for photo display
         }
       });
 
@@ -443,6 +511,133 @@ router.get('/ausentes', async (req, res) => {
 });
 
 /**
+ * GET /api/asistencias/sin-salida
+ * Detectar personas que registraron entrada pero NO salida
+ */
+router.get('/sin-salida', async (req, res) => {
+  try {
+    const { fecha } = req.query;
+    
+    // Determinar fecha (hoy por defecto)
+    let fechaInicio, fechaFin;
+    if (fecha) {
+      fechaInicio = new Date(fecha);
+      fechaFin = new Date(fecha);
+    } else {
+      fechaInicio = new Date();
+      fechaFin = new Date();
+    }
+    fechaInicio.setHours(0, 0, 0, 0);
+    fechaFin.setHours(23, 59, 59, 999);
+
+    // Obtener todas las entradas del día
+    const entradas = await prisma.asistencia.findMany({
+      where: {
+        timestamp: {
+          gte: fechaInicio,
+          lte: fechaFin
+        },
+        tipo_evento: 'entrada'
+      },
+      select: {
+        alumno_id: true,
+        personal_id: true
+      }
+    });
+
+    // Obtener todas las salidas del día
+    const salidas = await prisma.asistencia.findMany({
+      where: {
+        timestamp: {
+          gte: fechaInicio,
+          lte: fechaFin
+        },
+        tipo_evento: 'salida'
+      },
+      select: {
+        alumno_id: true,
+        personal_id: true
+      }
+    });
+
+    const sinSalida = [];
+    
+    // DEBUG: Trazar totales
+    logger.info({ 
+        entradas: entradas.length, 
+        salidas: salidas.length 
+    }, '[DEBUG] Analizando /sin-salida (Entradas vs Salidas)');
+
+    // Lógica mejorada: Contar entradas vs salidas (para manejar re-ingresos)
+    
+    // 1. Alumnos
+    const entradasAlumnos = {};
+    entradas.forEach(e => { if(e.alumno_id) entradasAlumnos[e.alumno_id] = (entradasAlumnos[e.alumno_id] || 0) + 1; });
+    const salidasAlumnos = {};
+    salidas.forEach(s => { if(s.alumno_id) salidasAlumnos[s.alumno_id] = (salidasAlumnos[s.alumno_id] || 0) + 1; });
+
+    for (const idStr of Object.keys(entradasAlumnos)) {
+        const id = parseInt(idStr);
+        const countEntradas = entradasAlumnos[id];
+        const countSalidas = salidasAlumnos[id] || 0;
+
+        if (countEntradas > countSalidas) {
+             const alumno = await prisma.alumno.findUnique({
+                where: { id },
+                select: {
+                    id: true, carnet: true, nombres: true, apellidos: true,
+                    grado: true, seccion: true, jornada: true, foto_path: true
+                }
+             });
+             if (alumno) sinSalida.push({ ...alumno, tipo: 'alumno' });
+        }
+    }
+
+    // 2. Personal
+    const entradasPersonal = {};
+    entradas.forEach(e => { if(e.personal_id) entradasPersonal[e.personal_id] = (entradasPersonal[e.personal_id] || 0) + 1; });
+    const salidasPersonal = {};
+    salidas.forEach(s => { if(s.personal_id) salidasPersonal[s.personal_id] = (salidasPersonal[s.personal_id] || 0) + 1; });
+
+    for (const idStr of Object.keys(entradasPersonal)) {
+        const id = parseInt(idStr);
+        const countEntradas = entradasPersonal[id];
+        const countSalidas = salidasPersonal[id] || 0;
+
+        if (countEntradas > countSalidas) {
+             const persona = await prisma.personal.findUnique({
+                where: { id },
+                select: {
+                    id: true, carnet: true, nombres: true, apellidos: true,
+                    cargo: true, jornada: true, foto_path: true
+                }
+             });
+             if (persona) sinSalida.push({ ...persona, tipo: 'personal' });
+        }
+    }
+
+    logger.info({ 
+      fecha: fechaInicio.toISOString().split('T')[0],
+      totalSinSalida: sinSalida.length
+    }, '[OK] Personas sin salida detectadas');
+
+    res.json({
+      fecha: fechaInicio.toISOString().split('T')[0],
+      total: sinSalida.length,
+      sinSalida,
+      stats: {
+        alumnos: sinSalida.filter(p => p.tipo === 'alumno').length,
+        personal: sinSalida.filter(p => p.tipo === 'personal').length
+      }
+    });
+  } catch (error) {
+    logger.error({ err: error }, '[ERROR] Error detectando personas sin salida');
+    res.status(500).json({ error: error.message });
+  }
+});
+
+
+/**
  * GET /api/asistencias/stats
  * Obtener estadísticas de asistencias
  */
@@ -463,7 +658,8 @@ router.get('/stats', cacheMiddleware('stats'), async (req, res) => {
       select: {
         timestamp: true,
         tipo_evento: true,
-        estado_puntualidad: true
+        estado_puntualidad: true,
+        alumno_id: true
       }
     });
 
@@ -472,7 +668,7 @@ router.get('/stats', cacheMiddleware('stats'), async (req, res) => {
     asistencias.forEach(a => {
       const fecha = a.timestamp.toISOString().split('T')[0];
       if (!porDia[fecha]) {
-        porDia[fecha] = { total: 0, entradas: 0, salidas: 0, puntuales: 0, tardes: 0 };
+        porDia[fecha] = { total: 0, entradas: 0, salidas: 0, puntuales: 0, tardes: 0, ausentes: 0 };
       }
       porDia[fecha].total++;
       if (a.tipo_evento === 'entrada') porDia[fecha].entradas++;
@@ -480,6 +676,21 @@ router.get('/stats', cacheMiddleware('stats'), async (req, res) => {
       if (a.estado_puntualidad === 'puntual') porDia[fecha].puntuales++;
       if (a.estado_puntualidad === 'tarde') porDia[fecha].tardes++;
     });
+
+    // Calcular ausentes para cada día
+    const totalAlumnos = await prisma.alumno.count({
+      where: { estado: 'activo' }
+    });
+
+    for (const fecha in porDia) {
+      // Contar alumnos únicos que asistieron ese día
+      const alumnosQueAsistieron = new Set(
+        asistencias
+          .filter(a => a.timestamp.toISOString().split('T')[0] === fecha && a.tipo_evento === 'entrada')
+          .map(a => a.alumno_id)
+      );
+      porDia[fecha].ausentes = totalAlumnos - alumnosQueAsistieron.size;
+    }
 
     res.json({
       periodo: `Últimos ${dias} días`,

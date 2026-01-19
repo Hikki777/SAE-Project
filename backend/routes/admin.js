@@ -53,6 +53,7 @@ router.post('/reset-factory', async (req, res) => {
 
     await prisma.$transaction([
       // 1. Borrar datos transaccionales
+      prisma.historialAcademico.deleteMany(),
       prisma.asistencia.deleteMany(),
       prisma.excusa.deleteMany(),
       prisma.codigoQr.deleteMany(),

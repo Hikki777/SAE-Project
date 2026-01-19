@@ -386,7 +386,7 @@ export default function MetricsPanel() {
               <li>Hit rate de caché: % de requests servidos desde caché</li>
               <li>Solo administradores pueden resetear las métricas</li>
               <li>Auto-refresh actualiza cada {refreshInterval} segundos</li>
-              <li>El servidor corre en Linux (Railway) aunque desarrolles en Windows</li>
+              <li>El sistema se ejecuta localmente en {metrics?.system?.platform === 'win32' ? 'Windows' : metrics?.system?.platform}</li>
             </ul>
           </div>
         </div>
