@@ -25,13 +25,31 @@ const migracionService = {
     const regla = config.reglasPromocion[gradoActual];
     
     if (!regla) {
-      logger.warn({ gradoActual }, 'No se encontró regla de promoción');
+      // logger.warn({ gradoActual }, 'No se encontró regla de promoción');
       return null;
     }
     
     // Si es objeto (depende de carrera - caso Diversificado)
     if (typeof regla === 'object') {
-      return regla[carrera] || regla.default || null;
+      // 1. Prioridad: Regla explícita en config
+      if (carrera && regla[carrera]) {
+        return regla[carrera];
+      }
+      
+      // 2. Lógica Dinámica (Heurística)
+      if (carrera) {
+         const lower = carrera.toLowerCase();
+         // Bachillerato General (2 años) -> Gradúa al terminar el grado donde se define la regla (5to)
+         if (lower.includes('bachillerato') && !lower.includes('madurez')) {
+             return 'GRADUADO';
+         }
+         // Perito General (3 años) -> Continúa
+         if (lower.includes('perito')) {
+             return '6to. Diversificado';
+         }
+      }
+
+      return regla.default || null;
     }
     
     return regla;

@@ -338,6 +338,7 @@ router.put('/', upload.fields([{ name: 'logo', maxCount: 1 }]), async (req, res)
       horario_inicio: horario_inicio || '07:00',
       horario_salida: horario_salida || '13:00',
       margen_puntualidad_min: parseInt(margen_puntualidad_min) || 5,
+      ...(req.body.ciclo_escolar && { ciclo_escolar: parseInt(req.body.ciclo_escolar) })
     };
 
     if (logoPath) {

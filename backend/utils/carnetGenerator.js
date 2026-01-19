@@ -9,7 +9,8 @@ const prisma = require('../prismaClient');
  * Formato: A-YYYYNNN (ej: A-2026001)
  */
 async function generateAlumnoCarnet() {
-  const year = new Date().getFullYear();
+  const institucion = await prisma.institucion.findFirst({ select: { ciclo_escolar: true } });
+  const year = institucion?.ciclo_escolar || new Date().getFullYear();
   const prefix = `A-${year}`;
 
   // Buscar el último carnet del año actual
@@ -43,8 +44,11 @@ async function generateAlumnoCarnet() {
  * @param {object} tx - Cliente de transacción Prisma opcional
  */
 async function generatePersonalCarnet(cargo, tx = null) {
-  const year = new Date().getFullYear();
   const db = tx || prisma;
+  
+  // Obtener ciclo escolar (si estamos en transacción, debería ser capaz de leerlo también)
+  const institucion = await db.institucion.findFirst({ select: { ciclo_escolar: true } });
+  const year = institucion?.ciclo_escolar || new Date().getFullYear();
   
   // Mapeo de cargos a prefijos
   const prefixMap = {

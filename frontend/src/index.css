@@ -2,8 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Webfont opcional: si existen archivos en /public/fonts, se cargarán.
-   Primero intentamos usar la fuente instalada en el sistema (local()). */
+/* Fonts temporarilmente deshabilitadas por archivos faltantes
 @font-face {
   font-family: "Hack Nerd Font Mono";
   src: local("Hack Nerd Font Mono"), local("Hack Nerd Font"), local("Hack"),
@@ -40,6 +39,7 @@
   font-style: italic;
   font-display: swap;
 }
+*/
 
 * {
   margin: 0;

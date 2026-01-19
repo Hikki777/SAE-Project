@@ -21,6 +21,7 @@ model Institucion {
   municipio              String?
   email                  String?
   telefono               String?
+  ciclo_escolar          Int      @default(2026)
   inicializado           Boolean  @default(false)
   creado_en              DateTime @default(now())
   actualizado_en         DateTime @updatedAt

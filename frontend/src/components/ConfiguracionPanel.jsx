@@ -29,7 +29,8 @@ const SettingsSidebar = ({ activeTab, setActiveTab }) => {
   const tabs = [
     { id: 'institucion', label: 'Institucional', icon: Building2 },
     { id: 'usuarios', label: 'Gestión de Usuarios', icon: Users },
-    { id: 'equipos', label: 'Red / Equipos', icon: Server }, // New Tab
+    { id: 'equipos', label: 'Red / Equipos', icon: Server },
+    { id: 'academico', label: 'Control Académico', icon: FileText }, // New Tab
     { id: 'sistema', label: 'Sistema y Reset', icon: Trash2 }, // Reusing icon or similar
   ];
 
@@ -78,18 +79,39 @@ const InstitucionSettings = ({ formData, setFormData, logoPreview, handleLogoCha
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Información Básica */}
       <div className="grid grid-cols-1 gap-6">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Nombre de la Institución *
-          </label>
-          <input
-            type="text"
-            required
-            value={formData.nombre}
-            onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
-            className="w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2.5 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            placeholder="Ej: Colegio San José"
-          />
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div className="md:col-span-3">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Nombre de la Institución *
+            </label>
+            <input
+              type="text"
+              required
+              value={formData.nombre}
+              onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
+              className="w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2.5 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Ej: Colegio San José"
+            />
+          </div>
+          <div className="md:col-span-1">
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-1.5 relative group">
+              <span className="text-blue-600 font-bold">Ciclo Escolar</span>
+              <AlertCircle size={14} className="text-amber-500 cursor-help" />
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-gray-900 text-white text-xs rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 text-center">
+                Esto define el prefijo de los carnets (Ej: A-2026...)
+                <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
+              </div>
+            </label>
+            <input
+              type="number"
+              required
+              min="2000"
+              max="2100"
+              value={formData.ciclo_escolar}
+              onChange={(e) => setFormData({ ...formData, ciclo_escolar: parseInt(e.target.value) })}
+              className="w-full bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg px-4 py-2.5 text-blue-900 dark:text-blue-100 font-bold text-center focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
         </div>
         
         <div>
@@ -799,6 +821,196 @@ const EquipoSettings = ({ equipos, loading, onApprove, onDelete, serverInfo }) =
           </tbody>
         </table>
       </div>
+    </motion.div>
+  );
+};
+
+// --- SUBCOMPONENT: Control Academico Settings ---
+const ControlAcademicoSettings = () => {
+  const [loading, setLoading] = useState(false);
+  const [previewData, setPreviewData] = useState(null);
+  const [executing, setExecuting] = useState(false);
+  const [confirmMigration, setConfirmMigration] = useState(false);
+  const [anioObjetivo, setAnioObjetivo] = useState(new Date().getFullYear() + 1);
+
+  const handleGenerarPreview = async () => {
+    setLoading(true);
+    try {
+      const response = await client.get(`/migracion/preview?anio=${anioObjetivo}`);
+      setPreviewData(response.data.preview);
+      toast.success('Vista previa generada');
+    } catch (error) {
+      console.error(error);
+      toast.error('Error generando vista previa');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEjecutarMigracion = async () => {
+    if (!confirmMigration) return;
+    setExecuting(true);
+    try {
+      const response = await client.post('/migracion/fin-de-anio', { anioEscolar: anioObjetivo });
+      const { resultados } = response.data;
+      
+      let msg = `Migración completada. ${resultados.promovidos.length} promovidos`;
+      if (resultados.graduados.length > 0) msg += `, ${resultados.graduados.length} graduados`;
+      
+      toast.success(msg, { duration: 6000 });
+      setPreviewData(null);
+      setConfirmMigration(false);
+    } catch (error) {
+      console.error(error);
+      toast.error('Error en migración: ' + (error.response?.data?.error || error.message));
+    } finally {
+      setExecuting(false);
+    }
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: 20 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: -20 }}
+      className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 space-y-6"
+    >
+      <div className="border-b border-gray-200 dark:border-gray-700 pb-4">
+        <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+          <FileText size={24} className="text-blue-600" />
+          Control Académico y Migración
+        </h3>
+        <p className="text-sm text-gray-500 mt-1">Gestión de fin de año, promoción de grados y graduaciones.</p>
+      </div>
+
+      {/* Panel de Control */}
+      <div className="bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800 rounded-xl p-6">
+        <h4 className="font-bold text-blue-900 dark:text-blue-200 mb-4 flex items-center gap-2">
+          <Activity size={20} />
+          Migración de Fin de Año
+        </h4>
+        <p className="text-sm text-blue-800 dark:text-blue-300 mb-6">
+          Esta herramienta mueve a todos los alumnos activos a su siguiente grado correspondiente según las reglas académicas.
+          Los alumnos de último grado serán marcados como graduados.
+        </p>
+
+        <div className="flex items-end gap-4">
+          <div>
+             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+               Año Escolar Destino
+             </label>
+             <input 
+               type="number" 
+               className="w-32 rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-800 px-3 py-2"
+               value={anioObjetivo}
+               onChange={(e) => setAnioObjetivo(parseInt(e.target.value))}
+             />
+          </div>
+          <button
+            onClick={handleGenerarPreview}
+            disabled={loading || executing}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold flex items-center gap-2 disabled:opacity-50 transition-colors"
+          >
+            {loading ? <div className="animate-spin rounded-full h-4 w-4 border-2 border-white/30 border-t-white" /> : <ClipboardList size={18} />}
+            Generar Vista Previa
+          </button>
+        </div>
+      </div>
+
+      {/* Resultados Preview */}
+      {previewData && (
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="space-y-6"
+        >
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Promociones */}
+            <div className="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
+              <h5 className="font-bold text-gray-800 dark:text-gray-200 mb-3 flex items-center gap-2">
+                <Users size={18} className="text-green-600" />
+                Promociones ({Object.values(previewData.promociones).reduce((acc, curr) => acc + curr.length, 0)})
+              </h5>
+              <div className="space-y-2 max-h-60 overflow-y-auto custom-scrollbar pr-2">
+                {Object.entries(previewData.promociones).map(([cambio, alumnos]) => (
+                  <div key={cambio} className="bg-white dark:bg-gray-800 p-3 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700">
+                    <div className="text-xs font-bold text-blue-600 dark:text-blue-400 mb-1 uppercase tracking-wider">
+                      {cambio}
+                    </div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400">
+                      {alumnos.length} alumnos
+                    </div>
+                  </div>
+                ))}
+                {Object.keys(previewData.promociones).length === 0 && (
+                  <p className="text-sm text-gray-400 italic">No hay promociones registradas.</p>
+                )}
+              </div>
+            </div>
+
+            {/* Graduaciones */}
+            <div className="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
+              <h5 className="font-bold text-gray-800 dark:text-gray-200 mb-3 flex items-center gap-2">
+                <FileText size={18} className="text-purple-600" />
+                Graduandos ({previewData.graduaciones.length})
+              </h5>
+              <div className="space-y-2 max-h-60 overflow-y-auto custom-scrollbar pr-2">
+                {previewData.graduaciones.map((graduado) => (
+                  <div key={graduado.id} className="bg-white dark:bg-gray-800 p-3 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 flex justify-between items-center">
+                     <div>
+                       <div className="font-medium text-gray-800 dark:text-gray-200">{graduado.nombre}</div>
+                       <div className="text-xs text-gray-500">{graduado.carrera || graduado.grado}</div>
+                     </div>
+                     <span className="text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-2 py-1 rounded-full font-bold">
+                       Graduado
+                     </span>
+                  </div>
+                ))}
+                 {previewData.graduaciones.length === 0 && (
+                  <p className="text-sm text-gray-400 italic">No hay graduandos este ciclo.</p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Zona de Confirmación */}
+          <div className="border-t-2 border-dashed border-gray-300 dark:border-gray-700 pt-6">
+            <div className="flex items-center gap-3 mb-4">
+              <input 
+                type="checkbox" 
+                id="confirmMigration" 
+                checked={confirmMigration}
+                onChange={(e) => setConfirmMigration(e.target.checked)}
+                className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500 cursor-pointer"
+              />
+              <label htmlFor="confirmMigration" className="text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer select-none">
+                Confirmo que he revisado la vista previa y deseo ejecutar la migración definitiva.
+              </label>
+            </div>
+
+            <button
+              onClick={handleEjecutarMigracion}
+              disabled={!confirmMigration || executing}
+              className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {executing ? (
+                 <>
+                   <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                   Procesando Migración...
+                 </>
+              ) : (
+                 <>
+                   <Server size={20} />
+                   Ejecutar Migración de Fin de Año
+                 </>
+              )}
+            </button>
+            <p className="text-center text-xs text-gray-500 mt-2">
+              Se creará un registro en el historial académico de cada alumno procesado.
+            </p>
+          </div>
+        </motion.div>
+      )}
     </motion.div>
   );
 };
@@ -1946,7 +2158,8 @@ export default function ConfiguracionPanel() {
         email: data.email || '',
         telefono: data.telefono || '',
         pais: data.pais || '',
-        departamento: data.departamento || ''
+        departamento: data.departamento || '',
+        ciclo_escolar: data.ciclo_escolar || new Date().getFullYear()
       });
       
       if (data.logo_path) {
@@ -2096,6 +2309,9 @@ export default function ConfiguracionPanel() {
                 onDelete={handleDeleteEquipo}
                 serverInfo={serverInfo}
               />
+            )}
+            {activeTab === 'academico' && (
+              <ControlAcademicoSettings key="academico" />
             )}
             {activeTab === 'sistema' && (
               <SistemaSettings key="sistema" currentUser={currentUser} />

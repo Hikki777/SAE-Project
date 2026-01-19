@@ -54,6 +54,7 @@ const metricsRoutes = require('./routes/metrics');
 const adminRoutes = require('./routes/admin');
 const dashboardRoutes = require('./routes/dashboard'); // Import Dashboard Routes
 const documentosRoutes = require('./routes/documentos'); // Import Documentos Routes
+const promocionRoutes = require('./routes/promocion'); // Import Promocion Routes
 
 // Verificar variables de entorno críticas
 const checkEnv = () => {
@@ -230,6 +231,7 @@ app.use('/api/excusas', excusasRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/dashboard', dashboardRoutes); // Mount Dashboard Routes
 app.use('/api/documentos', documentosRoutes); // Mount Documentos Routes
+app.use('/api/migracion', promocionRoutes); // Mount Migracion Routes
 app.use('/api/equipos', require('./routes/equipos'));
 app.use('/api/backup', require('./routes/backup'));
 app.use('/api/sync', require('./routes/sync'));

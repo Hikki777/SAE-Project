@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { GraduationCap, Plus, Edit, Trash2, Download, Search, Filter, X, User, QrCode, BookOpen, Sun, CheckCircle, XCircle, Briefcase } from 'lucide-react';
+import { GraduationCap, Plus, Edit, Trash2, Download, Search, Filter, X, User, QrCode, BookOpen, Sun, CheckCircle, XCircle, Briefcase, RotateCcw, AlertCircle } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 import { alumnosAPI, qrAPI, institucionAPI } from '../api/endpoints';
 import { TableSkeleton } from './LoadingSpinner';
@@ -50,6 +50,10 @@ export default function AlumnosPanel() {
   const [nuevoCarnet, setNuevoCarnet] = useState('');
   const [reasignandoCarnet, setReasignandoCarnet] = useState(false);
 
+  // Modal de confirmación genérico
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [confirmData, setConfirmData] = useState({ title: '', message: '', onConfirm: () => {}, type: 'danger' });
+
   useEffect(() => {
     fetchData();
   }, []);
@@ -76,7 +80,8 @@ export default function AlumnosPanel() {
     let grados = [
       '1ro. Primaria', '2do. Primaria', '3ro. Primaria', '4to. Primaria', '5to. Primaria', '6to. Primaria',
       '1ro. Básico', '2do. Básico', '3ro. Básico',
-      '4to. Diversificado', '5to. Diversificado', '6to. Diversificado'
+      'Básicos por Madurez (1er. Año)', 'Básicos por Madurez (2do. Año)',
+      'Bachillerato por Madurez'
     ];
     // Aquí se podría personalizar más según el país si fuera necesario
     setPosiblesGrados(grados);
@@ -450,6 +455,7 @@ export default function AlumnosPanel() {
               <option value="">Todos</option>
               <option value="activo">Activo</option>
               <option value="inactivo">Inactivo</option>
+              <option value="repitente">Repitente</option>
             </select>
           </div>
           <div>
@@ -529,7 +535,7 @@ export default function AlumnosPanel() {
                     <th className="px-3 py-3 text-left text-xs font-semibold w-48">Especialidad</th>
                     <th className="px-3 py-3 text-left text-xs font-semibold w-28">Jornada</th>
                     <th className="px-3 py-3 text-center text-xs font-semibold w-20">Estado</th>
-                    <th className="px-3 py-3 text-center text-xs font-semibold w-28">Acciones</th>
+                    <th className="px-3 py-3 text-center text-xs font-semibold w-32">Acciones</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -597,6 +603,8 @@ export default function AlumnosPanel() {
                         <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
                           alumno.estado === 'activo'
                             ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                            : alumno.estado === 'repitente'
+                            ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400'
                             : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
                         }`}>
                           {alumno.estado}
@@ -612,17 +620,61 @@ export default function AlumnosPanel() {
                           >
                             <QrCode size={16} />
                           </button>
-                          <button
-                            onClick={() => handleToggleEstado(alumno.id, alumno.estado, `${alumno.nombres} ${alumno.apellidos}`)}
-                            className={`p-1.5 rounded-lg transition ${
-                              alumno.estado === 'activo'
-                                ? 'text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/20'
-                                : 'text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20'
-                            }`}
-                            title={alumno.estado === 'activo' ? 'Desactivar' : 'Activar'}
-                          >
-                            {alumno.estado === 'activo' ? <XCircle size={16} /> : <CheckCircle size={16} />}
-                          </button>
+                      
+                          {/* Botones de Estado */}
+                          {alumno.estado === 'repitente' ? (
+                            <button
+                              onClick={() => handleToggleEstado(alumno.id, 'repitente', `${alumno.nombres} ${alumno.apellidos}`)}
+                              className="p-1.5 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition"
+                              title="Reactivar (Quitar Repitente)"
+                            >
+                               <CheckCircle size={16} />
+                            </button>
+                          ) : (
+                            <>
+                                <button
+                                    onClick={() => handleToggleEstado(alumno.id, alumno.estado, `${alumno.nombres} ${alumno.apellidos}`)}
+                                    className={`p-1.5 rounded-lg transition ${
+                                    alumno.estado === 'activo'
+                                        ? 'text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20'
+                                        : 'text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20'
+                                    }`}
+                                    title={alumno.estado === 'activo' ? 'Desactivar' : 'Activar'}
+                                >
+                                    {alumno.estado === 'activo' ? <XCircle size={16} /> : <CheckCircle size={16} />}
+                                </button>
+                                
+                                {alumno.estado === 'activo' && (
+                                    <button
+                                    onClick={() => {
+                                        setConfirmData({
+                                            title: 'Marcar como Repitente',
+                                            message: `¿Estás seguro de marcar a ${alumno.nombres} como repitente? Esto lo excluirá de la promoción automática.`,
+                                            type: 'warning',
+                                            onConfirm: () => {
+                                                const toastId = toast.loading('Marcando como repitente...');
+                                                alumnosAPI.update(alumno.id, { estado: 'repitente' })
+                                                  .then(() => {
+                                                      toast.success('Alumno marcado como repitente', { id: toastId });
+                                                      fetchData();
+                                                  })
+                                                  .catch(err => {
+                                                      console.error(err);
+                                                      toast.error('Error al actualizar: ' + (err.response?.data?.error || err.message), { id: toastId });
+                                                  });
+                                            }
+                                        });
+                                        setShowConfirmModal(true);
+                                    }}
+                                    className="p-1.5 text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-lg transition"
+                                    title="Marcar como Repitente"
+                                    >
+                                    <RotateCcw size={16} />
+                                    </button>
+                                )}
+                            </>
+                          )}
+
                           <button
                             onClick={() => handleEdit(alumno)}
                             className="p-1.5 text-yellow-600 hover:bg-yellow-50 dark:hover:bg-yellow-900/20 rounded-lg transition"
@@ -962,7 +1014,7 @@ export default function AlumnosPanel() {
 
 
                {/* Campos carrera/especialidad solo visibles para Diversificado */}
-               {formData.grado && formData.grado.includes('Diversificado') && (
+               {formData.grado && (formData.grado.includes('Diversificado') || formData.grado.includes('Bachillerato')) && (
                  <>
                    <div>
                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Carrera</label>
@@ -1167,6 +1219,52 @@ export default function AlumnosPanel() {
                   </>
                 )}
               </button>
+            </div>
+          </motion.div>
+        </div>,
+        document.body
+      )}
+
+      {/* Modal de Confirmación Genérico */}
+      {showConfirmModal && createPortal(
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[100000] p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-sm w-full shadow-2xl border border-gray-200 dark:border-gray-700"
+          >
+            <div className="flex flex-col items-center text-center">
+              <div className={`p-3 rounded-full mb-4 ${
+                confirmData.type === 'danger' ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400' : 
+                confirmData.type === 'warning' ? 'bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400' :
+                'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
+              }`}>
+                <AlertCircle size={32} />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">{confirmData.title}</h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-6">{confirmData.message}</p>
+              
+              <div className="flex gap-3 w-full">
+                <button
+                  onClick={() => setShowConfirmModal(false)}
+                  className="flex-1 px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg font-medium transition"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={() => {
+                    confirmData.onConfirm();
+                    setShowConfirmModal(false);
+                  }}
+                  className={`flex-1 px-4 py-2 text-white rounded-lg font-bold transition shadow-lg ${
+                    confirmData.type === 'danger' ? 'bg-red-600 hover:bg-red-700 shadow-red-500/30' : 
+                    confirmData.type === 'warning' ? 'bg-orange-500 hover:bg-orange-600 shadow-orange-500/30' :
+                    'bg-blue-600 hover:bg-blue-700 shadow-blue-500/30'
+                  }`}
+                >
+                  Confirmar
+                </button>
+              </div>
             </div>
           </motion.div>
         </div>,

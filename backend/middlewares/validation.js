@@ -67,7 +67,7 @@ exports.validarCrearAlumno = [
   
   body('estado')
     .optional()
-    .isIn(['activo', 'inactivo']).withMessage('Estado inválido'),
+    .isIn(['activo', 'inactivo', 'repitente']).withMessage('Estado inválido'),
   
   handleValidationErrors
 ];
@@ -114,7 +114,7 @@ exports.validarActualizarAlumno = [
   
   body('estado')
     .optional()
-    .isIn(['activo', 'inactivo']).withMessage('Estado inválido'),
+    .isIn(['activo', 'inactivo', 'repitente']).withMessage('Estado inválido'),
   
   handleValidationErrors
 ];

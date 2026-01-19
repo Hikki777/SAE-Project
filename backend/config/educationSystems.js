@@ -31,11 +31,21 @@ const sistemaEducativoGuatemala = {
       siguienteNivel: 'Diversificado'
     },
     {
+      nombre: 'Básicos por Madurez',
+      grados: [
+        '1ra. Etapa Básicos',
+        '2da. Etapa Básicos'
+      ],
+      gradoGraduacion: '2da. Etapa Básicos',
+      siguienteNivel: 'Diversificado'
+    },
+    {
       nombre: 'Diversificado',
       grados: [
         '4to. Diversificado',
         '5to. Diversificado',
-        '6to. Diversificado'
+        '6to. Diversificado',
+        'Bachillerato por Madurez'
       ],
       carreras: [
         {
@@ -61,6 +71,24 @@ const sistemaEducativoGuatemala = {
           duracion: 3,
           gradoInicio: '4to Diversificado',
           gradoGraduacion: '6to Diversificado'
+        },
+        {
+          nombre: 'Bachillerato en Diseño Gráfico',
+          duracion: 2,
+          gradoInicio: '4to. Diversificado',
+          gradoGraduacion: '5to. Diversificado'
+        },
+        {
+          nombre: 'Perito en Mercadotecnia',
+          duracion: 3,
+          gradoInicio: '4to. Diversificado',
+          gradoGraduacion: '6to. Diversificado'
+        },
+        {
+          nombre: 'Bachillerato por Madurez',
+          duracion: 1,
+          gradoInicio: 'Bachillerato por Madurez',
+          gradoGraduacion: 'Bachillerato por Madurez'
         }
       ]
     }
@@ -79,17 +107,22 @@ const sistemaEducativoGuatemala = {
     // Básicos
     '1ro. Básico': '2do. Básico',
     '2do. Básico': '3ro. Básico',
-    '3ro. Básico': '4to. Diversificado', // Cambio de nivel
+    '3ro. Básico': '4to. Diversificado',
+    // --- Básicos por Madurez ---
+    'Básicos por Madurez (1er. Año)': 'Básicos por Madurez (2do. Año)',
+    'Básicos por Madurez (2do. Año)': '4to. Diversificado',  // Nivel Básicos por Madurez (2 etapas = 2 años)
+    'Básicos por Madurez': {
+      duracion: 2,
+      grados: ['Básicos por Madurez (1er. Año)', 'Básicos por Madurez (2do. Año)'],
+      proximoNivel: 'Diversificado'
+    }, // Promoción a diversificado
     
-    // Diversificado
+    // Diversificado (Reglas base)
+    'Bachillerato por Madurez': 'GRADUADO',
     '4to. Diversificado': '5to. Diversificado',
     '5to. Diversificado': {
-      // Depende de la carrera
-      'Bachillerato en Computación': 'GRADUADO',
-      'Secretariado y Oficinista': 'GRADUADO',
-      'Perito Contador': '6to. Diversificado',
-      'Secretariado Bilingüe': '6to. Diversificado',
-      'default': '6to. Diversificado' // Si no tiene carrera definida
+       // Logic handled dynamically in service for general rules
+       'default': '6to. Diversificado' 
     },
     '6to. Diversificado': 'GRADUADO'
   }
