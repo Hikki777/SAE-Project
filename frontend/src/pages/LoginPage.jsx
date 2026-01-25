@@ -320,7 +320,7 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className={`w-full pl-11 pr-4 py-3 bg-white border ${submitted && !email ? 'border-red-500 ring-4 ring-red-500/10' : 'border-gray-200'} rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-gray-900 placeholder-gray-400 shadow-sm`}
-                placeholder="admin@test.edu"
+                placeholder="usuario@dominio.com"
                 required
               />
             </div>

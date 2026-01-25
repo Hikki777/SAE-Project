@@ -45,7 +45,8 @@ export default function SetupWizard({ onComplete }) {
     logo_base64: null, // Legacy check for preview
     logo_file: null,
     admin_foto_file: null,
-    admin_foto_preview: null
+    admin_foto_preview: null,
+    ciclo_escolar: new Date().getFullYear()
   });
 
   const [logoPreview, setLogoPreview] = useState('');
@@ -795,6 +796,24 @@ export default function SetupWizard({ onComplete }) {
                     </div>
                   </div>
 
+                  <div>
+                     <label className="block text-sm font-medium text-gray-900 mb-1">Ciclo Escolar</label>
+                     <div className="relative">
+                       <Clock className="absolute left-3 top-3 text-gray-400" size={18} />
+                       <input
+                         type="number"
+                         name="ciclo_escolar"
+                         value={formData.ciclo_escolar}
+                         onChange={handleChange}
+                         className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900"
+                         min="2020"
+                         max="2100"
+                         required
+                       />
+                     </div>
+                     <p className="text-xs text-gray-500 mt-1">Año del ciclo escolar actual</p>
+                  </div>
+
                   {/* Sección de Directores */}
                   <div className="border-t border-gray-200 pt-6 mt-6">
                     <div className="flex items-center justify-between mb-4">
@@ -1193,6 +1212,10 @@ export default function SetupWizard({ onComplete }) {
                       <div className="flex justify-between">
                         <span className="text-gray-600">Horario:</span>
                         <span className="font-medium text-gray-900">{formData.horario_inicio} - {formData.horario_salida}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Ciclo Escolar:</span>
+                        <span className="font-medium text-gray-900">{formData.ciclo_escolar}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-600">Margen:</span>

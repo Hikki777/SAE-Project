@@ -134,7 +134,6 @@ router.post(
         directores // Expecting JSON string
       } = req.body;
 
-      // DEBUG: Loguear cuerpo de la petición
       const debugBody = { ...req.body };
       logger.info({ body: debugBody, files: req.files }, '[DEBUG] Entering /init route');
 
@@ -192,6 +191,7 @@ router.post(
           margen_puntualidad_min: margen ? parseInt(margen) : 5,
           master_recovery_key: masterRecoveryKeyHash, // Guardar HASH, no texto plano
           inicializado: true,
+          ciclo_escolar: req.body.ciclo_escolar ? parseInt(req.body.ciclo_escolar) : new Date().getFullYear()
         };
 
         if (logoPath) {

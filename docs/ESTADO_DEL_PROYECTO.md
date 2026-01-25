@@ -1,138 +1,254 @@
-# Sistema de Registro Institucional - Estado del Proyecto
+# SAE - Sistema de Administración Educativa - Estado del Proyecto
 
-**Fecha:** 02 de enero de 2026
-**Versión:** 1.0.0 (Release Candidate)
-**Estado:** ✅ Estable y Operativo (Ready for Production)
+**Fecha:** 24 de enero de 2026  
+**Versión:** 1.0.0 (Release Candidate)  
+**Estado:** ✅ Listo para Release de Producción
 
 ---
 
 ## 🎯 Resumen del Sistema
 
-Sistema integral de gestión institucional diseñado para controlar asistencias mediante códigos QR, administrar expedientes de alumnos y personal, gestionar justificaciones de ausencias, y proveer métricas en tiempo real. Construido sobre stack moderno (Node.js, React, Electron) con enfoque en estabilidad, rendimiento y facilidad de despliegue.
+Sistema integral de gestión educativa diseñado específicamente para instituciones guatemaltecas. Controla asistencias mediante códigos QR, administra expedientes completos de alumnos y personal, gestiona justificaciones de ausencias, y provee métricas en tiempo real. 
+
+**Arquitectura:** Aplicación de Escritorio (Electron) con base de datos local (SQLite) que funciona 100% offline.
 
 ---
 
 ## ✅ Funcionalidades Implementadas (v1.0.0)
 
 ### 🖥️ Plataforma y Core
-- **Aplicación de Escritorio:** Empaquetado con Electron v39 para Windows.
-- **Setup Wizard:** Asistente de instalación inicial para configuración sin conocimientos técnicos.
-- **Update System:** Sistema robusto de actualizaciones automáticas (`npm run update`) con Rollback integrado (`npm run rollback`).
-- **Seguridad Reforzada:** Headers HTTP seguros, rate limiting, saneamiento de inputs, y protección contra inyección de scripts.
-- **Offline First:** Banner de reconexión y cola de sincronización para operaciones críticas.
+- **Aplicación de Escritorio:** Electron v39 para Windows (Linux y macOS en desarrollo)
+- **Setup Wizard:** Asistente de instalación inicial intuitivo
+- **100% Offline:** No requiere conexión a internet para funcionar
+- **Base de Datos Local:** SQLite con modo WAL para alto rendimiento
+- **Dark Mode:** Tema oscuro integrado en toda la aplicación
 
 ### 👥 Gestión de Usuarios
-- **Alumnos:** Expediente completo, generación de carnet con QR, historial de asistencias.
-- **Personal:** Gestión de docentes y administrativos con roles diferenciados.
-- **Control de Acceso (RBAC):** Roles de Administrador (acceso total) y Operador (acceso limitado a toma de asistencia).
+- **Alumnos:** 
+  - Expediente completo con foto
+  - Generación automática de carnets con código QR
+  - Historial de asistencias
+  - Gestión de estados (Activo/Inactivo/Repitente)
+  - Soporte para todos los niveles (Preprimaria, Primaria, Básicos, Diversificado)
+  
+- **Personal:** 
+  - Gestión de docentes y administrativos
+  - Asignación de cursos múltiples para docentes
+  - Grado guía para maestros
+  - Diferentes cargos (Docente, Director, Subdirector, Secretaria, etc.)
+
+- **Control de Acceso (RBAC):** 
+  - Rol Administrador (acceso total al sistema)
+  - Rol Operador (solo toma de asistencias y consultas)
 
 ### ⏱️ Control de Asistencias
-- **Scanner QR:** Lectura rápida mediante cámara web o lector físico.
-- **Registro Manual:** Opción de respaldo para entrada manual.
-- **Validación de Horarios:** Detección automática de retardos según configuración institucional.
-- **Justificaciones (Excusas):** Módulo completo para gestionar ausencias médicas/familiares con flujo de aprobación.
+- **Scanner QR:** Lectura rápida mediante cámara web o lector físico
+- **Registro Manual:** Opción de respaldo para entrada manual de asistencias
+- **Validación de Horarios:** Detección automática de retardos según configuración institucional
+- **Gestión de Salidas:** Control de salidas tempranas y permisos
+- **Modal de entrada sin salida previa:** Advertencia al marcar asistencia sin salida del día anterior
+
+### 📝 Justificaciones y Excusas
+- **Módulo completo** para gestionar ausencias médicas, familiares y otras
+- **Flujo de estados:** Pendiente → Aprobada/Rechazada
+- **Adjuntar documentos** de respaldo
+- **Historial completo** por alumno/personal
 
 ### 📊 Análisis y Reportes
-- **Dashboard en Tiempo Real:** Gráficos de asistencia diaria, puntualidad y ausentismo.
-- **Métricas Avanzadas:** Análisis de tendencias semanales/mensuales.
-- **Reportes Exportables:** Generación de Excel (.xlsx) y PDF para listados y estadísticas.
+- **Dashboard en Tiempo Real:** 
+  - Gráficos de asistencia diaria
+  - Análisis de puntualidad
+  - Estadísticas de ausentismo
+  - Métricas por jornada y grado
+  
+- **Reportes Exportables:** 
+  - Generación de Excel (.xlsx) para listados
+  - Reportes de asistencias del día
+  - Reportes personalizados por fecha
+  - Vista de carnets para impresión
 
-### 🔒 Infraestructura
-- **Base de Datos:** SQLite local optimizada con WAL mode para rendimiento.
-- **Backups Automáticos:** Sistema de respaldo cifrado (AES-256) de base de datos y archivos multimedia.
-- **Logs Estructurados:** Sistema de logging (Pino) sin caracteres corruptos y rotación diaria.
-- **Prevención de Errores:** Validación estricta de código (ESLint) y prevención de emojis problemáticos.
+### 🎨 Interfaz de Usuario
+- **Modal de Vista Previa:** Click en fotos para ver información completa + QR
+- **Responsive Design:** Funciona en diferentes tamaños de pantalla
+- **Animaciones suaves:** `framer-motion` para mejor UX
+- **Feedback visual:** Loading states, toasts, confirmaciones
+- **Búsqueda y filtros avanzados** en todos los módulos
+
+### 🔒 Infraestructura y Seguridad
+- **Seguridad:**
+  - Contraseñas hasheadas con bcrypt
+  - JWT para autenticación
+  - Rate limiting en endpoints críticos
+  - Validación estricta de inputs
+  - Headers de seguridad con Helmet
+  
+- **Backups:**
+  - Sistema manual de respaldo de base de datos
+  - Carpeta `uploads/` para archivos multimedia
+  - Scripts de rollback disponibles
+
+- **Logs:**
+  - Sistema de logging estructurado (Pino)
+  - Rotación automática de logs
+  - Logs separados por tipo (error, info, http)
 
 ---
 
-## 🔧 Cambios Recientes (Actualización v1.0)
+## 🔧 Cambios Recientes (Camino a v1.0)
 
-### 1. Sistema de Actualización y Rollback
-- Implementación de scripts CLI para facilitar el mantenimiento.
-- **Update:** `npm run update` automatiza backup -> pull -> migraciones -> verficación.
-- **Rollback:** `npm run rollback` permite volver a cualquier versión previa ante fallos.
-- **Gestor de Migraciones:** Sistema incremental para cambios en base de datos.
+### Mejoras de UI/UX
+- ✅ Modal de vista previa con foto, información completa y código QR
+- ✅ Fotos clickeables con hover effects
+- ✅ Vista compacta de cursos para docentes en formularios
+- ✅ Agregados grados faltantes de Diversificado (4to, 5to, 6to)
+- ✅ Mejoras en z-index y overlays de modales
+- ✅ Limpieza correcta de estados en formularios
 
-### 2. Estabilidad de Electron
-- Solución definitiva a bloqueos de inicio mediante aumento de memoria (1GB heap).
-- Corrección de corrupción de logs en terminales Windows (codificación UTF-8 forzada).
-- Renovación de UI en Setup Wizard y paneles principales.
+### Organización del Código
+- ✅ Movida toda la documentación a carpeta `/docs`
+- ✅ Eliminados archivos de test temporales
+- ✅ Eliminada documentación obsoleta y redundante
+- ✅ Repositorio limpio y profesional
+- ✅ Documentación completamente en español
 
-### 3. Módulo de Justificaciones
-- Activación del módulo de Excusas para gestión de ausencias.
-- Integración completa con el expediente del alumno/personal.
-- Corrección de bugs visuales y de importación.
-
-### 4. Setup Wizard
-- Flujo guiado para primera instalación.
-- Configuración de institución y admin inicial.
-- Validación de conexión y verificación de entorno.
+### Seguridad
+- ✅ Actualizado `.gitignore` para excluir datos sensibles
+- ✅ Carpeta `uploads/` correctamente excluida de git
+- ✅ Archivos personales (fotos, carnets) protegidos
 
 ---
 
-## 📂 Estructura del Proyecto
+## 📂 Arquitectura del Código
 
+### Backend (`/backend`)
 ```
-Sistema de Registro Institucional/
-├── backend/
-│   ├── config/              ← Configuración y control de versiones
-│   ├── migrations/          ← Scripts de migración de BD
-│   ├── routes/              ← API Endpoints (Auth, Alumnos, Asistencias, Excusas...)
-│   ├── services/            ← Lógica de negocio (QR, Reportes, Backup)
-│   ├── prisma/              ← Esquema de BD y migraciones
-│   └── server.js            ← Punto de entrada
-├── frontend/
-│   ├── src/
-│   │   ├── api/             ← Cliente Axios y puntos finales
-│   │   ├── components/      ← Paneles (Alumnos, Personal, Config, Excusas...)
-│   │   ├── pages/           ← Login, SetupWizard
-│   │   └── App.jsx          ← Router principal
-├── electron/                ← Configuración de la ventana nativa
-├── scripts/                 ← Herramientas CLI (Update, Backup, Start, Validate)
-├── backups/                 ← (Ignorado) Archivos .bak generados
-├── uploads/                 ← (Ignorado) Fotos y logos almacenados
-└── package.json             ← Dependencias y scripts
+backend/
+├── config/              # Configuración del sistema
+├── middlewares/         # Auth, validación, logging
+├── prisma/             
+│   ├── schema.prisma    # Modelo de datos
+│   └── dev.db           # Base de datos SQLite
+├── routes/              # API Endpoints
+│   ├── alumnos.js
+│   ├── personal.js
+│   ├── asistencias.js
+│   ├── justificaciones.js
+│   └── ...
+├── services/            # Lógica de negocio
+└── server.js            # Entry point
+```
+
+### Frontend (`/frontend`)
+```
+frontend/
+├── src/
+│   ├── api/             # Cliente API (axios)
+│   ├── components/      # React Components
+│   │   ├── AlumnosPanel.jsx
+│   │   ├── PersonalPanel.jsx
+│   │   ├── AsistenciasPanel.jsx
+│   │   └── ...
+│   ├── pages/           # Login, Dashboard
+│   └── App.jsx          # Router principal
+└── dist/                # Build de producción
+```
+
+### Electron (`/electron`)
+```
+electron/
+└── main.cjs             # Proceso principal de Electron
 ```
 
 ---
 
-## 🚀 Guía de Scripts
+## 🚀 Comandos Principales
 
-| Comando | Descripción |
-|---------|-------------|
-| `npm run dev` | Inicia Backend y Frontend en modo desarrollo |
-| `npm run start` | Inicia el servidor en modo producción |
-| `npm run electron` | Lanza la aplicación de escritorio |
-| `npm run update` | **Actualiza el sistema** (Backup + Pull + Migrate) |
-| `npm run rollback` | **Restaura una versión anterior** desde backup |
-| `npm run validate:all` | Valida código y busca emojis prohibidos |
-| `npm test` | Ejecuta pruebas unitarias e integración |
+### Usuario Final
+- `npm run electron` - Inicia la aplicación de escritorio
 
----
+### Desarrollo
+- `npm run dev` - Desarrollo con hot reload
+- `npm test` - Ejecutar pruebas
+- `npm run admin` - Crear usuario administrador
 
-## 📋 Próximos Pasos (Roadmap v2.0)
+### Mantenimiento
+- `npm run update` - Actualizar sistema (con backup)
+- `npm run rollback` - Restaurar versión anterior
+- `npm run db:reset` - Reiniciar base de datos
 
-El proyecto entra ahora en fase de estabilidad. Las siguientes funcionalidades están planificadas para la versión 2.0:
-
-1.  **Gestión de Horarios (CNB Guatemala):**
-    - Asignación de cargas académicas (periodos, materias).
-    - Detección de conflictos de horario.
-    - Soporte para mallas curriculares complejas.
-
-2.  **Portal de Padres:**
-    - Acceso web para consulta de notas y asistencia.
-
-3.  **Notificaciones Push:**
-    - Alertas en tiempo real a móviles.
-
-4.  **Escalabilidad Cloud:**
-    - Migración opcional a PostgreSQL para despliegues multi-sede.
+### Distribución
+- `npm run dist:win` - Crear instalador Windows
 
 ---
 
-## 📞 Soporte y Mantenimiento
+## 📋 Roadmap v1.x
 
-Para reportar problemas o solicitar ayuda:
-1.  Verificar logs en carpeta `logs/`.
-2.  Ejecutar `npm run validate:all` para salud del código.
-3.  Contactar al equipo de desarrollo.
+### v1.0.0 (ACTUAL - Release Candidate)
+- ✅ Sistema core completo y estable
+- ✅ Documentación actualizada
+- 🔄 Instalador Windows con auto-actualización
+- 🔄 Release en GitHub
+
+### v1.0.1-1.0.x (Estabilización - 1-2 meses)
+- Corrección de bugs reportados por usuarios
+- Optimizaciones de rendimiento
+- Mejoras incrementales de UI/UX
+
+### v1.1.0 (Features Menores - 2-3 meses)
+- Exportación de reportes a más formatos (CSV, JSON)
+- Temas de color personalizables
+- Búsqueda global en todo el sistema
+- Dashboard con más métricas
+
+### v1.2.0 (Features Medianas - 3-6 meses)
+- Módulo de notificaciones internas
+- Gestión básica de horarios escolares
+- Multi-idioma (español/inglés)
+- Mejoras en reportes estadísticos
+
+### v2.0.0 (Major Release - 6-12 meses)
+- Modo multi-sede (opcional con PostgreSQL)
+- Portal web para padres
+- API pública para integraciones
+- App móvil complementaria
+
+---
+
+## 🎯 Filosofía del Proyecto
+
+### Principios
+1. **Offline-First:** Debe funcionar sin internet
+2. **Simple y Robusto:** Fácil de usar, difícil de romper
+3. **Datos Locales:** Control total de la información
+4. **Código Libre:** GPL v3.0 para la comunidad educativa
+
+### Público Objetivo
+- Instituciones educativas de Guatemala
+- Colegios privados pequeños/medianos
+- Escuelas públicas con recursos limitados
+- Centros educativos que valoran privacidad de datos
+
+---
+
+## 📞 Información del Proyecto
+
+### Proyecto
+- **Nombre:** SAE - Sistema de Administración Educativa
+- **Repositorio:** https://github.com/Hikki777/SAE-Project
+- **Licencia:** GPL v3.0
+- **Autor:** Kevin Pérez
+- **País:** Guatemala 🇬🇹
+
+### Reporte de Bugs
+Si encuentras algún problema:
+1. Revisa logs en carpeta `logs/`
+2. Abre un issue en GitHub con:
+   - Versión del sistema
+   - Pasos para reproducir
+   - Logs relevantes
+   - Capturas de pantalla si aplica
+
+---
+
+**Última actualización de este documento:** 24 de Enero, 2026  
+**Próxima milestone:** Release v1.0.0

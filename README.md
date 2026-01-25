@@ -1,10 +1,10 @@
 # SAE - Sistema de Administración Educativa
 
-![Version](https://img.shields.io/badge/version-0.9.0--beta-orange.svg) ![Electron](https://img.shields.io/badge/Electron-v39-9FEAF9.svg) ![React](https://img.shields.io/badge/React-18-61DAFB.svg) ![Node](https://img.shields.io/badge/Node-18%2B-339933.svg) ![Status](https://img.shields.io/badge/Status-Beta-yellow.svg) ![License](https://img.shields.io/badge/License-GPL--3.0-blue.svg)
+![Version](https://img.shields.io/badge/version-1.0.0-brightgreen.svg) ![Electron](https://img.shields.io/badge/Electron-v39-9FEAF9.svg) ![React](https://img.shields.io/badge/React-18-61DAFB.svg) ![Node](https://img.shields.io/badge/Node-18%2B-339933.svg) ![Status](https://img.shields.io/badge/Status-Stable-brightgreen.svg) ![License](https://img.shields.io/badge/License-GPL--3.0-blue.svg)
 
 **Gestión Educativa Libre** para instituciones de Guatemala
 
-> **⚠️ VERSIÓN BETA**: Este proyecto está en desarrollo activo. Pueden existir errores y funcionalidades incompletas. Se recomienda usar en entornos de prueba.
+> **✅ VERSIÓN 1.0.0 ESTABLE**: Primera versión de producción lista para uso en instituciones educativas.
 
 ---
 
@@ -30,23 +30,26 @@
 
 ## 📦 Instalación
 
-1.  **Clonar el repositorio:**
-    ```bash
-    git clone https://github.com/Hikki777/SAE-Project.git
-    cd SAE-Project
-    ```
+### Para Usuarios Finales (Recomendado)
 
-2.  **Instalar dependencias:**
-    ```bash
-    npm install
-    cd frontend
-    npm install
-    cd ..
-    ```
+1. **Descargar instalador:**
+   - Ir a [Releases en GitHub](https://github.com/Hikki777/SAE-Project/releases)
+   - Descargar la última versión `SAE-Setup-1.0.0.exe`
 
-3.  **Configuración Inicial:**
-    - El sistema incluye un **Setup Wizard** que se ejecutará la primera vez
-    - No es necesario configurar manualmente el `.env` para desarrollo local (SQLite)
+2. **Ejecutar instalador:**
+   - Doble click en el archivo descargado
+   - Seguir instrucciones del asistente
+   - Al finalizar, el sistema se abrirá automáticamente
+
+3. **Configuración Inicial:**
+   - El **Setup Wizard** se ejecutará la primera vez
+   - Configurar datos de la institución
+   - Crear usuario administrador
+   - ¡Listo para usar!
+
+### Para Desarrolladores
+
+Solo si deseas contribuir al código:
 
 ---
 
