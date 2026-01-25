@@ -1,5 +1,6 @@
-const { app, BrowserWindow, shell } = require("electron");
+const { app, BrowserWindow, shell, dialog } = require("electron");
 const path = require("path");
+const { autoUpdater } = require("electron-updater");
 
 // Variables globales
 let mainWindow;
@@ -44,6 +45,45 @@ function createWindow() {
 
 app.whenReady().then(() => {
   createWindow();
+
+  // Configurar auto-updater solo en producción
+  if (!isDev) {
+    // Verificar actualizaciones al iniciar
+    autoUpdater.checkForUpdatesAndNotify();
+
+    // Configurar eventos de actualización
+    autoUpdater.on("update-available", (info) => {
+      dialog.showMessageBox(mainWindow, {
+        type: "info",
+        title: "Actualización Disponible",
+        message: `Una nueva versión (${info.version}) está disponible.`,
+        detail: "La actualización se descargará en segundo plano.",
+        buttons: ["OK"],
+      });
+    });
+
+    autoUpdater.on("update-downloaded", (info) => {
+      dialog
+        .showMessageBox(mainWindow, {
+          type: "info",
+          title: "Actualización Lista",
+          message: `La versión ${info.version} ha sido descargada.`,
+          detail: "Reinicia la aplicación para instalar la actualización.",
+          buttons: ["Reiniciar Ahora", "Más Tarde"],
+          defaultId: 0,
+          cancelId: 1,
+        })
+        .then((result) => {
+          if (result.response === 0) {
+            autoUpdater.quitAndInstall();
+          }
+        });
+    });
+
+    autoUpdater.on("error", (error) => {
+      console.error("Error en auto-updater:", error);
+    });
+  }
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {

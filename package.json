@@ -58,6 +58,7 @@
     "cors": "^2.8.5",
     "crypto-js": "^4.2.0",
     "dotenv": "^17.2.3",
+    "electron-updater": "^6.7.3",
     "express": "^4.18.2",
     "express-rate-limit": "^8.2.1",
     "express-validator": "^7.3.0",
@@ -110,7 +111,13 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true
     },
-    "asar": false
+    "asar": false,
+    "publish": {
+      "provider": "github",
+      "owner": "Hikki777",
+      "repo": "SAE-Project",
+      "releaseType": "release"
+    }
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",
