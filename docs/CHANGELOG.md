@@ -5,6 +5,159 @@ Todos los cambios notables en este proyecto serán documentados en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [1.0.0] - 2026-01-24 🎉 PRIMERA VERSIÓN ESTABLE
+
+### 🎉 Release de Producción
+
+Primera versión de producción estable de SAE - Sistema de Administración Educativa. Sistema listo para uso en instituciones educativas de Guatemala.
+
+### ✨ Funcionalidades Principales
+
+#### Control de Asistencias
+- ✅ Scanner QR para entrada/salida rápida
+- ✅ Registro manual como respaldo
+- ✅ Detección automática de retardos
+- ✅ Control de salidas tempranas
+- ✅ Modal de advertencia para entradas sin salida previa
+
+#### Gestión Académica
+- ✅ Expedientes completos de alumnos (todos los niveles: Preprimaria, Primaria, Básicos, Diversificado)
+- ✅ Gestión de personal docente y administrativo
+- ✅ Sistema de carnets con QR integrado
+- ✅ **NUEVO:** Modal de Vista Previa - Click en fotos para ver información completa + QR
+- ✅ **NUEVO:** Soporte completo para 4to, 5to y 6to Diversificado
+
+#### Justificaciones
+- ✅ Módulo completo de excusas y permisos
+- ✅ Flujo de aprobación/rechazo
+- ✅ Adjuntar documentos de respaldo
+- ✅ Historial por alumno/personal
+
+#### Dashboard y Reportes
+- ✅ Métricas en tiempo real
+- ✅ Gráficos interactivos (asistencia, puntualidad, ausentismo)
+- ✅ Exportación a Excel (.xlsx)
+- ✅ Generación de PDFs
+- ✅ Reportes personalizados por fecha
+
+#### Sistema de Roles
+- ✅ Administrador (acceso total)
+- ✅ Operador (solo asistencias y consultas)
+
+### 🎨 Mejoras de UI/UX
+
+#### Modal de Vista Previa (NUEVO)
+- **AlumnosPanel:**
+  - Click en foto abre modal con información completa
+  - Header con foto grande, nombre, carnet y estado
+  - Secciones: Información Personal, Académica, Código QR
+  - Botones: Editar y Cerrar
+  
+- **PersonalPanel:**
+  - Vista previa similar con información de personal
+  - Para docentes: muestra cursos impartidos con chips de colores
+  - Secciones: Personal, Laboral, Código QR
+
+- **Características:**
+  - Fotos clickeables con hover ring indicativo
+  - QR code cargado dinámicamente como blob
+  - Animaciones suaves de entrada/salida
+  - Click en overlay para cerrar
+  - Responsive y con dark mode
+
+#### Vista Compacta de Cursos
+- Formulario de Personal ahora muestra cursos en botón compacto "Ver X cursos"
+- Modal dedicado para gestión de cursos (agregar/eliminar)
+- Chips de colores para cada curso
+- Fix de z-index y overlay usando `createPortal`
+
+#### Correcciones de Formularios
+- Fix limpieza de estados al crear nuevo personal
+- Agregados grados 4to, 5to, 6to Diversificado
+- Mejor organización de campos
+
+### 📚 Documentación
+
+#### Completamente Reescrita y Actualizada
+- ❌ **Eliminada** `GUIA_DESPLIEGUE.md` obsoleta (contenía info de cloud irrelevante)
+- ✅ **Reescrito** `MANUAL_TECNICO.md` con arquitectura correcta (Electron+SQLite)
+- ✅ **Reescrito** `ESTADO_DEL_PROYECTO.md` con features reales y roadmap realista
+- ✅ **Actualizado** `README.md` con instrucciones de instalador
+- ✅ **Organizada** toda la documentación en carpeta `/docs`
+
+#### Nuevos Documentos
+- `uploads/README.md` - Guía de seguridad para archivos sensibles
+- `docs/README.md` - Índice de documentación
+
+#### Correcciones Críticas
+- URL de repositorio corregida (ahora SAE-Project)
+- Versión correcta en todos los documentos
+- Eliminadas menciones de features inexistentes
+- Todo en español (excepto LICENSE estándar GPL)
+
+### 🔒 Seguridad
+
+#### Gitignore Mejorado
+- Patrón `uploads/**/*` para excluir TODO el contenido
+- Agregadas carpetas: carnets, directores, usuarios, personal
+- Removidos 5 archivos sensibles que estaban trackeados
+- `uploads/README.md` documenta prácticas de seguridad
+
+#### Repositorio Limpio
+- ❌ Eliminados archivos de test temporales
+- ❌ Eliminada documentación redundante
+- ❌ Removido template README de Vite en inglés
+- ✅ Estructura profesional y organizada
+
+### 🏗️ Arquitectura
+
+- **Desktop:** Electron v39 (aplicación nativa de Windows)
+- **Frontend:** React 18 + Vite + TailwindCSS
+- **Backend:** Node.js + Express
+- **Base de Datos:** SQLite local (100% offline)
+- **QR:** Html5-QRCode + qrcode
+- **Reportes:** ExcelJS + PDFKit
+
+### 📦 Sistema de Instalación
+
+- ✅ Instalador Windows (.exe) con NSIS
+- ✅ Setup Wizard automático en primera ejecución
+- ✅ Configuración guiada de institución
+- ✅ Creación de usuario administrador
+- ✅ **PRÓXIMAMENTE:** Auto-actualización integrada
+
+### 🔄 Cambiado
+
+- Estado del proyecto: Beta → **Estable/Producción**
+- Badge de versión: v0.9.0-beta → **v1.0.0**
+- Status badge: Beta (amarillo) → **Stable (verde)**
+
+### 🐛 Corregido
+
+- Modal de cursos ahora aparece sobre modal de edición (z-index fix)
+- Overlay de modales cubre toda la pantalla sin franjas
+- QR code se carga correctamente en vista previa (blob URL)
+- Limpieza de estados de cursos al cancelar o crear nuevo
+- Fotos sensibles ya no se suben a GitHub
+
+### 📊 Estadísticas del Release
+
+- **Commits:** 200+ commits desde v0.9.0-beta
+- **Archivos modificados en esta release:** 15+
+- **Líneas de código agregadas:** ~1,500
+- **Documentación actualizada:** 100%
+- **Tests pasando:** ✅ 
+- **Sin vulnerabilidades:** ✅
+
+### 🚀 Próximos Pasos (v1.0.x)
+
+- Auto-actualización integrada via electron-updater
+- Instalador firmado digitalmente
+- Correcciones de bugs reportados
+- Optimizaciones de rendimiento
+
+---
+
 ## [0.9.3-beta] - 2026-01-17 (Fixes Reportes y Ausentes)
 
 ### 🐛 Corregido
