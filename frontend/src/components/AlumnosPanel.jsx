@@ -54,6 +54,43 @@ export default function AlumnosPanel() {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [confirmData, setConfirmData] = useState({ title: '', message: '', onConfirm: () => {}, type: 'danger' });
 
+  // Preview modal
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [previewAlumno, setPreviewAlumno] = useState(null);
+  const [previewQR, setPreviewQR] = useState(null);
+
+  // Load QR when preview modal opens
+  useEffect(() => {
+    const loadQR = async () => {
+      if (showPreviewModal && previewAlumno?.codigos_qr?.[0]) {
+        try {
+          const response = await qrAPI.download(previewAlumno.codigos_qr[0].id);
+          const blob = new Blob([response.data], { type: 'image/png' });
+          const url = window.URL.createObjectURL(blob);
+          setPreviewQR(url);
+        } catch (error) {
+          console.error('Error loading QR:', error);
+          setPreviewQR(null);
+        }
+      } else {
+        // Clean up previous QR URL
+        if (previewQR) {
+          window.URL.revokeObjectURL(previewQR);
+          setPreviewQR(null);
+        }
+      }
+    };
+    
+    loadQR();
+    
+    // Cleanup on unmount
+    return () => {
+      if (previewQR) {
+        window.URL.revokeObjectURL(previewQR);
+      }
+    };
+  }, [showPreviewModal, previewAlumno]);
+
   useEffect(() => {
     fetchData();
   }, []);
@@ -81,6 +118,7 @@ export default function AlumnosPanel() {
       '1ro. Primaria', '2do. Primaria', '3ro. Primaria', '4to. Primaria', '5to. Primaria', '6to. Primaria',
       '1ro. Básico', '2do. Básico', '3ro. Básico',
       'Básicos por Madurez (1er. Año)', 'Básicos por Madurez (2do. Año)',
+      '4to. Diversificado', '5to. Diversificado', '6to. Diversificado',
       'Bachillerato por Madurez'
     ];
     // Aquí se podría personalizar más según el país si fuera necesario
@@ -300,6 +338,11 @@ export default function AlumnosPanel() {
     } catch (error) {
       toast.error('Error al ver QR: ' + error.message);
     }
+  };
+
+  const handlePhotoClick = (alumno) => {
+    setPreviewAlumno(alumno);
+    setShowPreviewModal(true);
   };
 
   const handleDownloadQRsMasivo = async () => {
@@ -559,7 +602,11 @@ export default function AlumnosPanel() {
                       </td>
                       <td className="px-3 py-3">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700 flex-shrink-0">
+                          <div 
+                            className="w-10 h-10 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700 flex-shrink-0 cursor-pointer hover:ring-2 hover:ring-primary-500 transition-all"
+                            onClick={() => handlePhotoClick(alumno)}
+                            title="Click para ver detalles"
+                          >
                             {alumno.foto_path ? (
                               <img 
                                 src={alumno.foto_path.startsWith('http') ? alumno.foto_path : `${BASE_URL}/uploads/${alumno.foto_path}`}
@@ -710,7 +757,11 @@ export default function AlumnosPanel() {
                   <div className="flex justify-between items-start mb-3">
                     <div className="flex items-center gap-3 flex-1">
                       <span className="text-sm font-bold text-gray-500 dark:text-gray-400">#{index + 1}</span>
-                      <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700 flex-shrink-0">
+                      <div 
+                        className="w-12 h-12 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700 flex-shrink-0 cursor-pointer hover:ring-2 hover:ring-primary-500 transition-all"
+                        onClick={() => handlePhotoClick(alumno)}
+                        title="Click para ver detalles"
+                      >
                         {alumno.foto_path ? (
                           <img 
                             src={alumno.foto_path.startsWith('http') ? alumno.foto_path : `${BASE_URL}/uploads/${alumno.foto_path}`}
@@ -1265,6 +1316,168 @@ export default function AlumnosPanel() {
                   Confirmar
                 </button>
               </div>
+            </div>
+          </motion.div>
+        </div>,
+        document.body
+      )}
+
+      {/* Preview Modal */}
+      {showPreviewModal && previewAlumno && createPortal(
+        <div 
+          className="fixed inset-0 z-[100000] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm overflow-hidden"
+          onClick={() => setShowPreviewModal(false)}
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header con foto grande */}
+            <div className="relative bg-gradient-to-r from-primary-500 to-primary-600 p-6">
+              <button
+                onClick={() => setShowPreviewModal(false)}
+                className="absolute top-4 right-4 text-white/80 hover:text-white transition p-2 hover:bg-white/10 rounded-full"
+              >
+                <X size={24} />
+              </button>
+              
+              <div className="flex items-center gap-6">
+                <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-white shadow-xl flex-shrink-0">
+                  {previewAlumno.foto_path ? (
+                    <img 
+                      src={previewAlumno.foto_path.startsWith('http') ? previewAlumno.foto_path : `${BASE_URL}/uploads/${previewAlumno.foto_path}`}
+                      alt={`${previewAlumno.nombres} ${previewAlumno.apellidos}`}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-white text-gray-400">
+                      <User size={48} />
+                    </div>
+                  )}
+                </div>
+                
+                <div className="flex-1 text-white">
+                  <h2 className="text-2xl font-bold mb-1">
+                    {previewAlumno.nombres} {previewAlumno.apellidos}
+                  </h2>
+                  <p className="text-white/90 font-mono font-semibold">
+                    Carnet: {previewAlumno.carnet}
+                  </p>
+                  <span className={`inline-block mt-2 px-3 py-1 rounded-full text-sm font-semibold ${
+                    previewAlumno.estado === 'activo' 
+                      ? 'bg-green-500 text-white' 
+                      : previewAlumno.estado === 'repitente'
+                      ? 'bg-orange-500 text-white'
+                      : 'bg-red-500 text-white'
+                  }`}>
+                    {previewAlumno.estado.toUpperCase()}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Contenido */}
+            <div className="p-6 space-y-6">
+              {/* Información Personal */}
+              <div>
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2 mb-3">
+                  <User className="text-primary-600" size={20} />
+                  Información Personal
+                </h3>
+                <div className="grid grid-cols-2 gap-4 bg-gray-50 dark:bg-gray-700/30 p-4 rounded-lg">
+                  {previewAlumno.sexo && (
+                    <div>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Sexo</p>
+                      <p className="font-semibold text-gray-900 dark:text-white">{previewAlumno.sexo}</p>
+                    </div>
+                  )}
+                  <div>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Jornada</p>
+                    <p className="font-semibold text-gray-900 dark:text-white">{previewAlumno.jornada || '-'}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Información Académica */}
+              <div>
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2 mb-3">
+                  <GraduationCap className="text-primary-600" size={20} />
+                  Información Académica
+                </h3>
+                <div className="grid grid-cols-2 gap-4 bg-gray-50 dark:bg-gray-700/30 p-4 rounded-lg">
+                  <div>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Grado</p>
+                    <p className="font-semibold text-gray-900 dark:text-white">{previewAlumno.grado}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Sección</p>
+                    <p className="font-semibold text-gray-900 dark:text-white">{previewAlumno.seccion || '-'}</p>
+                  </div>
+                  {previewAlumno.carrera && (
+                    <div className="col-span-2">
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Carrera</p>
+                      <p className="font-semibold text-gray-900 dark:text-white">{previewAlumno.carrera}</p>
+                    </div>
+                  )}
+                  {previewAlumno.especialidad && (
+                    <div className="col-span-2">
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Especialidad</p>
+                      <p className="font-semibold text-gray-900 dark:text-white">{previewAlumno.especialidad}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Código QR */}
+              {previewAlumno.codigos_qr?.[0] && (
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2 mb-3">
+                    <QrCode className="text-primary-600" size={20} />
+                    Código QR
+                  </h3>
+                  <div className="bg-gray-50 dark:bg-gray-700/30 p-6 rounded-lg flex justify-center">
+                    {previewQR ? (
+                      <div className="bg-white p-4 rounded-lg shadow-md">
+                        <img 
+                          src={previewQR}
+                          alt="Código QR"
+                          className="w-48 h-48"
+                        />
+                      </div>
+                    ) : (
+                      <div className="w-56 h-56 flex items-center justify-center text-gray-400">
+                        <div className="text-center">
+                          <QrCode size={48} className="mx-auto mb-2" />
+                          <p className="text-sm">Cargando QR...</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Footer con acciones */}
+            <div className="p-6 border-t border-gray-200 dark:border-gray-700 flex gap-3 bg-gray-50 dark:bg-gray-800/50">
+              <button
+                onClick={() => {
+                  setShowPreviewModal(false);
+                  handleEdit(previewAlumno);
+                }}
+                className="flex-1 bg-primary-600 hover:bg-primary-700 text-white font-bold py-3 px-4 rounded-lg transition flex items-center justify-center gap-2"
+              >
+                <Edit size={18} />
+                Editar
+              </button>
+              <button
+                onClick={() => setShowPreviewModal(false)}
+                className="flex-1 bg-gray-300 hover:bg-gray-400 dark:bg-gray-600 dark:hover:bg-gray-500 text-gray-800 dark:text-gray-100 font-bold py-3 px-4 rounded-lg transition"
+              >
+                Cerrar
+              </button>
             </div>
           </motion.div>
         </div>,

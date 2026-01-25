@@ -61,9 +61,14 @@ export default function PersonalPanel() {
   const [nuevoCarnet, setNuevoCarnet] = useState('');
   const [reasignandoCarnet, setReasignandoCarnet] = useState(false);
 
-  // Estado para el input de curso (cuando se agregan mÃºltiples)
+  // Estado para el input de curso (cuando se agregan múltiples)
   const [cursoInput, setCursoInput] = useState('');
   const [cursosList, setCursosList] = useState([]);
+
+  // Preview modal
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [previewPersonal, setPreviewPersonal] = useState(null);
+  const [previewQR, setPreviewQR] = useState(null);
 
   // Colores para las etiquetas de cursos
   const courseColors = [
@@ -116,6 +121,36 @@ export default function PersonalPanel() {
     fetchPersonal();
     generarGrados();
   }, []);
+
+  // Load QR when preview modal opens
+  useEffect(() => {
+    const loadQR = async () => {
+      if (showPreviewModal && previewPersonal?.codigos_qr?.[0]) {
+        try {
+          const response = await qrAPI.download(previewPersonal.codigos_qr[0].id);
+          const blob = new Blob([response.data], { type: 'image/png' });
+          const url = window.URL.createObjectURL(blob);
+          setPreviewQR(url);
+        } catch (error) {
+          console.error('Error loading QR:', error);
+          setPreviewQR(null);
+        }
+      } else {
+        if (previewQR) {
+          window.URL.revokeObjectURL(previewQR);
+          setPreviewQR(null);
+        }
+      }
+    };
+    
+    loadQR();
+    
+    return () => {
+      if (previewQR) {
+        window.URL.revokeObjectURL(previewQR);
+      }
+    };
+  }, [showPreviewModal, previewPersonal]);
 
   const fetchPersonal = async () => {
     setLoading(true);
@@ -350,6 +385,11 @@ export default function PersonalPanel() {
     setShowCursosModal(true);
   };
 
+  const handlePhotoClick = (miembro) => {
+    setPreviewPersonal(miembro);
+    setShowPreviewModal(true);
+  };
+
   const handleViewQR = async (id) => {
     try {
       const response = await qrAPI.download(id);
@@ -478,6 +518,9 @@ export default function PersonalPanel() {
               categoria: 'Docente',
               jornada: ''
             });
+            setCursosList([]); // Limpiar lista de cursos
+            setCursoInput(''); // Limpiar input de cursos
+            setCarnetMode('auto'); // Reset carnet mode
             setShowModal(true);
           }}
           className="bg-success hover:bg-success-dark dark:bg-success-light dark:hover:bg-success text-white font-bold py-2.5 px-5 rounded-lg flex items-center justify-center gap-2 transition-colors shadow-lg hover:shadow-xl"
@@ -657,7 +700,11 @@ export default function PersonalPanel() {
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700 flex-shrink-0">
+                          <div 
+                            className="w-10 h-10 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700 flex-shrink-0 cursor-pointer hover:ring-2 hover:ring-success transition-all"
+                            onClick={() => handlePhotoClick(miembro)}
+                            title="Click para ver detalles"
+                          >
                             {miembro.foto_path ? (
                               <img 
                                 src={miembro.foto_path.startsWith('http') ? miembro.foto_path : `${BASE_URL}/uploads/${miembro.foto_path}`}
@@ -761,7 +808,11 @@ export default function PersonalPanel() {
                   <div className="flex justify-between items-start mb-3">
                     <div className="flex items-center gap-3 flex-1">
                       <span className="text-sm font-bold text-gray-500 dark:text-gray-400">#{index + 1}</span>
-                      <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700 flex-shrink-0">
+                      <div 
+                        className="w-12 h-12 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700 flex-shrink-0 cursor-pointer hover:ring-2 hover:ring-success transition-all"
+                        onClick={() => handlePhotoClick(miembro)}
+                        title="Click para ver detalles"
+                      >
                         {miembro.foto_path ? (
                           <img 
                             src={miembro.foto_path.startsWith('http') ? miembro.foto_path : `${BASE_URL}/uploads/${miembro.foto_path}`}
@@ -1102,27 +1153,24 @@ export default function PersonalPanel() {
                         />
                     </div>
                     
-                    {/* Lista de chips de cursos */}
-                    <div className="flex flex-wrap gap-2 min-h-[30px] p-2 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-100 dark:border-gray-700">
-                        {cursosList.length === 0 && (
-                        <span className="text-xs text-gray-400 italic">No hay cursos asignados</span>
-                        )}
-                        {cursosList.map((c, index) => (
-                        <span 
-                            key={index} 
-                            className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold ${getCourseColor(c)}`}
+                    {/* Vista compacta de cursos */}
+                    {cursosList.length > 0 ? (
+                      <div className="mt-2">
+                        <button
+                          type="button"
+                          onClick={() => setShowCursosModal({ 
+                            nombre: `${formData.nombres || 'Nuevo'} ${formData.apellidos || 'Personal'}`, 
+                            cursos: cursosList 
+                          })}
+                          className="text-blue-600 dark:text-blue-400 hover:underline font-medium text-sm flex items-center gap-1"
                         >
-                            {c}
-                            <button
-                            type="button"
-                            onClick={() => handleRemoveCurso(c)}
-                            className="hover:text-red-500 focus:outline-none"
-                            >
-                            <X size={12} />
-                            </button>
-                        </span>
-                        ))}
-                    </div>
+                          Ver {cursosList.length} curso{cursosList.length !== 1 ? 's' : ''}
+                        </button>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Haz clic para ver/editar cursos</p>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-gray-400 italic mt-1">No hay cursos asignados</p>
+                    )}
                   </div>
                 </div>
               )}
@@ -1130,7 +1178,11 @@ export default function PersonalPanel() {
               <div className="flex gap-3 pt-4">
                 <button
                   type="button"
-                  onClick={() => setShowModal(false)}
+                  onClick={() => {
+                    setShowModal(false);
+                    setCursosList([]);
+                    setCursoInput('');
+                  }}
                   className="flex-1 bg-gray-300 hover:bg-gray-400 dark:bg-gray-600 dark:hover:bg-gray-500 text-gray-800 dark:text-gray-100 font-bold py-2.5 rounded-lg transition"
                 >
                   Cancelar
@@ -1206,22 +1258,34 @@ export default function PersonalPanel() {
         document.body
       )}
       {/* Modal de Cursos */}
-      <AnimatePresence>
-        {showCursosModal && selectedDocenteCursos && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+      {showCursosModal && (selectedDocenteCursos || showCursosModal.cursos) && createPortal(
+        <AnimatePresence>
+          <div 
+            className="fixed inset-0 z-[100000] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm overflow-hidden"
+            onClick={() => {
+              setShowCursosModal(false);
+              setSelectedDocenteCursos(null);
+            }}
+          >
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
               className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-md overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
             >
               <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-800/50">
                 <div>
                   <h2 className="text-xl font-bold text-gray-900 dark:text-white">Cursos Impartidos</h2>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{selectedDocenteCursos.nombre}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                    {selectedDocenteCursos?.nombre || showCursosModal?.nombre}
+                  </p>
                 </div>
                 <button
-                  onClick={() => setShowCursosModal(false)}
+                  onClick={() => {
+                    setShowCursosModal(false);
+                    setSelectedDocenteCursos(null);
+                  }}
                   className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300 transition-colors p-2 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-full"
                 >
                   <X size={20} />
@@ -1229,8 +1293,30 @@ export default function PersonalPanel() {
               </div>
               
               <div className="p-6 max-h-[60vh] overflow-y-auto">
+                {/* Input para agregar curso (solo en modo edición desde formulario) */}
+                {showCursosModal.cursos && (
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Agregar nuevo curso
+                    </label>
+                    <input
+                      type="text"
+                      value={cursoInput}
+                      onChange={(e) => setCursoInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleAddCurso();
+                        }
+                      }}
+                      placeholder="Escribe y presiona Enter"
+                      className="w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-success focus:border-transparent text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
+                    />
+                  </div>
+                )}
+
                 <div className="space-y-2">
-                  {selectedDocenteCursos.cursos.map((curso, index) => (
+                  {(selectedDocenteCursos?.cursos || showCursosModal?.cursos || []).map((curso, index) => (
                     <div 
                       key={index}
                       className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-700/30 border border-gray-100 dark:border-gray-700 hover:shadow-sm transition-all duration-200"
@@ -1241,14 +1327,32 @@ export default function PersonalPanel() {
                       <span className={`px-3 py-1 rounded-lg text-sm font-semibold flex-1 ${getCourseColor(curso)}`}>
                         {curso}
                       </span>
+                      {/* Botón eliminar solo en modo edición */}
+                      {showCursosModal.cursos && (
+                        <button
+                          onClick={() => handleRemoveCurso(curso)}
+                          className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition"
+                          title="Eliminar curso"
+                        >
+                          <X size={16} />
+                        </button>
+                      )}
                     </div>
                   ))}
+                  {(selectedDocenteCursos?.cursos || showCursosModal?.cursos || []).length === 0 && (
+                    <div className="text-center py-8 text-gray-400">
+                      <p className="text-sm">No hay cursos asignados</p>
+                    </div>
+                  )}
                 </div>
               </div>
 
               <div className="p-6 pt-2">
                 <button
-                  onClick={() => setShowCursosModal(false)}
+                  onClick={() => {
+                    setShowCursosModal(false);
+                    setSelectedDocenteCursos(null);
+                  }}
                   className="w-full bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-bold py-3 rounded-xl transition"
                 >
                   Cerrar
@@ -1256,8 +1360,9 @@ export default function PersonalPanel() {
               </div>
             </motion.div>
           </div>
-        )}
-      </AnimatePresence>
+        </AnimatePresence>,
+        document.body
+      )}
 
       {/* Modal de Reasignación de Carnet */}
       {showReasignarModal && createPortal(
@@ -1358,6 +1463,175 @@ export default function PersonalPanel() {
                     ✅ Confirmar Reasignación
                   </>
                 )}
+              </button>
+            </div>
+          </motion.div>
+        </div>,
+        document.body
+      )}
+
+      {/* Preview Modal */}
+      {showPreviewModal && previewPersonal && createPortal(
+        <div 
+          className="fixed inset-0 z-[100000] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm overflow-hidden"
+          onClick={() => setShowPreviewModal(false)}
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header con foto grande */}
+            <div className="relative bg-gradient-to-r from-success to-success-dark p-6">
+              <button
+                onClick={() => setShowPreviewModal(false)}
+                className="absolute top-4 right-4 text-white/80 hover:text-white transition p-2 hover:bg-white/10 rounded-full"
+              >
+                <X size={24} />
+              </button>
+              
+              <div className="flex items-center gap-6">
+                <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-white shadow-xl flex-shrink-0">
+                  {previewPersonal.foto_path ? (
+                    <img 
+                      src={previewPersonal.foto_path.startsWith('http') ? previewPersonal.foto_path : `${BASE_URL}/uploads/${previewPersonal.foto_path}`}
+                      alt={`${previewPersonal.nombres} ${previewPersonal.apellidos}`}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-white text-gray-400">
+                      <User size={48} />
+                    </div>
+                  )}
+                </div>
+                
+                <div className="flex-1 text-white">
+                  <h2 className="text-2xl font-bold mb-1">
+                    {previewPersonal.nombres} {previewPersonal.apellidos}
+                  </h2>
+                  <p className="text-white/90 font-mono font-semibold">
+                    Carnet: {previewPersonal.carnet}
+                  </p>
+                  <span className={`inline-block mt-2 px-3 py-1 rounded-full text-sm font-semibold ${
+                    previewPersonal.estado === 'activo' 
+                      ? 'bg-green-500 text-white' 
+                      : 'bg-red-500 text-white'
+                  }`}>
+                    {previewPersonal.estado.toUpperCase()}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Contenido */}
+            <div className="p-6 space-y-6">
+              {/* Información Personal */}
+              <div>
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2 mb-3">
+                  <User className="text-success" size={20} />
+                  Información Personal
+                </h3>
+                <div className="grid grid-cols-2 gap-4 bg-gray-50 dark:bg-gray-700/30 p-4 rounded-lg">
+                  {previewPersonal.sexo && (
+                    <div>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Sexo</p>
+                      <p className="font-semibold text-gray-900 dark:text-white">{previewPersonal.sexo}</p>
+                    </div>
+                  )}
+                  <div>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Cargo</p>
+                    <p className="font-semibold text-gray-900 dark:text-white">{previewPersonal.cargo || '-'}</p>
+                  </div>
+                  <div className="col-span-2">
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Jornada</p>
+                    <p className="font-semibold text-gray-900 dark:text-white">{previewPersonal.jornada || '-'}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Información Laboral (solo para docentes) */}
+              {previewPersonal.cargo === 'Docente' && (
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2 mb-3">
+                    <Briefcase className="text-success" size={20} />
+                    Información Laboral
+                  </h3>
+                  <div className="bg-gray-50 dark:bg-gray-700/30 p-4 rounded-lg space-y-3">
+                    {previewPersonal.grado_guia && (
+                      <div>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Grado Guía</p>
+                        <p className="font-semibold text-gray-900 dark:text-white">{previewPersonal.grado_guia}</p>
+                      </div>
+                    )}
+                    
+                    {/* Cursos impartidos */}
+                    {previewPersonal.curso && (
+                      <div>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">Cursos Impartidos</p>
+                        <div className="flex flex-wrap gap-2">
+                          {previewPersonal.curso.split(',').map((curso, index) => (
+                            <span 
+                              key={index}
+                              className={`px-3 py-1 rounded-lg text-sm font-semibold ${getCourseColor(curso.trim())}`}
+                            >
+                              {curso.trim()}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Código QR */}
+              {previewPersonal.codigos_qr?.[0] && (
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2 mb-3">
+                    <QrCode className="text-success" size={20} />
+                    Código QR
+                  </h3>
+                  <div className="bg-gray-50 dark:bg-gray-700/30 p-6 rounded-lg flex justify-center">
+                    {previewQR ? (
+                      <div className="bg-white p-4 rounded-lg shadow-md">
+                        <img 
+                          src={previewQR}
+                          alt="Código QR"
+                          className="w-48 h-48"
+                        />
+                      </div>
+                    ) : (
+                      <div className="w-56 h-56 flex items-center justify-center text-gray-400">
+                        <div className="text-center">
+                          <QrCode size={48} className="mx-auto mb-2" />
+                          <p className="text-sm">Cargando QR...</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Footer con acciones */}
+            <div className="p-6 border-t border-gray-200 dark:border-gray-700 flex gap-3 bg-gray-50 dark:bg-gray-800/50">
+              <button
+                onClick={() => {
+                  setShowPreviewModal(false);
+                  handleEdit(previewPersonal);
+                }}
+                className="flex-1 bg-success hover:bg-success-dark text-white font-bold py-3 px-4 rounded-lg transition flex items-center justify-center gap-2"
+              >
+                <Edit size={18} />
+                Editar
+              </button>
+              <button
+                onClick={() => setShowPreviewModal(false)}
+                className="flex-1 bg-gray-300 hover:bg-gray-400 dark:bg-gray-600 dark:hover:bg-gray-500 text-gray-800 dark:text-gray-100 font-bold py-3 px-4 rounded-lg transition"
+              >
+                Cerrar
               </button>
             </div>
           </motion.div>
