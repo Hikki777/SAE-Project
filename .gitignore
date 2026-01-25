@@ -34,19 +34,24 @@ combined.log
 error.log
 
 # ============================================
-# ARCHIVOS SUBIDOS (UPLOADS)
+# ARCHIVOS SUBIDOS (UPLOADS) - DATOS SENSIBLES
 # ============================================
-uploads/alumnos/*
-uploads/docentes/*
-uploads/qrs/*
-uploads/logos/*
-uploads/documentos/*
+# Ignorar TODO el contenido de uploads EXCEPTO los archivos .gitkeep
+uploads/**/*
 !uploads/.gitkeep
-!uploads/alumnos/.gitkeep
-!uploads/docentes/.gitkeep
-!uploads/qrs/.gitkeep
-!uploads/logos/.gitkeep
-!uploads/documentos/.gitkeep
+!uploads/*/.gitkeep
+!uploads/*/*/.gitkeep
+
+# Asegurar que estas carpetas específicas estén ignoradas
+uploads/alumnos/
+uploads/docentes/
+uploads/directores/
+uploads/usuarios/
+uploads/qrs/
+uploads/logos/
+uploads/documentos/
+uploads/carnets/
+uploads/personal/
 
 # ============================================
 # BUILD Y DISTRIBUCIÓN
