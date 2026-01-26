@@ -120,8 +120,30 @@ router.get('/', async (req, res) => {
     const excusas = await prisma.excusa.findMany({
       where,
       include: {
-        alumno: { select: { nombres: true, apellidos: true, carnet: true, grado: true } },
-        personal: { select: { nombres: true, apellidos: true, cargo: true } },
+        alumno: { 
+          select: { 
+            nombres: true, 
+            apellidos: true, 
+            carnet: true, 
+            grado: true,
+            seccion: true,
+            carrera: true,
+            especialidad: true,
+            foto_path: true,
+            jornada: true
+          } 
+        },
+        personal: { 
+          select: { 
+            nombres: true, 
+            apellidos: true, 
+            cargo: true,
+            carnet: true,
+            grado_guia: true,
+            foto_path: true,
+            jornada: true
+          } 
+        },
       },
       orderBy: { fecha: 'desc' },
     });

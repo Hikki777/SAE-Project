@@ -9,7 +9,7 @@ export default function ModalSinSalida({ personas, fecha, onCerrar, onActualizar
   const [procesando, setProcesando] = useState(false);
   const [personasProcesadas, setPersonasProcesadas] = useState(new Set());
 
-  const handleMarcarSalida = async (persona) => {
+  const handleMarcarSalida = async (persona, silent = false) => {
     try {
       const data = {
         tipo_evento: 'salida',
@@ -26,7 +26,10 @@ export default function ModalSinSalida({ personas, fecha, onCerrar, onActualizar
       await client.post('/asistencias', data);
       
       setPersonasProcesadas(prev => new Set([...prev, persona.id]));
-      toast.success(`✅ Salida registrada para ${persona.nombres}`);
+      
+      if (!silent) {
+        toast.success(`✅ Salida registrada para ${persona.nombres}`);
+      }
       
       if (onActualizar) {
         onActualizar();
@@ -49,7 +52,7 @@ export default function ModalSinSalida({ personas, fecha, onCerrar, onActualizar
     const pendientes = personas.filter(p => !personasProcesadas.has(p.id));
     
     for (const persona of pendientes) {
-      await handleMarcarSalida(persona);
+      await handleMarcarSalida(persona, true); // silent = true
       // Pequeña pausa para no saturar
       await new Promise(resolve => setTimeout(resolve, 300));
     }
@@ -66,7 +69,7 @@ export default function ModalSinSalida({ personas, fecha, onCerrar, onActualizar
 
   return createPortal(
     <div 
-      className="modal-overlay"
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
       onClick={onCerrar}
     >
       <motion.div
@@ -128,7 +131,13 @@ export default function ModalSinSalida({ personas, fecha, onCerrar, onActualizar
                     {/* Avatar */}
                     <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-600 flex-shrink-0">
                       {(() => {
-                        const fotoUrl = persona.foto_path ? `/uploads/${persona.foto_path}` : null;
+                        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+                        const BASE_URL = API_URL.replace('/api', '');
+                        const fotoUrl = persona.foto_path 
+                          ? (persona.foto_path.startsWith('http') 
+                              ? persona.foto_path 
+                              : `${BASE_URL}/uploads/${persona.foto_path}`)
+                          : null;
                         
                         return fotoUrl ? (
                           <>

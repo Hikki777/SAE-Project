@@ -1,723 +1,659 @@
 import { useState, useEffect } from 'react';
-import { createPortal } from 'react-dom';
-import { useNavigate } from 'react-router-dom';
-import { excusasAPI, alumnosAPI, docentesAPI } from '../api/endpoints';
-import { FileText, Plus, Check, X, Eye, Calendar, User, Filter } from 'lucide-react';
-import RevisionRapidaView from './RevisionRapidaView';
-import './JustificacionesPanel.css';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  FileText, AlertCircle, Check, X, Eye, Calendar, User, Filter,
+  UserX, Clock, ChevronDown, ChevronUp, FileDown, FileSpreadsheet,
+  Search, ChevronLeft, ChevronRight
+} from 'lucide-react';
+import client from '../api/client';
+import toast, { Toaster } from 'react-hot-toast';
+import { generateJustificacionesPDF, generateJustificacionesExcel } from '../utils/reportGenerator';
 
-const ExcusasPanel = () => {
-  const navigate = useNavigate();
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const BASE_URL = API_URL.replace('/api', '');
+
+export default function JustificacionesPanel() {
   const [excusas, setExcusas] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    ausentesHoy: 0,
+    ausentesSemana: 0,
+    ausentesMes: 0,
+    pendientes: 0,
+    rechazadas: 0
+  });
+
+  // Filtros
   const [filtros, setFiltros] = useState({
-    personaTipo: '',
+    busqueda: '',
     estado: '',
+    rol: '',
     fechaInicio: '',
     fechaFin: '',
-    busqueda: ''
+    rangoRapido: 'hoy'
   });
-  
-  const [modalCrear, setModalCrear] = useState(false);
-  const [modalDetalle, setModalDetalle] = useState(null);
-  const [modalAccion, setModalAccion] = useState(null); // { tipo: 'aprobar'|'rechazar', excusa }
-  
-  const [alumnos, setAlumnos] = useState([]);
-  const [docentes, setDocentes] = useState([]);
-  
-  // Estados para modo revisión rápida
-  const [modoRevision, setModoRevision] = useState(false);
-  const [ausentesRevision, setAusentesRevision] = useState([]);
-  const [fechaRevision, setFechaRevision] = useState(null);
-  
-  const [formData, setFormData] = useState({
-    persona_tipo: 'alumno',
-    alumno_id: '',
-    personal_id: '',
-    fecha_ausencia: '',
-    motivo: '',
-    descripcion: '',
-    documento_url: ''
-  });
+  const [mostrarFiltrosAvanzados, setMostrarFiltrosAvanzados] = useState(false);
 
-  // Detectar modo de revisión desde URL
+  // Paginación
+  const [paginaActual, setPaginaActual] = useState(1);
+  const itemsPorPagina = 10;
+
+  // Modales
+  const [excusaSeleccionada, setExcusaSeleccionada] = useState(null);
+  const [motivoRechazo, setMotivoRechazo] = useState('');
+  const [mostrarModalRechazo, setMostrarModalRechazo] = useState(false);
+  const [mostrarModalJustificar, setMostrarModalJustificar] = useState(false);
+  const [personaJustificar, setPersonaJustificar] = useState(null);
+
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('modo') === 'revision') {
-      const ausentes = JSON.parse(sessionStorage.getItem('ausentes_revision') || '[]');
-      const fecha = sessionStorage.getItem('fecha_revision') || new Date().toISOString();
-      
-      if (ausentes.length > 0) {
-        setModoRevision(true);
-        setAusentesRevision(ausentes);
-        setFechaRevision(fecha);
-      }
+    // Inicializar rango hoy si no hay fechas
+    if (!filtros.fechaInicio && !filtros.fechaFin) {
+      handleRangoRapido('hoy');
+    } else {
+      cargarDatos();
     }
-  }, []);
+  }, [filtros]); 
 
-  // Cargar listas de personas solo al montar
-  useEffect(() => {
-    cargarPersonas();
-  }, []);
-
-  // Cargar excusas con debouncing para la búsqueda
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      cargarExcusas();
-    }, filtros.busqueda ? 500 : 0); // Esperar 500ms si hay texto, si no cargar inmediato
-
-    return () => clearTimeout(timer);
-  }, [filtros.personaTipo, filtros.estado, filtros.fechaInicio, filtros.fechaFin, filtros.busqueda]);
-
-  const cargarExcusas = async () => {
+  const cargarDatos = async () => {
+    setLoading(true);
     try {
-      setLoading(true);
-      const response = await excusasAPI.list(filtros);
-      setExcusas(response.data.excusas || response.data);
+      const params = new URLSearchParams();
+      if (filtros.estado) params.append('estado', filtros.estado);
+      if (filtros.busqueda) params.append('busqueda', filtros.busqueda);
+      if (filtros.fechaInicio) params.append('fechaInicio', filtros.fechaInicio);
+      if (filtros.fechaFin) params.append('fechaFin', filtros.fechaFin);
+      // Filtros opcionales de rol
+      if (filtros.rol === 'alumno') params.append('personaTipo', 'alumno');
+      if (filtros.rol === 'personal') params.append('personaTipo', 'personal');
+
+      const response = await client.get(`/excusas?${params.toString()}`);
+      const excusasData = response.data.excusas || [];
+      setExcusas(excusasData);
+      calcularEstadisticas(excusasData);
     } catch (error) {
-      console.error('Error cargando excusas:', error);
-      alert('Error al cargar excusas');
+      console.error('Error cargando datos:', error);
+      toast.error('Error al cargar justificaciones');
     } finally {
       setLoading(false);
     }
   };
 
-  const cargarPersonas = async () => {
-    try {
-      const [alumnosRes, docentesRes] = await Promise.all([
-        alumnosAPI.list(),
-        docentesAPI.list()
-      ]);
-      setAlumnos(alumnosRes.data.alumnos || alumnosRes.data);
-      setDocentes(docentesRes.data.docentes || docentesRes.data);
-    } catch (error) {
-      console.error('Error cargando personas:', error);
-    }
+  const calcularEstadisticas = (excusasData) => {
+    const hoy = new Date();
+    const hace7Dias = new Date();
+    hace7Dias.setDate(hoy.getDate() - 7);
+    const inicioMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+
+    const stats = {
+      ausentesHoy: excusasData.filter(e => {
+        const fecha = new Date(e.fecha_ausencia);
+        return fecha.toDateString() === hoy.toDateString();
+      }).length,
+      ausentesSemana: excusasData.filter(e => {
+        const fecha = new Date(e.fecha_ausencia);
+        return fecha >= hace7Dias;
+      }).length,
+      ausentesMes: excusasData.filter(e => {
+        const fecha = new Date(e.fecha_ausencia);
+        return fecha >= inicioMes;
+      }).length,
+      pendientes: excusasData.filter(e => e.estado === 'pendiente').length,
+      rechazadas: excusasData.filter(e => e.estado === 'rechazada').length
+    };
+    setStats(stats);
   };
 
-
-
-  const handleAprobar = async (excusa) => {
-    if (!window.confirm(`¿Aprobar excusa de ${getNombrePersona(excusa)}?`)) {
-      return;
-    }
-
-    try {
-      await excusasAPI.update(excusa.id, { estado: 'aprobada' });
-      alert('Excusa aprobada');
-      cargarExcusas();
-    } catch (error) {
-      console.error('Error aprobando excusa:', error);
-      alert('Error al aprobar excusa');
-    }
-  };
-
-  const handleRechazar = async (excusa, observaciones) => {
-    try {
-      await excusasAPI.update(excusa.id, { 
-        estado: 'rechazada',
-        observaciones 
-      });
-      alert('Excusa rechazada');
-      setModalAccion(null);
-      cargarExcusas();
-    } catch (error) {
-      console.error('Error rechazando excusa:', error);
-      alert('Error al rechazar excusa');
-    }
-  };
-
-  const handleEliminar = async (id) => {
-    if (!window.confirm('¿Eliminar esta excusa?')) {
-      return;
-    }
-
-    try {
-      await excusasAPI.delete(id);
-      alert('Excusa eliminada');
-      cargarExcusas();
-    } catch (error) {
-      console.error('Error eliminando excusa:', error);
-      alert('Error al eliminar excusa');
-    }
-  };
-
-  const getNombrePersona = (excusa) => {
-    if (excusa.alumno) {
-      return `${excusa.alumno.nombres} ${excusa.alumno.apellidos}`;
-    } else if (excusa.personal) {
-      return `${excusa.personal.nombres} ${excusa.personal.apellidos}`;
-    }
-    return 'N/A';
-  };
-
-  const resetForm = () => {
-    setFormData({
-      persona_tipo: 'alumno',
-      alumno_id: '',
-      personal_id: '',
-      fecha_ausencia: '',
-      motivo: '',
-      descripcion: '',
-      documento_url: '',
-      archivo: null
-    });
-  };
-
-  const handleFileChange = (e) => {
-    if (e.target.files[0]) {
-      setFormData({ ...formData, archivo: e.target.files[0] });
-    }
-  };
-
-  const handleCrearExcusa = async (e) => {
-    e.preventDefault();
+  const handleRangoRapido = (rango) => {
+    const hoy = new Date();
     
-    if (!formData.fecha_ausencia || !formData.motivo) {
-      alert('Fecha y motivo son obligatorios');
-      return;
-    }
+    // YYYY-MM-DD
+    const formatDate = (date) => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
 
-    if (formData.persona_tipo === 'alumno' && !formData.alumno_id) {
-      alert('Selecciona un alumno');
-      return;
-    }
+    let inicio, fin;
+    fin = formatDate(hoy);
 
-    if (formData.persona_tipo === 'personal' && !formData.personal_id) {
-      alert('Selecciona un miembro del personal');
-      return;
-    }
-
-    const data = new FormData();
-    data.append('persona_tipo', formData.persona_tipo);
-    data.append('motivo', formData.motivo);
-    data.append('fecha_ausencia', formData.fecha_ausencia);
-    if (formData.alumno_id) data.append('alumno_id', formData.alumno_id);
-    if (formData.personal_id) data.append('personal_id', formData.personal_id);
-    if (formData.descripcion) data.append('descripcion', formData.descripcion);
-    if (formData.archivo) data.append('archivo', formData.archivo);
-
-    try {
-      await excusasAPI.create(data);
-      alert('Justificación registrada exitosamente');
-      setModalCrear(false);
-      resetForm();
-      cargarExcusas();
-    } catch (error) {
-      console.error('Error creando justificación:', error);
-      alert('Error: ' + (error.response?.data?.error || error.message));
-    }
-  };
-
-  const formatFecha = (fecha) => {
-    return new Date(fecha).toLocaleDateString('es-ES', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  };
-
-  const getEstadoBadgeClass = (estado) => {
-    switch (estado) {
-      case 'aprobada': return 'badge-success';
-      case 'rechazada': return 'badge-danger';
-      case 'pendiente': return 'badge-warning';
-      default: return 'badge-secondary';
-    }
-  };
-
-  const handleQuickRange = (range) => {
-    const today = new Date();
-    // Ajustar a la zona horaria local para evitar saltos de día por UTC
-    const offset = today.getTimezoneOffset() * 60000;
-    const localToday = new Date(today - offset);
-    const todayStr = localToday.toISOString().split('T')[0];
-
-    switch (range) {
-      case 'Hoy':
-        setFiltros({ ...filtros, fechaInicio: todayStr, fechaFin: todayStr });
+    switch (rango) {
+      case 'hoy':
+        inicio = fin;
         break;
-      case 'Últimos 7 días':
-        const sevenDaysAgo = new Date();
-        sevenDaysAgo.setDate(today.getDate() - 7);
-        const localSevenDays = new Date(sevenDaysAgo - offset);
-        setFiltros({ ...filtros, fechaInicio: localSevenDays.toISOString().split('T')[0], fechaFin: todayStr });
+      case 'semana':
+        const hace7 = new Date();
+        hace7.setDate(hoy.getDate() - 7);
+        inicio = formatDate(hace7);
         break;
-      case 'Este mes':
-        const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-        const localFirstDay = new Date(firstDayOfMonth - offset);
-        setFiltros({ ...filtros, fechaInicio: localFirstDay.toISOString().split('T')[0], fechaFin: todayStr });
-        break;
-      case 'Pendientes':
-        setFiltros({ ...filtros, estado: 'pendiente' });
+      case 'mes':
+        const inicioMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+        inicio = formatDate(inicioMes);
         break;
       default:
-        break;
+        // personalizada o pendientes, no cambiamos fechas aqui
+        return; 
+    }
+
+    setFiltros(prev => ({
+      ...prev,
+      rangoRapido: rango,
+      fechaInicio: inicio,
+      fechaFin: fin
+    }));
+  };
+
+  const handleAprobar = async (excusaId) => {
+    try {
+      await client.put(`/excusas/${excusaId}`, { estado: 'aprobada' });
+      toast.success('✓ Justificación aprobada');
+      cargarDatos();
+    } catch (error) {
+      console.error('Error aprobando:', error);
+      toast.error('Error al aprobar');
     }
   };
 
-  const handleVolverAAsistencias = () => {
-    // Limpiar sessionStorage
-    sessionStorage.removeItem('ausentes_revision');
-    sessionStorage.removeItem('fecha_revision');
-    
-    // Redirigir a asistencias
-    navigate('/asistencias');
+  const handleRechazar = async () => {
+    if (!motivoRechazo.trim()) {
+      toast.error('Debes proporcionar un motivo');
+      return;
+    }
+    try {
+      await client.put(`/excusas/${excusaSeleccionada.id}`, { 
+        estado: 'rechazada',
+        observaciones: motivoRechazo
+      });
+      toast.success('✗ Justificación rechazada');
+      setMostrarModalRechazo(false);
+      setExcusaSeleccionada(null);
+      setMotivoRechazo('');
+      cargarDatos();
+    } catch (error) {
+      console.error('Error rechazando:', error);
+      toast.error('Error al rechazar');
+    }
   };
 
-  // Si está en modo revisión, mostrar vista especial
-  if (modoRevision) {
-    return (
-      <RevisionRapidaView
-        ausentesIniciales={ausentesRevision}
-        fecha={fechaRevision}
-        onVolver={handleVolverAAsistencias}
-      />
-    );
-  }
+  const handleExportarPDF = async () => {
+    try {
+      const institucionRes = await client.get('/institucion');
+      const institucion = institucionRes.data;
+      
+      await generateJustificacionesPDF({
+        excusas: excusasFiltradas,
+        institucion,
+        stats: {
+          total: excusasFiltradas.length,
+          pendientes: excusasFiltradas.filter(e => e.estado === 'pendiente').length,
+          aprobadas: excusasFiltradas.filter(e => e.estado === 'aprobada').length,
+          rechazadas: excusasFiltradas.filter(e => e.estado === 'rechazada').length
+        },
+        filtrosGenerated: { ...filtros }
+      });
+      toast.success('PDF generado correctamente');
+    } catch (error) {
+      console.error('Error PDF:', error);
+      toast.error('Error al generar PDF');
+    }
+  };
 
-  // Vista tradicional de gestión de excusas
+  const handleExportarExcel = async () => {
+    try {
+      const institucionRes = await client.get('/institucion');
+      const institucion = institucionRes.data;
+
+      await generateJustificacionesExcel({
+        excusas: excusasFiltradas,
+        institucion,
+        stats: {
+          total: excusasFiltradas.length,
+          pendientes: excusasFiltradas.filter(e => e.estado === 'pendiente').length,
+          aprobadas: excusasFiltradas.filter(e => e.estado === 'aprobada').length,
+          rechazadas: excusasFiltradas.filter(e => e.estado === 'rechazada').length
+        },
+        filtrosGenerated: { ...filtros }
+      });
+      toast.success('Excel generado correctamente');
+    } catch (error) {
+      console.error('Error Excel:', error);
+      toast.error('Error al generar Excel');
+    }
+  };
+
+  const formatFechaDisplay = (fecha) => {
+    if (!fecha) return '';
+    // Ajustar zona horaria si viene como UTC
+    const d = new Date(fecha);
+    const day = String(d.getUTCDate()).padStart(2, '0');
+    const month = String(d.getUTCMonth() + 1).padStart(2, '0');
+    const year = d.getUTCFullYear();
+    return `${day}/${month}/${year}`;
+  };
+
+  // Filtrado final en cliente (por búsqueda texto y detalles)
+  const excusasFiltradas = excusas.filter(e => {
+    if (filtros.rol && filtros.rol !== '') {
+      if (filtros.rol === 'alumno' && !e.alumno) return false;
+      if (filtros.rol === 'personal' && !e.personal) return false;
+    }
+    const persona = e.alumno || e.personal;
+    // Búsqueda texto
+    if (filtros.busqueda) {
+      const term = filtros.busqueda.toLowerCase();
+      const nombre = `${persona?.nombres} ${persona?.apellidos}`.toLowerCase();
+      const carnet = (persona?.carnet || '').toLowerCase();
+      if (!nombre.includes(term) && !carnet.includes(term)) return false;
+    }
+    return true;
+  });
+
+  const totalPaginas = Math.ceil(excusasFiltradas.length / itemsPorPagina);
+  const indiceInicio = (paginaActual - 1) * itemsPorPagina;
+  const excusasPaginadas = excusasFiltradas.slice(indiceInicio, indiceInicio + itemsPorPagina);
+
   return (
-    <div className="excusas-panel">
-      {/* Header */}
-      <div className="panel-header">
-        <div className="header-left">
-          <FileText size={32} />
-          <div>
-            <h2>Gestión de Excusas</h2>
-            <p>Administra las justificaciones de ausencias</p>
-          </div>
-        </div>
-        <button className="btn-primary" onClick={() => setModalCrear(true)}>
-          <Plus size={20} />
-          Nueva Excusa
-        </button>
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+        <StatCard icon="📋" label="Ausentes Hoy" value={stats.ausentesHoy} color="blue" />
+        <StatCard icon="📅" label="Semana" value={stats.ausentesSemana} color="blue" />
+        <StatCard icon="📆" label="Mes" value={stats.ausentesMes} color="teal" />
+        <StatCard icon="⏳" label="Pendientes" value={stats.pendientes} color="orange" />
+        <StatCard icon="✗" label="Rechazadas" value={stats.rechazadas} color="red" />
       </div>
 
-      {/* --- BLOQUE PRINCIPAL: FILTROS Y BÚSQUEDA --- */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-6 border border-gray-100 dark:border-gray-700">
-        
-        {/* Encabezado del bloque */}
-        <div className="flex items-center gap-2 mb-6">
-          <Filter className="text-blue-600" size={20} />
-          <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100">Filtros de Búsqueda</h3>
-        </div>
-
-        {/* 1. RANGOS RÁPIDOS */}
-        <div className="mb-6">
-          <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">Rangos Rápidos</p>
-          <div className="flex flex-wrap gap-2">
-            {['Hoy', 'Últimos 7 días', 'Este mes', 'Pendientes'].map((rango) => (
-              <button 
-                key={rango}
-                type="button"
-                onClick={() => handleQuickRange(rango)}
-                className={`px-3 py-1.5 text-sm font-medium rounded-lg border transition-colors ${
-                  (rango === 'Pendientes' && filtros.estado === 'pendiente')
-                  ? 'bg-blue-600 text-white border-blue-600'
-                  : 'bg-gray-50 dark:bg-gray-700/50 hover:bg-blue-50 dark:hover:bg-blue-900/30 text-gray-600 dark:text-gray-300 hover:text-blue-600 border-gray-200 dark:border-gray-600 hover:border-blue-200'
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="flex gap-2">
+            {[
+              { id: 'hoy', label: 'Hoy' },
+              { id: 'semana', label: 'Semana' },
+              { id: 'mes', label: 'Mes' }
+            ].map((r) => (
+              <button
+                key={r.id}
+                onClick={() => handleRangoRapido(r.id)}
+                className={`px-4 py-2 rounded-lg font-medium transition ${
+                  filtros.rangoRapido === r.id 
+                    ? 'bg-blue-600 text-white' 
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200'
                 }`}
               >
-                {rango}
+                {r.label}
               </button>
             ))}
           </div>
+
+          <div className="flex gap-2">
+            <button onClick={handleExportarPDF} className="btn-export">
+              <FileDown size={16} /> PDF
+            </button>
+            <button onClick={handleExportarExcel} className="btn-export">
+              <FileSpreadsheet size={16} /> Excel
+            </button>
+          </div>
         </div>
 
-        {/* 2. GRID DE INPUTS */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-          
-          {/* Input: Buscar Alumno */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Buscar Persona</label>
-            <div className="relative">
-              <input 
-                type="text" 
-                placeholder="Nombre o Carnet..." 
-                value={filtros.busqueda}
-                onChange={(e) => setFiltros({ ...filtros, busqueda: e.target.value })}
-                className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all dark:text-white"
-              />
-              <User className="w-5 h-5 text-gray-400 absolute left-3 top-2.5" />
-            </div>
+        <div className="mt-4 flex flex-wrap items-center gap-4">
+          <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
+            <Calendar size={20} className="text-blue-600" />
+            <span className="font-medium text-sm">
+               {filtros.fechaInicio} — {filtros.fechaFin}
+            </span>
           </div>
-
-          {/* Input: Estado */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Estado</label>
-            <select 
-              value={filtros.estado}
-              onChange={(e) => setFiltros({ ...filtros, estado: e.target.value })}
-              className="w-full py-2.5 px-3 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-gray-600 dark:text-gray-300"
-            >
-              <option value="">Todos los estados</option>
-              <option value="pendiente">⏳ Pendiente</option>
-              <option value="aprobada">✅ Aprobada</option>
-              <option value="rechazada">❌ Rechazada</option>
-            </select>
-          </div>
-
-          {/* Input: Fecha Inicio */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Desde</label>
-            <input 
-              type="date" 
-              value={filtros.fechaInicio}
-              onChange={(e) => setFiltros({ ...filtros, fechaInicio: e.target.value })}
-              className="w-full py-2.5 px-3 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-gray-600 dark:text-gray-300"
-            />
-          </div>
-
-           {/* Input: Fecha Fin */}
-           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Hasta</label>
-            <input 
-              type="date" 
-              value={filtros.fechaFin}
-              onChange={(e) => setFiltros({ ...filtros, fechaFin: e.target.value })}
-              className="w-full py-2.5 px-3 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-gray-600 dark:text-gray-300"
-            />
-          </div>
-
-        </div>
-
-        {/* 3. BOTONES DE ACCIÓN */}
-        <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-700">
-          <button 
-            type="button"
-            onClick={() => setFiltros({ personaTipo: '', estado: '', fechaInicio: '', fechaFin: '', busqueda: '' })}
-            className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 font-medium px-4 py-2 transition"
+          <button
+            onClick={() => {
+              setFiltros({
+                busqueda: '', estado: '', rol: '', fechaInicio: '', fechaFin: '', rangoRapido: ''
+              });
+              handleRangoRapido('hoy'); // Reset a hoy
+            }}
+            className="text-sm text-blue-600 hover:underline"
           >
-            Limpiar Filtros
+            Restablecer Filtros
           </button>
-          <button 
-            type="button"
-            onClick={() => cargarExcusas()}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-6 rounded-lg shadow-sm hover:shadow-md transition-all active:scale-95 flex items-center gap-2"
+          <button
+             onClick={cargarDatos}
+             className="ml-auto px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
           >
-            <Filter size={18} />
-            Filtrar Resultados
+            <Search size={16} /> Actualizar
           </button>
         </div>
-
       </div>
 
-      {/* Tabla de Excusas */}
+      {/* Filtros Avanzados */}
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
+        <button
+          onClick={() => setMostrarFiltrosAvanzados(!mostrarFiltrosAvanzados)}
+          className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-gray-50 transition"
+        >
+          <span className="font-medium flex items-center gap-2">
+            <Filter size={18} /> Filtros Avanzados
+          </span>
+          {mostrarFiltrosAvanzados ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+        </button>
+
+        {mostrarFiltrosAvanzados && (
+          <div className="p-4 grid grid-cols-1 md:grid-cols-4 gap-4 border-t border-gray-200">
+            <input
+              type="text"
+              placeholder="Buscar por nombre/carnet..."
+              value={filtros.busqueda}
+              onChange={(e) => setFiltros({ ...filtros, busqueda: e.target.value })}
+              className="input-field"
+            />
+            <select
+              value={filtros.rol}
+              onChange={(e) => setFiltros({ ...filtros, rol: e.target.value })}
+              className="input-field"
+            >
+              <option value="">Todos los Roles</option>
+              <option value="alumno">Alumnos</option>
+              <option value="personal">Personal</option>
+            </select>
+            <select
+              value={filtros.estado}
+              onChange={(e) => setFiltros({ ...filtros, estado: e.target.value })}
+              className="input-field"
+            >
+              <option value="">Todos los Estados</option>
+              <option value="pendiente">Pendientes</option>
+              <option value="aprobada">Aprobadas</option>
+              <option value="rechazada">Rechazadas</option>
+            </select>
+            <div className="flex gap-2">
+                <input 
+                  type="date" 
+                  value={filtros.fechaInicio}
+                  onChange={(e) => setFiltros({...filtros, fechaInicio: e.target.value, rangoRapido: 'custom'})}
+                  className="input-field"
+                />
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Tabla */}
       {loading ? (
-        <div className="loading">Cargando excusas...</div>
-      ) : excusas.length === 0 ? (
-        <div className="empty-state">
-          <FileText size={64} />
-          <p>No hay excusas registradas</p>
-          <button className="btn-primary" onClick={() => setModalCrear(true)}>
-            Crear Primera Excusa
-          </button>
-        </div>
+        <div className="flex justify-center py-20"><div className="loader" /></div>
       ) : (
-        <div className="table-container">
-          <table className="excusas-table">
-            <thead>
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <table className="w-full">
+            <thead className="bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-600">
               <tr>
-                <th>Fecha Ausencia</th>
-                <th>Persona</th>
-                <th>Tipo</th>
-                <th>Motivo</th>
-                <th>Estado</th>
-                <th>Acciones</th>
+                <th className="px-4 py-3 text-left text-sm font-semibold">Persona</th>
+                <th className="px-4 py-3 text-center text-sm font-semibold">Carnet</th>
+                <th className="px-4 py-3 text-center text-sm font-semibold">Jornada</th>
+                <th className="px-4 py-3 text-center text-sm font-semibold">Rol</th>
+                <th className="px-4 py-3 text-left text-sm font-semibold">Motivo</th>
+                <th className="px-4 py-3 text-center text-sm font-semibold">Estado</th>
+                <th className="px-4 py-3 text-center text-sm font-semibold">Acciones</th>
               </tr>
             </thead>
-            <tbody>
-              {excusas.map((excusa) => (
-                <tr key={excusa.id}>
-                  <td>{formatFecha(excusa.fecha_ausencia)}</td>
-                  <td>
-                    <div className="persona-info">
-                      <User size={16} />
-                      {getNombrePersona(excusa)}
-                    </div>
-                  </td>
-                  <td>
-                    <span className={`tipo-badge ${excusa.persona_tipo}`}>
-                      {excusa.persona_tipo}
-                    </span>
-                  </td>
-                  <td className="motivo-cell">{excusa.motivo}</td>
-                  <td>
-                    <span className={`badge ${getEstadoBadgeClass(excusa.estado)}`}>
-                      {excusa.estado}
-                    </span>
-                  </td>
-                  <td>
-                    <div className="acciones">
-                      <button 
-                        className="btn-icon"
-                        onClick={() => setModalDetalle(excusa)}
-                        title="Ver detalles"
-                      >
-                        <Eye size={18} />
-                      </button>
-                      
-                      {excusa.estado === 'pendiente' && (
-                        <>
-                          <button 
-                            className="btn-icon btn-success"
-                            onClick={() => handleAprobar(excusa)}
-                            title="Aprobar"
-                          >
-                            <Check size={18} />
-                          </button>
-                          <button 
-                            className="btn-icon btn-danger"
-                            onClick={() => setModalAccion({ tipo: 'rechazar', excusa })}
-                            title="Rechazar"
-                          >
-                            <X size={18} />
-                          </button>
-                        </>
-                      )}
-                      
-                      <button 
-                        className="btn-icon btn-danger"
-                        onClick={() => handleEliminar(excusa.id)}
-                        title="Eliminar"
-                      >
-                        <X size={18} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
+            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+              {excusasPaginadas.map(excusa => (
+                <FilaJustificacion 
+                  key={excusa.id} 
+                  excusa={excusa}
+                  onAprobar={handleAprobar}
+                  onRechazar={(exc) => {
+                    setExcusaSeleccionada(exc);
+                    setMostrarModalRechazo(true);
+                  }}
+                  onVerDetalles={(exc) => {
+                    setPersonaJustificar(exc.alumno || exc.personal);
+                    setExcusaSeleccionada(exc);
+                    setMostrarModalJustificar(true);
+                  }}
+                />
               ))}
             </tbody>
           </table>
+          
+          {excusasFiltradas.length === 0 && (
+             <div className="text-center py-12 text-gray-500">No se encontraron registros.</div>
+          )}
+
+          {/* Paginador */}
+          {totalPaginas > 1 && (
+             <div className="flex justify-between items-center px-4 py-3 bg-gray-50 border-t">
+               <span className="text-sm text-gray-600">
+                  Página {paginaActual} de {totalPaginas}
+               </span>
+               <div className="flex gap-1">
+                 <button 
+                    disabled={paginaActual === 1}
+                    onClick={() => setPaginaActual(p => p - 1)}
+                    className="p-1 rounded hover:bg-gray-200 disabled:opacity-50"
+                 >
+                    <ChevronLeft size={20} />
+                 </button>
+                 <button 
+                    disabled={paginaActual === totalPaginas}
+                    onClick={() => setPaginaActual(p => p + 1)}
+                    className="p-1 rounded hover:bg-gray-200 disabled:opacity-50"
+                 >
+                    <ChevronRight size={20} />
+                 </button>
+               </div>
+             </div>
+          )}
         </div>
       )}
 
-      {/* Modal Crear Excusa */}
-      {modalCrear && createPortal(
-        <div className="modal-overlay" onClick={() => setModalCrear(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>Nueva Excusa</h3>
-              <button onClick={() => setModalCrear(false)}>&times;</button>
-            </div>
-            
-            <form onSubmit={handleCrearExcusa}>
-              <div className="form-group">
-                <label>Tipo de Persona *</label>
-                <select 
-                  value={formData.persona_tipo}
-                  onChange={(e) => setFormData({ ...formData, persona_tipo: e.target.value, alumno_id: '', personal_id: '' })}
-                  required
-                >
-                  <option value="alumno">Alumno</option>
-                  <option value="personal">Personal</option>
-                </select>
-              </div>
-
-              {formData.persona_tipo === 'alumno' ? (
-                <div className="form-group">
-                  <label>Alumno *</label>
-                  <select 
-                    value={formData.alumno_id}
-                    onChange={(e) => setFormData({ ...formData, alumno_id: e.target.value })}
-                    required
-                  >
-                    <option value="">Seleccionar alumno...</option>
-                    {alumnos.map(alumno => (
-                      <option key={alumno.id} value={alumno.id}>
-                        {alumno.nombres} {alumno.apellidos} - {alumno.carnet}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              ) : (
-                <div className="form-group">
-                  <label>Personal *</label>
-                  <select 
-                    value={formData.personal_id}
-                    onChange={(e) => setFormData({ ...formData, personal_id: e.target.value })}
-                    required
-                  >
-                    <option value="">Seleccionar personal...</option>
-                    {docentes.map(docente => (
-                      <option key={docente.id} value={docente.id}>
-                        {docente.nombres} {docente.apellidos} - {docente.cargo}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              <div className="form-group">
-                <label>Fecha de Ausencia *</label>
-                <input 
-                  type="date"
-                  value={formData.fecha_ausencia}
-                  onChange={(e) => setFormData({ ...formData, fecha_ausencia: e.target.value })}
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label>Motivo *</label>
-                <select 
-                  value={formData.motivo}
-                  onChange={(e) => setFormData({ ...formData, motivo: e.target.value })}
-                  required
-                >
-                  <option value="">Seleccionar motivo...</option>
-                  <option value="Enfermedad">Enfermedad</option>
-                  <option value="Cita médica">Cita médica</option>
-                  <option value="Asunto familiar">Asunto familiar</option>
-                  <option value="Emergencia">Emergencia</option>
-                  <option value="Otro">Otro</option>
-                </select>
-              </div>
-
-              <div className="form-group">
-                <label>Descripción</label>
+      {/* Modales */}
+      <AnimatePresence>
+        {mostrarModalJustificar && personaJustificar && (
+          <ModalDetalles 
+            persona={personaJustificar} 
+            excusa={excusaSeleccionada}
+            onClose={() => setMostrarModalJustificar(false)}
+            formatFecha={formatFechaDisplay}
+            baseUrl={BASE_URL}
+          />
+        )}
+        {mostrarModalRechazo && (
+           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+             <div className="bg-white rounded-xl p-6 max-w-md w-full shadow-2xl">
+                <h3 className="font-bold text-lg mb-4">Rechazar Justificación</h3>
                 <textarea 
-                  value={formData.descripcion}
-                  onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })}
-                  placeholder="Detalles adicionales..."
-                  rows="4"
+                  className="w-full border rounded p-2 mb-4" 
+                  rows={3}
+                  placeholder="Motivo del rechazo..."
+                  value={motivoRechazo}
+                  onChange={e => setMotivoRechazo(e.target.value)}
                 />
-              </div>
-
-              <div className="form-group">
-                <label>Evidencia (PDF o Imagen)</label>
-                <input 
-                  type="file"
-                  accept="image/*,application/pdf"
-                  onChange={handleFileChange}
-                  className="file-input"
-                />
-                <small>Opcional. Máx 5MB.</small>
-              </div>
-
-              <div className="modal-actions">
-                <button type="button" className="btn-secondary" onClick={() => setModalCrear(false)}>
-                  Cancelar
-                </button>
-                <button type="submit" className="btn-primary">
-                  Crear Excusa
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>,
-        document.body
-      )}
-
-      {/* Modal Detalle */}
-      {modalDetalle && createPortal(
-        <div className="modal-overlay" onClick={() => setModalDetalle(null)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>Detalles de la Excusa</h3>
-              <button onClick={() => setModalDetalle(null)}>&times;</button>
-            </div>
-            
-            <div className="detalle-content">
-              <div className="detalle-row">
-                <strong>Persona:</strong>
-                <span>{getNombrePersona(modalDetalle)}</span>
-              </div>
-              <div className="detalle-row">
-                <strong>Tipo:</strong>
-                <span className={`tipo-badge ${modalDetalle.persona_tipo}`}>
-                  {modalDetalle.persona_tipo}
-                </span>
-              </div>
-              <div className="detalle-row">
-                <strong>Fecha de Ausencia:</strong>
-                <span>{formatFecha(modalDetalle.fecha_ausencia)}</span>
-              </div>
-              <div className="detalle-row">
-                <strong>Motivo:</strong>
-                <span>{modalDetalle.motivo}</span>
-              </div>
-              <div className="detalle-row">
-                <strong>Estado:</strong>
-                <span className={`badge ${getEstadoBadgeClass(modalDetalle.estado)}`}>
-                  {modalDetalle.estado}
-                </span>
-              </div>
-              {modalDetalle.descripcion && (
-                <div className="detalle-row">
-                  <strong>Descripción:</strong>
-                  <p>{modalDetalle.descripcion}</p>
+                <div className="flex gap-2 justify-end">
+                   <button onClick={() => setMostrarModalRechazo(false)} className="px-4 py-2 bg-gray-200 rounded">Cancelar</button>
+                   <button onClick={handleRechazar} className="px-4 py-2 bg-red-600 text-white rounded">Rechazar</button>
                 </div>
-              )}
-              {modalDetalle.documento_url && (
-                <div className="detalle-row">
-                  <strong>Documento:</strong>
-                  <a href={modalDetalle.documento_url} target="_blank" rel="noopener noreferrer">
-                    Ver documento
-                  </a>
-                </div>
-              )}
-              {modalDetalle.observaciones && (
-                <div className="detalle-row">
-                  <strong>Observaciones:</strong>
-                  <p>{modalDetalle.observaciones}</p>
-                </div>
-              )}
-              <div className="detalle-row">
-                <strong>Creada:</strong>
-                <span>{formatFecha(modalDetalle.creado_en)}</span>
-              </div>
-            </div>
+             </div>
+           </div>
+        )}
+      </AnimatePresence>
 
-            <div className="modal-actions">
-              <button className="btn-secondary" onClick={() => setModalDetalle(null)}>
-                Cerrar
-              </button>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
-
-      {/* Modal Rechazar */}
-      {modalAccion && modalAccion.tipo === 'rechazar' && createPortal(
-        <div className="modal-overlay" onClick={() => setModalAccion(null)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>Rechazar Excusa</h3>
-              <button onClick={() => setModalAccion(null)}>&times;</button>
-            </div>
-            
-            <form onSubmit={(e) => {
-              e.preventDefault();
-              const observaciones = e.target.observaciones.value;
-              handleRechazar(modalAccion.excusa, observaciones);
-            }}>
-              <div className="form-group">
-                <label>Motivo del Rechazo</label>
-                <textarea 
-                  name="observaciones"
-                  placeholder="Explica por qué se rechaza esta excusa..."
-                  rows="4"
-                  required
-                />
-              </div>
-
-              <div className="modal-actions">
-                <button type="button" className="btn-secondary" onClick={() => setModalAccion(null)}>
-                  Cancelar
-                </button>
-                <button type="submit" className="btn-danger">
-                  Rechazar Excusa
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>,
-        document.body
-      )}
+      <Toaster position="top-right" />
     </div>
   );
-};
+}
 
-export default ExcusasPanel;
+// Subcomponentes
+function StatCard({ icon, label, value, color }) {
+  const colors = {
+     blue: 'border-l-blue-500 bg-blue-50',
+     teal: 'border-l-teal-500 bg-teal-50',
+     orange: 'border-l-orange-500 bg-orange-50',
+     red: 'border-l-red-500 bg-red-50'
+  };
+  return (
+    <div className={`p-4 rounded-xl shadow-sm border-l-4 ${colors[color] || 'bg-white'}`}>
+       <div className="flex justify-between">
+          <div>
+            <p className="text-sm text-gray-600">{label}</p>
+            <p className="text-2xl font-bold">{value}</p>
+          </div>
+          <span className="text-2xl">{icon}</span>
+       </div>
+    </div>
+  );
+}
+
+function FilaJustificacion({ excusa, onAprobar, onRechazar, onVerDetalles }) {
+  const persona = excusa.alumno || excusa.personal;
+  const esAlumno = !!excusa.alumno;
+  
+  // Foto
+  const [imgError, setImgError] = useState(false);
+  const fotoUrl = !imgError && persona?.foto_path 
+     ? (persona.foto_path.startsWith('http') ? persona.foto_path : `http://localhost:5000/uploads/${persona.foto_path}`)
+     : null;
+
+  return (
+    <tr className="hover:bg-gray-50 border-b last:border-0">
+      <td className="px-4 py-3">
+        <div className="flex items-center gap-3">
+           <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex items-center justify-center">
+              {fotoUrl ? (
+                <img src={fotoUrl} onError={() => setImgError(true)} className="w-full h-full object-cover"/>
+              ) : (
+                <span className="text-xl">{esAlumno ? '👨‍🎓' : '👨‍🏫'}</span>
+              )}
+           </div>
+           <div>
+              <p className="font-medium text-gray-900">{persona?.nombres} {persona?.apellidos}</p>
+              <p className="text-xs text-gray-500">
+                 {esAlumno 
+                   ? `${persona?.grado || ''} ${persona?.seccion || ''}` 
+                   : persona?.cargo || 'Docente'}
+              </p>
+           </div>
+        </div>
+      </td>
+      <td className="px-4 py-3 text-center">
+         <span className="font-mono font-bold text-gray-700 bg-gray-100 px-2 py-1 rounded" style={{fontFamily: '"Hack Nerd Font Mono", monospace'}}>
+            {persona?.carnet || 'N/A'}
+         </span>
+      </td>
+      <td className="px-4 py-3 text-center">
+         <span className={`px-2 py-1 rounded text-xs font-semibold
+            ${persona?.jornada === 'Matutina' ? 'bg-amber-100 text-amber-800' : 'bg-indigo-100 text-indigo-800'}
+         `}>
+            {persona?.jornada || 'N/A'}
+         </span>
+      </td>
+      <td className="px-4 py-3 text-center">
+         <span className={`px-2 py-1 rounded-full text-xs 
+            ${esAlumno ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'}`}>
+            {esAlumno ? 'Alumno' : 'Personal'}
+         </span>
+      </td>
+      <td className="px-4 py-3 text-sm text-gray-700 max-w-xs truncate" title={excusa.motivo}>
+         {excusa.motivo}
+      </td>
+      <td className="px-4 py-3 text-center">
+         <span className={`px-2 py-1 rounded-full text-xs font-bold
+            ${excusa.estado === 'aprobada' ? 'bg-green-100 text-green-800' : 
+              excusa.estado === 'rechazada' ? 'bg-red-100 text-red-800' : 'bg-orange-100 text-orange-800'}
+         `}>
+            {excusa.estado.charAt(0).toUpperCase() + excusa.estado.slice(1)}
+         </span>
+      </td>
+      <td className="px-4 py-3">
+         <div className="flex justify-center gap-2">
+            {excusa.estado === 'pendiente' && (
+              <>
+                <button onClick={() => onAprobar(excusa.id)} className="p-1 text-green-600 hover:bg-green-100 rounded">
+                  <Check size={18} />
+                </button>
+                <button onClick={() => onRechazar(excusa)} className="p-1 text-red-600 hover:bg-red-100 rounded">
+                  <X size={18} />
+                </button>
+              </>
+            )}
+            <button onClick={() => onVerDetalles(excusa)} className="p-1 text-blue-600 hover:bg-blue-100 rounded">
+               <Eye size={18} />
+            </button>
+         </div>
+      </td>
+    </tr>
+  );
+}
+
+function ModalDetalles({ persona, excusa, onClose, formatFecha, baseUrl }) {
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6">
+         <div className="flex justify-between items-center mb-6 border-b pb-4">
+            <h3 className="text-xl font-bold">Detalles de Justificación</h3>
+            <button onClick={onClose}><X size={24} className="text-gray-400 hover:text-gray-600"/></button>
+         </div>
+
+         <div className="flex items-center gap-4 bg-gray-50 p-4 rounded-xl mb-6">
+            <div className="w-16 h-16 rounded-full bg-gray-200 overflow-hidden">
+               {persona.foto_path ? (
+                 <img src={persona.foto_path.startsWith('http') ? persona.foto_path : `http://localhost:5000/uploads/${persona.foto_path}`} className="w-full h-full object-cover"/>
+               ) : (
+                 <div className="w-full h-full flex items-center justify-center text-2xl">👤</div>
+               )}
+            </div>
+            <div>
+               <h4 className="text-lg font-bold">{persona.nombres} {persona.apellidos}</h4>
+               <p className="text-gray-600">{persona.grado || persona.cargo}</p>
+               <p className="text-sm font-mono mt-1">Carnet: {persona.carnet}</p>
+            </div>
+         </div>
+
+         <div className="grid grid-cols-2 gap-6 mb-6">
+            <div>
+               <label className="text-sm font-bold text-gray-500">Fecha Ausencia</label>
+               <p className="text-lg">{formatFecha(excusa.fecha_ausencia)}</p>
+            </div>
+            <div>
+               <label className="text-sm font-bold text-gray-500">Estado</label>
+               <div>
+                 <span className={`px-3 py-1 rounded-full text-sm font-bold
+                    ${excusa.estado === 'aprobada' ? 'bg-green-100 text-green-800' : 
+                      excusa.estado === 'rechazada' ? 'bg-red-100 text-red-800' : 'bg-orange-100 text-orange-800'}
+                 `}>
+                    {excusa.estado.toUpperCase()}
+                 </span>
+               </div>
+            </div>
+         </div>
+
+         <div className="mb-6">
+            <label className="text-sm font-bold text-gray-500">Motivo</label>
+            <p className="bg-gray-50 p-3 rounded-lg mt-1 border">{excusa.motivo}</p>
+         </div>
+         
+         {excusa.descripcion && (
+            <div className="mb-6">
+               <label className="text-sm font-bold text-gray-500">Descripción</label>
+               <p className="text-gray-700 mt-1">{excusa.descripcion}</p>
+            </div>
+         )}
+
+         {excusa.archivo_path && (
+            <div className="mb-6">
+               <label className="text-sm font-bold text-gray-500">Evidencia Adjunta</label>
+               <a 
+                 href={`http://localhost:5000/uploads/${excusa.archivo_path}`} 
+                 target="_blank" 
+                 rel="noreferrer"
+                 className="flex items-center gap-2 text-blue-600 hover:underline mt-1"
+               >
+                 <FileText size={16}/> Ver Documento
+               </a>
+            </div>
+         )}
+
+         <div className="flex justify-end pt-4 border-t">
+            <button onClick={onClose} className="px-6 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700">Cerrar</button>
+         </div>
+      </div>
+    </div>
+  );
+}
+
+// Estilos adicionales para inputs
+const inputStyle = "w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700";

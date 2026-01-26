@@ -1,9 +1,16 @@
 import { motion } from 'framer-motion';
 import { Check, SkipForward } from 'lucide-react';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const BASE_URL = API_URL.replace('/api', '');
+
 export default function CardAusente({ persona, onJustificar, onOmitir }) {
   // Construct photo URL from foto_path if available
-  const fotoUrl = persona.foto_path ? `/uploads/${persona.foto_path}` : null;
+  const fotoUrl = persona.foto_path 
+    ? (persona.foto_path.startsWith('http') 
+        ? persona.foto_path 
+        : `${BASE_URL}/uploads/${persona.foto_path}`)
+    : null;
   
   return (
     <motion.div
@@ -42,11 +49,44 @@ export default function CardAusente({ persona, onJustificar, onOmitir }) {
           <h4 className="persona-nombre">
             {persona.nombres} {persona.apellidos}
           </h4>
-          <p className="persona-detalle">
-            {persona.tipo === 'alumno' 
-              ? `Estudiante - ${persona.grado} ${persona.seccion || ''}` 
-              : `${persona.cargo || 'Personal'}`}
-          </p>
+          
+          {/* Mostrar información específica según tipo */}
+          {persona.tipo === 'alumno' ? (
+            // Para alumnos: grado, carrera, especialidad
+            <div className="flex flex-col gap-1 mt-1">
+              <p className="persona-detalle">
+                {persona.grado}
+                {persona.seccion && ` - Sección ${persona.seccion}`}
+              </p>
+              {(persona.carrera || persona.especialidad) && (
+                <div className="flex flex-wrap gap-1">
+                  {persona.carrera && (
+                    <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs rounded-full font-semibold">
+                      {persona.carrera}
+                    </span>
+                  )}
+                  {persona.especialidad && (
+                    <span className="px-2 py-0.5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 text-xs rounded-full font-semibold">
+                      {persona.especialidad}
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+          ) : (
+            // Para personal: cargo y grado guía
+            <div className="flex flex-col gap-1 mt-1">
+              <p className="persona-detalle">
+                {persona.cargo || 'Personal'}
+              </p>
+              {persona.grado_guia && (
+                <span className="px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 text-xs rounded-full font-semibold inline-block">
+                  Grado Guía: {persona.grado_guia}
+                </span>
+              )}
+            </div>
+          )}
+          
           <p className="persona-carnet">ID: {persona.carnet}</p>
         </div>
       </div>

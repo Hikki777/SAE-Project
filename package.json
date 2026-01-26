@@ -97,7 +97,8 @@
     ],
     "win": {
       "target": "nsis",
-      "icon": "frontend/public/logo.png"
+      "icon": "frontend/public/logo.ico",
+      "signAndEditExecutable": false
     },
     "linux": {
       "target": "AppImage",
@@ -112,6 +113,12 @@
       "createDesktopShortcut": true
     },
     "asar": false,
+    "extraResources": [
+      {
+        "from": "prisma/schema.prisma",
+        "to": "prisma/schema.prisma"
+      }
+    ],
     "publish": {
       "provider": "github",
       "owner": "Hikki777",
@@ -124,7 +131,7 @@
     "concurrently": "^9.2.1",
     "cross-env": "^10.1.0",
     "electron": "^39.2.7",
-    "electron-builder": "^24.9.1",
+    "electron-builder": "^26.5.0",
     "jest": "^30.2.0",
     "jimp": "^1.6.0",
     "jsqr": "^1.4.0",

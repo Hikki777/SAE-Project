@@ -2,53 +2,73 @@ const prisma = require('../prismaClient');
 
 /**
  * Generador de carnets automáticos para alumnos y personal
+ * Sistema de doble secuencia:
+ * - Una secuencia para todo el personal (DIR, D, S, AUX, etc.)
+ * - Una secuencia independiente para alumnos (A)
  */
 
 /**
  * Genera el siguiente carnet disponible para alumnos
  * Formato: A-YYYYNNN (ej: A-2026001)
+ * Usa carnet_counter_alumnos de la tabla institucion
  */
 async function generateAlumnoCarnet() {
-  const institucion = await prisma.institucion.findFirst({ select: { ciclo_escolar: true } });
-  const year = institucion?.ciclo_escolar || new Date().getFullYear();
-  const prefix = `A-${year}`;
+  const institucion = await prisma.institucion.findFirst({ 
+    select: { 
+      id: true,
+      ciclo_escolar: true 
+    } 
+  });
+  
+  if (!institucion) {
+    throw new Error('No se encontró la institución');
+  }
 
-  // Buscar el último carnet del año actual
-  const lastAlumno = await prisma.alumno.findFirst({
-    where: {
-      carnet: {
-        startsWith: prefix
+  const year = institucion.ciclo_escolar || new Date().getFullYear();
+
+  // Incrementar el contador atómicamente y obtener el nuevo valor
+  const updated = await prisma.institucion.update({
+    where: { id: institucion.id },
+    data: {
+      carnet_counter_alumnos: {
+        increment: 1
       }
     },
-    orderBy: {
-      carnet: 'desc'
+    select: {
+      carnet_counter_alumnos: true
     }
   });
 
-  let nextNumber = 1;
-  if (lastAlumno) {
-    // Extraer el número del carnet (últimos 3 dígitos)
-    const lastNumber = parseInt(lastAlumno.carnet.slice(-3));
-    nextNumber = lastNumber + 1;
-  }
+  const nextNumber = updated.carnet_counter_alumnos;
 
   // Formatear con padding de 3 dígitos
-  const carnet = `${prefix}${String(nextNumber).padStart(3, '0')}`;
+  const carnet = `A-${year}${String(nextNumber).padStart(3, '0')}`;
   return carnet;
 }
 
 /**
  * Genera el siguiente carnet disponible para personal según cargo
- * Formato: [PREFIJO]-YYYYNNN (ej: D-2026001, DIR-2026001)
+ * Formato: [PREFIJO]-YYYYNNN (ej: D-2026001, DIR-2026002)
+ * Usa carnet_counter_personal de la tabla institucion (compartido entre todos los cargos)
  * @param {string} cargo - Cargo del personal
  * @param {object} tx - Cliente de transacción Prisma opcional
  */
 async function generatePersonalCarnet(cargo, tx = null) {
   const db = tx || prisma;
   
-  // Obtener ciclo escolar (si estamos en transacción, debería ser capaz de leerlo también)
-  const institucion = await db.institucion.findFirst({ select: { ciclo_escolar: true } });
-  const year = institucion?.ciclo_escolar || new Date().getFullYear();
+  // Obtener institución
+  const institucion = await db.institucion.findFirst({ 
+    select: { 
+      id: true,
+      ciclo_escolar: true 
+    } 
+  });
+  
+  if (!institucion) {
+    throw new Error('No se encontró la institución');
+  }
+
+  const year = institucion.ciclo_escolar || new Date().getFullYear();
   
   // Mapeo de cargos a prefijos
   const prefixMap = {
@@ -75,29 +95,24 @@ async function generatePersonalCarnet(cargo, tx = null) {
   };
 
   const prefix = prefixMap[cargo] || 'P'; // P = Personal genérico
-  const fullPrefix = `${prefix}-${year}`;
 
-  // Buscar el último carnet con este prefijo del año actual
-  const lastPersonal = await db.personal.findFirst({
-    where: {
-      carnet: {
-        startsWith: fullPrefix
+  // Incrementar el contador de personal atómicamente y obtener el nuevo valor
+  const updated = await db.institucion.update({
+    where: { id: institucion.id },
+    data: {
+      carnet_counter_personal: {
+        increment: 1
       }
     },
-    orderBy: {
-      carnet: 'desc'
+    select: {
+      carnet_counter_personal: true
     }
   });
 
-  let nextNumber = 1;
-  if (lastPersonal) {
-    // Extraer el número del carnet (últimos 3 dígitos)
-    const lastNumber = parseInt(lastPersonal.carnet.slice(-3));
-    nextNumber = lastNumber + 1;
-  }
+  const nextNumber = updated.carnet_counter_personal;
 
   // Formatear con padding de 3 dígitos
-  const carnet = `${fullPrefix}${String(nextNumber).padStart(3, '0')}`;
+  const carnet = `${prefix}-${year}${String(nextNumber).padStart(3, '0')}`;
   return carnet;
 }
 
@@ -214,8 +229,10 @@ function getCarnetPrefix(cargo) {
     'Directora': 'DIR',
     'Director General': 'DIR',
     'Directora General': 'DIR',
-    'Subdirector': 'DIR',
-    'Subdirectora': 'DIR',
+    'Director Técnico': 'DIR',
+    'Directora Técnica': 'DIR',
+    'Subdirector': 'SDIR',
+    'Subdirectora': 'SDIR',
     'Administrador': 'ADM',
     'Administradora': 'ADM',
     'Coordinador': 'COORD',

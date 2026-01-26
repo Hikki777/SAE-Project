@@ -17,31 +17,35 @@ class ReportService {
     const where = this.construirFiltros(filtros);
 
     // Obtener datos
-    const asistencias = await prisma.asistencia.findMany({
-      where,
-      include: {
-        alumno: {
-          select: {
-            carnet: true,
-            nombres: true,
-            apellidos: true,
-            grado: true,
-            seccion: true,
-            jornada: true
-          }
-        },
-        personal: {
-          select: {
-            carnet: true,
-            nombres: true,
-            apellidos: true,
-            cargo: true,
-            jornada: true
-          }
-        }
-      },
-      orderBy: { timestamp: 'desc' }
-    });
+    // Si el filtro es SOLO AUSENTES, no consultamos asistencias
+    let asistencias = [];
+    if (tipoEvento !== 'ausente') {
+        asistencias = await prisma.asistencia.findMany({
+          where,
+          include: {
+            alumno: {
+              select: {
+                carnet: true,
+                nombres: true,
+                apellidos: true,
+                grado: true,
+                seccion: true,
+                jornada: true
+              }
+            },
+            personal: {
+              select: {
+                carnet: true,
+                nombres: true,
+                apellidos: true,
+                cargo: true,
+                jornada: true
+              }
+            }
+          },
+          orderBy: { timestamp: 'desc' }
+        });
+    }
 
     // Obtener institución
     const institucion = await prisma.institucion.findUnique({ where: { id: 1 } });
@@ -266,6 +270,11 @@ class ReportService {
     });
 
     logger.info({ count: asistenciasDelDia.length }, '[REPORT] Asistencias del día encontradas');
+
+    // -----------------------------------------------------
+    // MODIFICACIÓN CLAVE: Si filtros.tipoEvento === 'ausente', 
+    // arriba en obtenerDatosReporte deberemos vaciar 'asistencias'
+    // -----------------------------------------------------
 
     // Crear sets de IDs que SÍ asistieron
     const alumnosQueAsistieron = new Set(

@@ -65,6 +65,22 @@ router.post('/excel', reportLimiter, validarGenerarReporte, async (req, res) => 
 });
 
 /**
+ * POST /api/reportes/preview
+ * Obtener datos JSON para vista previa
+ */
+router.post('/preview', reportLimiter, validarGenerarReporte, async (req, res) => {
+  try {
+    const filtros = req.body;
+    logger.info({ filtros }, '[REPORT] Generando vista previa (JSON)');
+    const data = await reportService.obtenerDatosReporte(filtros);
+    res.json(data);
+  } catch (error) {
+    logger.error({ err: error }, '[ERROR] Error generando vista previa');
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
  * GET /api/reportes/alumno/:id/pdf
  * Generar reporte PDF de un alumno específico
  */

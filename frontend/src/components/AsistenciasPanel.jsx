@@ -41,6 +41,7 @@ export default function AsistenciasPanel() {
   const [modalData, setModalData] = useState(null);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [detectedCargo, setDetectedCargo] = useState('Docente'); // Estado para mostrar cargo específico (Directora, etc.) // Estado para controlar sugerencias
+  const [mostrarAusentes, setMostrarAusentes] = useState(false); // Toggle para mostrar ausentes en historial
   const videoRef = useRef(null);
   const scannerRef = useRef(null);
   const scannerActiveRef = useRef(false);
@@ -330,7 +331,7 @@ export default function AsistenciasPanel() {
       // Mostrar modal con personas sin salida
       setPersonasSinSalida(sinSalida);
       setMostrarModalSinSalida(true);
-      toast.warning(`⚠️ ${total} persona${total !== 1 ? 's' : ''} sin marcar salida`);
+      // Modal ya muestra el contador visualmente, no necesitamos toast
     } catch (error) {
       console.error('Error detectando personas sin salida:', error);
       toast.error('Error al detectar salidas faltantes: ' + (error.response?.data?.error || error.message));
@@ -1065,6 +1066,15 @@ export default function AsistenciasPanel() {
     return date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
   };
 
+  // Formatear fecha con ceros a la izquierda (25/01/2026)
+  const formatDate = (timestamp) => {
+    const date = new Date(timestamp);
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+  };
+
   return (
     <div className="space-y-6">
       {/* Título del panel */}
@@ -1414,12 +1424,27 @@ export default function AsistenciasPanel() {
             <Clock className="text-blue-600" size={24} />
             Asistencias de Hoy
           </h3>
-          <button
-            onClick={fetchAsistenciasHoy}
-            className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-          >
-            Actualizar
-          </button>
+          <div className="flex gap-2 items-center">
+            {/* Toggle para mostrar ausentes */}
+            {asistenciasHoy.length > 0 && (
+              <button
+                onClick={() => setMostrarAusentes(!mostrarAusentes)}
+                className={`text-sm px-3 py-1.5 rounded-lg font-medium transition ${
+                  mostrarAusentes
+                    ? 'bg-gray-600 text-white hover:bg-gray-700'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                }`}
+              >
+                {mostrarAusentes ? '✓ Mostrando Ausentes' : 'Mostrar Ausentes'}
+              </button>
+            )}
+            <button
+              onClick={fetchAsistenciasHoy}
+              className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+            >
+              Actualizar
+            </button>
+          </div>
         </div>
 
         {loading ? (
@@ -1464,7 +1489,7 @@ export default function AsistenciasPanel() {
                       className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition"
                     >
                       <td className="px-3 py-2 font-medium text-gray-700 dark:text-gray-300">
-                        {new Date(asistencia.timestamp || asistencia.created_at).toLocaleDateString()}
+                        {formatDate(asistencia.timestamp || asistencia.created_at)}
                       </td>
                       <td className="px-3 py-2 font-medium text-gray-700 dark:text-gray-300">
                         {formatTime(asistencia.timestamp || asistencia.created_at)}
@@ -1529,11 +1554,80 @@ export default function AsistenciasPanel() {
                         )}
                       </td>
                     </motion.tr>
-                  );
-                })}
+                    );
+                  })}
                 
-                {/* Ausentes ocultos en la tabla por defecto para no llenar el historial */}
-              </tbody>
+                  {/* Ausentes - Solo mostrar si hay asistencias Y toggle activado */}
+                  {mostrarAusentes && asistenciasHoy.length > 0 && (() => {
+                    // Calcular ausentes
+                    const asistidosIds = new Set([
+                      ...asistenciasHoy.map(a => a.alumno_id),
+                      ...asistenciasHoy.map(a => a.personal_id)
+                    ]);
+                    const todos = [...alumnos, ...docentes];
+                    const ausentes = todos.filter(p => p && p.id && !asistidosIds.has(p.id));
+
+                    return ausentes.map((persona) => {
+                      const esAlumno = alumnos.some(a => a.id === persona.id);
+                      const capitalize = (str) => str ? str.charAt(0).toUpperCase() + str.slice(1).toLowerCase() : '-';
+
+                      return (
+                        <motion.tr
+                          key={`ausente-${persona.id}`}
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition bg-red-50/30 dark:bg-red-900/10"
+                        >
+                          <td className="px-3 py-2 font-medium text-gray-500 dark:text-gray-400">
+                            {formatDate(new Date())}
+                          </td>
+                          <td className="px-3 py-2 font-medium text-gray-500 dark:text-gray-400">
+                            -
+                          </td>
+                          <td className="px-3 py-2 text-gray-600 dark:text-gray-400 font-medium">
+                            {persona.carnet}
+                          </td>
+                          <td className="px-3 py-2 font-medium text-gray-900 dark:text-gray-100">
+                            {persona.nombres} {persona.apellidos}
+                          </td>
+                          <td className="px-3 py-2">
+                            <div className="flex flex-col items-center gap-1">
+                              <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                                esAlumno
+                                  ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'
+                                  : 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+                              }`}>
+                                {esAlumno ? 'Alumno' : 'Personal'}
+                              </span>
+                              {(persona.grado || persona.cargo) && (
+                                <span className="px-2 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300">
+                                  {persona.grado || persona.cargo}
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-3 py-2 text-center font-bold text-gray-700 dark:text-gray-300">
+                            {esAlumno ? (persona.seccion || '-') : '-'}
+                          </td>
+                          <td className="px-3 py-2 text-center font-medium text-gray-700 dark:text-gray-300">
+                            {capitalize(persona.jornada || 'Matutina')}
+                          </td>
+                          <td className="px-3 py-2 text-center">
+                            <span className="px-2 py-1 rounded-full text-xs font-bold bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300">
+                              AUSENTE
+                            </span>
+                          </td>
+                          <td className="px-3 py-2 text-center">
+                            <span className="text-gray-400 font-bold">-</span>
+                          </td>
+                          <td className="px-3 py-2 text-center">
+                            <span className="text-gray-400 font-bold">-</span>
+                          </td>
+                        </motion.tr>
+                      );
+                    });
+                  })()}
+                </tbody>
             </table>
           </div>
         )}
