@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   FileText, AlertCircle, Check, X, Eye, Calendar, User, Filter,
   UserX, Clock, ChevronDown, ChevronUp, FileDown, FileSpreadsheet,
-  Search, ChevronLeft, ChevronRight
+  Search, ChevronLeft, ChevronRight, Users
 } from 'lucide-react';
 import client from '../api/client';
 import toast, { Toaster } from 'react-hot-toast';
@@ -324,6 +324,7 @@ export default function JustificacionesPanel() {
 
   return (
     <div className="space-y-6">
+      {/* Tarjetas de Estadísticas */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         <StatCard icon="📋" label="Ausentes Hoy" value={stats.ausentesHoy} color="blue" />
         <StatCard icon="📅" label="Semana" value={stats.ausentesSemana} color="blue" />
@@ -332,128 +333,165 @@ export default function JustificacionesPanel() {
         <StatCard icon="✗" label="Rechazadas" value={stats.rechazadas} color="red" />
       </div>
 
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          <div className="flex gap-2">
+      {/* Sección de Filtros - Estilo Unificado */}
+      <div className="bg-red-50 dark:bg-red-900/20 rounded-lg border-2 border-red-200 dark:border-red-800 p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <Filter className="text-red-600 w-5 h-5" />
+          <h2 className="text-lg font-semibold text-red-900 dark:text-red-200">Filtros</h2>
+        </div>
+
+        {/* Rangos Rápidos */}
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Rangos rápidos:
+          </label>
+          <div className="flex flex-wrap gap-2">
             {[
               { id: 'hoy', label: 'Hoy' },
-              { id: 'semana', label: 'Semana' },
-              { id: 'mes', label: 'Mes' }
+              { id: 'semana', label: 'Últimos 7 días' },
+              { id: 'mes', label: 'Último mes' }
             ].map((r) => (
               <button
                 key={r.id}
                 onClick={() => handleRangoRapido(r.id)}
-                className={`px-4 py-2 rounded-lg font-medium transition ${
-                  filtros.rangoRapido === r.id 
-                    ? 'bg-blue-600 text-white' 
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200'
+                className={`px-3 py-1 rounded-lg text-sm font-medium transition ${
+                  filtros.rangoRapido === r.id
+                    ? 'bg-red-600 text-white'
+                    : 'bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-900 dark:text-gray-200'
                 }`}
               >
                 {r.label}
               </button>
             ))}
           </div>
-
-          <div className="flex gap-2">
-            <button onClick={handleExportarPDF} className="btn-export">
-              <FileDown size={16} /> PDF
-            </button>
-            <button onClick={handleExportarExcel} className="btn-export">
-              <FileSpreadsheet size={16} /> Excel
-            </button>
-          </div>
         </div>
 
-        <div className="mt-4 flex flex-wrap items-center gap-4">
-          <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
-            <Calendar size={20} className="text-blue-600" />
-            <span className="font-medium text-sm">
-               {filtros.fechaInicio} — {filtros.fechaFin}
-            </span>
-          </div>
-          <button
-            onClick={() => {
-              const hoy = new Date();
-              const formatDate = (date) => {
-                const year = date.getFullYear();
-                const month = String(date.getMonth() + 1).padStart(2, '0');
-                const day = String(date.getDate()).padStart(2, '0');
-                return `${year}-${month}-${day}`;
-              };
-              const hoyFormato = formatDate(hoy);
-              setFiltros({
-                busqueda: '', 
-                estado: '', 
-                rol: '', 
-                fechaInicio: hoyFormato, 
-                fechaFin: hoyFormato, 
-                rangoRapido: 'hoy'
-              });
-              setPaginaActual(1);
-            }}
-            className="text-sm text-blue-600 hover:underline"
-          >
-            Restablecer Filtros
-          </button>
-          <button
-             onClick={cargarDatos}
-             className="ml-auto px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
-          >
-            <Search size={16} /> Actualizar
-          </button>
-        </div>
-      </div>
-
-      {/* Filtros Avanzados */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
-        <button
-          onClick={() => setMostrarFiltrosAvanzados(!mostrarFiltrosAvanzados)}
-          className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-gray-50 transition"
-        >
-          <span className="font-medium flex items-center gap-2">
-            <Filter size={18} /> Filtros Avanzados
-          </span>
-          {mostrarFiltrosAvanzados ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-        </button>
-
-        {mostrarFiltrosAvanzados && (
-          <div className="p-4 grid grid-cols-1 md:grid-cols-4 gap-4 border-t border-gray-200">
+        {/* Grid de Filtros */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <Calendar className="inline w-4 h-4 mr-1" />Fecha Inicio
+            </label>
             <input
-              type="text"
-              placeholder="Buscar por nombre/carnet..."
-              value={filtros.busqueda}
-              onChange={(e) => setFiltros({ ...filtros, busqueda: e.target.value })}
-              className="input-field"
+              type="date"
+              value={filtros.fechaInicio}
+              onChange={(e) => setFiltros({ ...filtros, fechaInicio: e.target.value, rangoRapido: 'custom' })}
+              className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
             />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <Calendar className="inline w-4 h-4 mr-1" />Fecha Fin
+            </label>
+            <input
+              type="date"
+              value={filtros.fechaFin}
+              onChange={(e) => setFiltros({ ...filtros, fechaFin: e.target.value, rangoRapido: 'custom' })}
+              className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <Users className="inline w-4 h-4 mr-1" />Tipo de Persona
+            </label>
             <select
               value={filtros.rol}
               onChange={(e) => setFiltros({ ...filtros, rol: e.target.value })}
-              className="input-field"
+              className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
             >
-              <option value="">Todos los Roles</option>
+              <option value="">Todos</option>
               <option value="alumno">Alumnos</option>
               <option value="personal">Personal</option>
             </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <AlertCircle className="inline w-4 h-4 mr-1" />Estado
+            </label>
             <select
               value={filtros.estado}
               onChange={(e) => setFiltros({ ...filtros, estado: e.target.value })}
-              className="input-field"
+              className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
             >
               <option value="">Todos los Estados</option>
               <option value="pendiente">Pendientes</option>
               <option value="aprobada">Aprobadas</option>
               <option value="rechazada">Rechazadas</option>
             </select>
-            <div className="flex gap-2">
-                <input 
-                  type="date" 
-                  value={filtros.fechaInicio}
-                  onChange={(e) => setFiltros({...filtros, fechaInicio: e.target.value, rangoRapido: 'custom'})}
-                  className="input-field"
-                />
+          </div>
+        </div>
+
+        {/* Búsqueda y Botones */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="flex items-end">
+            <div className="flex-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <Search className="inline w-4 h-4 mr-1" />Buscar por nombre/carnet
+              </label>
+              <input
+                type="text"
+                placeholder="Ingresa nombre o carnet..."
+                value={filtros.busqueda}
+                onChange={(e) => setFiltros({ ...filtros, busqueda: e.target.value })}
+                className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              />
             </div>
           </div>
-        )}
+
+          <div className="flex gap-2 items-end">
+            <button
+              onClick={() => {
+                const hoy = new Date();
+                const formatDate = (date) => {
+                  const year = date.getFullYear();
+                  const month = String(date.getMonth() + 1).padStart(2, '0');
+                  const day = String(date.getDate()).padStart(2, '0');
+                  return `${year}-${month}-${day}`;
+                };
+                const hoyFormato = formatDate(hoy);
+                setFiltros({
+                  busqueda: '', 
+                  estado: '', 
+                  rol: '', 
+                  fechaInicio: hoyFormato, 
+                  fechaFin: hoyFormato, 
+                  rangoRapido: 'hoy'
+                });
+                setPaginaActual(1);
+              }}
+              className="px-4 py-2 bg-gray-400 hover:bg-gray-500 text-white rounded-lg font-medium transition"
+            >
+              Limpiar Filtros
+            </button>
+            <button
+              onClick={cargarDatos}
+              className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition flex items-center gap-2"
+            >
+              <Search size={16} /> Buscar
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Botones de Descarga */}
+      <div className="flex gap-3">
+        <button
+          onClick={handleExportarPDF}
+          className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold transition shadow-md"
+        >
+          <FileDown size={18} />
+          Descargar PDF
+        </button>
+        <button
+          onClick={handleExportarExcel}
+          className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition shadow-md"
+        >
+          <FileSpreadsheet size={18} />
+          Descargar Excel
+        </button>
       </div>
 
       {/* Tabla */}
@@ -464,13 +502,12 @@ export default function JustificacionesPanel() {
           <table className="w-full">
             <thead className="bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-600">
               <tr>
-                <th className="px-4 py-3 text-left text-sm font-semibold">Persona</th>
-                <th className="px-4 py-3 text-center text-sm font-semibold">Carnet</th>
-                <th className="px-4 py-3 text-center text-sm font-semibold">Jornada</th>
-                <th className="px-4 py-3 text-center text-sm font-semibold">Rol</th>
-                <th className="px-4 py-3 text-left text-sm font-semibold">Motivo</th>
-                <th className="px-4 py-3 text-center text-sm font-semibold">Estado</th>
-                <th className="px-4 py-3 text-center text-sm font-semibold">Acciones</th>
+                <th className="px-6 py-3 text-left text-sm font-semibold">Persona</th>
+                <th className="px-6 py-3 text-center text-sm font-semibold">Jornada</th>
+                <th className="px-6 py-3 text-left text-sm font-semibold">Motivo de Ausencia</th>
+                <th className="px-6 py-3 text-center text-sm font-semibold">Fecha</th>
+                <th className="px-6 py-3 text-center text-sm font-semibold">Estado</th>
+                <th className="px-6 py-3 text-center text-sm font-semibold">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -563,19 +600,19 @@ export default function JustificacionesPanel() {
 // Subcomponentes
 function StatCard({ icon, label, value, color }) {
   const colors = {
-     blue: 'border-l-blue-500 bg-blue-50',
-     teal: 'border-l-teal-500 bg-teal-50',
-     orange: 'border-l-orange-500 bg-orange-50',
-     red: 'border-l-red-500 bg-red-50'
+     blue: 'border-l-blue-500 bg-blue-50 dark:bg-blue-900/20',
+     teal: 'border-l-teal-500 bg-teal-50 dark:bg-teal-900/20',
+     orange: 'border-l-orange-500 bg-orange-50 dark:bg-orange-900/20',
+     red: 'border-l-red-500 bg-red-50 dark:bg-red-900/20'
   };
   return (
-    <div className={`p-4 rounded-xl shadow-sm border-l-4 ${colors[color] || 'bg-white'}`}>
-       <div className="flex justify-between">
+    <div className={`p-4 rounded-xl shadow-sm border-l-4 ${colors[color] || 'bg-white'} dark:border-gray-700`}>
+       <div className="flex justify-between items-center">
           <div>
-            <p className="text-sm text-gray-600">{label}</p>
-            <p className="text-2xl font-bold">{value}</p>
+            <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">{label}</p>
+            <p className="text-3xl font-bold text-gray-900 dark:text-gray-100 mt-2">{value}</p>
           </div>
-          <span className="text-2xl">{icon}</span>
+          <span className="text-3xl">{icon}</span>
        </div>
     </div>
   );
@@ -592,146 +629,228 @@ function FilaJustificacion({ excusa, onAprobar, onRechazar, onVerDetalles }) {
      : null;
 
   return (
-    <tr className="hover:bg-gray-50 border-b last:border-0">
-      <td className="px-4 py-3">
-        <div className="flex items-center gap-3">
-           <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex items-center justify-center">
-              {fotoUrl ? (
-                <img src={fotoUrl} onError={() => setImgError(true)} className="w-full h-full object-cover"/>
-              ) : (
-                <span className="text-xl">{esAlumno ? '👨‍🎓' : '👨‍🏫'}</span>
-              )}
-           </div>
-           <div>
-              <p className="font-medium text-gray-900">{persona?.nombres} {persona?.apellidos}</p>
-              <p className="text-xs text-gray-500">
-                 {esAlumno 
-                   ? `${persona?.grado || ''} ${persona?.seccion || ''}` 
-                   : persona?.cargo || 'Docente'}
-              </p>
-           </div>
+    <tr className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
+      {/* Persona con Foto y Carnet */}
+      <td className="px-6 py-4">
+        <div className="flex items-center gap-4">
+          {/* Foto más grande y mejor visualizada */}
+          <div className="w-12 h-12 rounded-full bg-gray-200 dark:bg-gray-600 overflow-hidden flex items-center justify-center flex-shrink-0">
+            {fotoUrl ? (
+              <img src={fotoUrl} onError={() => setImgError(true)} className="w-full h-full object-cover" alt={persona?.nombres}/>
+            ) : (
+              <span className="text-lg">{esAlumno ? '👨‍🎓' : '👨‍🏫'}</span>
+            )}
+          </div>
+          
+          <div className="flex-1 min-w-0">
+            <p className="font-semibold text-gray-900 dark:text-gray-100 truncate">{persona?.nombres} {persona?.apellidos}</p>
+            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+              {esAlumno 
+                ? `${persona?.grado || ''} ${persona?.seccion || ''}`.trim()
+                : persona?.cargo || 'Personal'}
+            </p>
+            {/* Carnet mostrado prominentemente */}
+            <p className="text-xs font-mono font-bold text-blue-700 dark:text-blue-300 mt-1 bg-blue-50 dark:bg-blue-900/30 inline-block px-2 py-1 rounded">
+              Carnet: {persona?.carnet || 'N/A'}
+            </p>
+          </div>
         </div>
       </td>
-      <td className="px-4 py-3 text-center">
-         <span className="font-mono font-bold text-gray-700 bg-gray-100 px-2 py-1 rounded" style={{fontFamily: '"Hack Nerd Font Mono", monospace'}}>
-            {persona?.carnet || 'N/A'}
-         </span>
+
+      {/* Jornada */}
+      <td className="px-6 py-4 text-center">
+        <span className={`px-3 py-1 rounded text-xs font-semibold
+          ${persona?.jornada === 'Matutina' ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300' : 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300'}
+        `}>
+          {persona?.jornada || 'N/A'}
+        </span>
       </td>
-      <td className="px-4 py-3 text-center">
-         <span className={`px-2 py-1 rounded text-xs font-semibold
-            ${persona?.jornada === 'Matutina' ? 'bg-amber-100 text-amber-800' : 'bg-indigo-100 text-indigo-800'}
-         `}>
-            {persona?.jornada || 'N/A'}
-         </span>
+
+      {/* Motivo de Ausencia */}
+      <td className="px-6 py-4">
+        <p className="text-sm text-gray-700 dark:text-gray-300 font-medium">{excusa.motivo}</p>
+        {excusa.descripcion && (
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{excusa.descripcion}</p>
+        )}
       </td>
-      <td className="px-4 py-3 text-center">
-         <span className={`px-2 py-1 rounded-full text-xs 
-            ${esAlumno ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'}`}>
-            {esAlumno ? 'Alumno' : 'Personal'}
-         </span>
+
+      {/* Fecha */}
+      <td className="px-6 py-4 text-center">
+        <p className="text-sm text-gray-700 dark:text-gray-300 font-medium">
+          {new Date(excusa.fecha_ausencia).toLocaleDateString('es-ES', { 
+            weekday: 'short', 
+            year: 'numeric', 
+            month: '2-digit', 
+            day: '2-digit' 
+          })}
+        </p>
       </td>
-      <td className="px-4 py-3 text-sm text-gray-700 max-w-xs truncate" title={excusa.motivo}>
-         {excusa.motivo}
+
+      {/* Estado */}
+      <td className="px-6 py-4 text-center">
+        <span className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap
+          ${excusa.estado === 'aprobada' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 
+            excusa.estado === 'rechazada' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300' : 
+            'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300'}
+        `}>
+          {excusa.estado.charAt(0).toUpperCase() + excusa.estado.slice(1)}
+        </span>
       </td>
-      <td className="px-4 py-3 text-center">
-         <span className={`px-2 py-1 rounded-full text-xs font-bold
-            ${excusa.estado === 'aprobada' ? 'bg-green-100 text-green-800' : 
-              excusa.estado === 'rechazada' ? 'bg-red-100 text-red-800' : 'bg-orange-100 text-orange-800'}
-         `}>
-            {excusa.estado.charAt(0).toUpperCase() + excusa.estado.slice(1)}
-         </span>
-      </td>
-      <td className="px-4 py-3">
-         <div className="flex justify-center gap-2">
-            {excusa.estado === 'pendiente' && (
-              <>
-                <button onClick={() => onAprobar(excusa.id)} className="p-1 text-green-600 hover:bg-green-100 rounded">
-                  <Check size={18} />
-                </button>
-                <button onClick={() => onRechazar(excusa)} className="p-1 text-red-600 hover:bg-red-100 rounded">
-                  <X size={18} />
-                </button>
-              </>
-            )}
-            <button onClick={() => onVerDetalles(excusa)} className="p-1 text-blue-600 hover:bg-blue-100 rounded">
-               <Eye size={18} />
-            </button>
-         </div>
+
+      {/* Acciones */}
+      <td className="px-6 py-4">
+        <div className="flex justify-center gap-2">
+          {excusa.estado === 'pendiente' && (
+            <>
+              <button 
+                onClick={() => onAprobar(excusa.id)} 
+                title="Aprobar"
+                className="p-2 text-green-600 hover:bg-green-100 dark:hover:bg-green-900/30 rounded-lg transition"
+              >
+                <Check size={18} />
+              </button>
+              <button 
+                onClick={() => onRechazar(excusa)}
+                title="Rechazar"
+                className="p-2 text-red-600 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg transition"
+              >
+                <X size={18} />
+              </button>
+            </>
+          )}
+          <button 
+            onClick={() => onVerDetalles(excusa)}
+            title="Ver detalles"
+            className="p-2 text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-lg transition"
+          >
+            <Eye size={18} />
+          </button>
+        </div>
       </td>
     </tr>
   );
 }
 
 function ModalDetalles({ persona, excusa, onClose, formatFecha, baseUrl }) {
+  const [imgError, setImgError] = useState(false);
+  
+  const fotoUrl = !imgError && persona?.foto_path 
+    ? (persona.foto_path.startsWith('http') ? persona.foto_path : `http://localhost:5000/uploads/${persona.foto_path}`)
+    : null;
+
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6">
-         <div className="flex justify-between items-center mb-6 border-b pb-4">
-            <h3 className="text-xl font-bold">Detalles de Justificación</h3>
-            <button onClick={onClose}><X size={24} className="text-gray-400 hover:text-gray-600"/></button>
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6">
+         {/* Header */}
+         <div className="flex justify-between items-center mb-6 border-b dark:border-gray-700 pb-4">
+            <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Detalles de Justificación</h3>
+            <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+              <X size={24}/>
+            </button>
          </div>
 
-         <div className="flex items-center gap-4 bg-gray-50 p-4 rounded-xl mb-6">
-            <div className="w-16 h-16 rounded-full bg-gray-200 overflow-hidden">
-               {persona.foto_path ? (
-                 <img src={persona.foto_path.startsWith('http') ? persona.foto_path : `http://localhost:5000/uploads/${persona.foto_path}`} className="w-full h-full object-cover"/>
-               ) : (
-                 <div className="w-full h-full flex items-center justify-center text-2xl">👤</div>
-               )}
+         {/* Información de la Persona */}
+         <div className="flex items-center gap-6 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-6 rounded-xl mb-6">
+            {/* Foto */}
+            <div className="w-24 h-24 rounded-full bg-gray-300 dark:bg-gray-600 overflow-hidden flex items-center justify-center flex-shrink-0 shadow-md">
+              {fotoUrl ? (
+                <img 
+                  src={fotoUrl} 
+                  onError={() => setImgError(true)} 
+                  className="w-full h-full object-cover"
+                  alt={persona?.nombres}
+                />
+              ) : (
+                <div className="text-4xl">👤</div>
+              )}
             </div>
-            <div>
-               <h4 className="text-lg font-bold">{persona.nombres} {persona.apellidos}</h4>
-               <p className="text-gray-600">{persona.grado || persona.cargo}</p>
-               <p className="text-sm font-mono mt-1">Carnet: {persona.carnet}</p>
-            </div>
-         </div>
-
-         <div className="grid grid-cols-2 gap-6 mb-6">
-            <div>
-               <label className="text-sm font-bold text-gray-500">Fecha Ausencia</label>
-               <p className="text-lg">{formatFecha(excusa.fecha_ausencia)}</p>
-            </div>
-            <div>
-               <label className="text-sm font-bold text-gray-500">Estado</label>
-               <div>
-                 <span className={`px-3 py-1 rounded-full text-sm font-bold
-                    ${excusa.estado === 'aprobada' ? 'bg-green-100 text-green-800' : 
-                      excusa.estado === 'rechazada' ? 'bg-red-100 text-red-800' : 'bg-orange-100 text-orange-800'}
-                 `}>
-                    {excusa.estado.toUpperCase()}
-                 </span>
-               </div>
+            
+            {/* Datos */}
+            <div className="flex-1">
+              <h4 className="text-xl font-bold text-gray-900 dark:text-gray-100">{persona?.nombres} {persona?.apellidos}</h4>
+              <p className="text-gray-600 dark:text-gray-400 mt-1">
+                {persona?.grado ? `${persona.grado} ${persona.seccion || ''}` : persona?.cargo}
+              </p>
+              <p className="text-sm font-mono font-bold text-white bg-blue-600 dark:bg-blue-700 inline-block px-3 py-1 rounded mt-2">
+                Carnet: {persona?.carnet}
+              </p>
             </div>
          </div>
 
+         {/* Información de Ausencia */}
+         <div className="grid grid-cols-2 gap-4 mb-6">
+            <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
+              <label className="text-sm font-bold text-gray-500 dark:text-gray-400">Fecha de Ausencia</label>
+              <p className="text-lg font-semibold text-gray-900 dark:text-gray-100 mt-2">
+                {formatFecha(excusa.fecha_ausencia)}
+              </p>
+            </div>
+            <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
+              <label className="text-sm font-bold text-gray-500 dark:text-gray-400">Estado</label>
+              <div className="mt-2">
+                <span className={`px-3 py-2 rounded-full text-sm font-bold inline-block
+                  ${excusa.estado === 'aprobada' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 
+                    excusa.estado === 'rechazada' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300' : 
+                    'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300'}
+                `}>
+                  {excusa.estado.charAt(0).toUpperCase() + excusa.estado.slice(1)}
+                </span>
+              </div>
+            </div>
+         </div>
+
+         {/* Motivo */}
          <div className="mb-6">
-            <label className="text-sm font-bold text-gray-500">Motivo</label>
-            <p className="bg-gray-50 p-3 rounded-lg mt-1 border">{excusa.motivo}</p>
+            <label className="text-sm font-bold text-gray-500 dark:text-gray-400 block mb-2">Motivo de Ausencia</label>
+            <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg border border-gray-200 dark:border-gray-600">
+              <p className="text-gray-900 dark:text-gray-100 font-medium">{excusa.motivo}</p>
+            </div>
          </div>
          
+         {/* Descripción si existe */}
          {excusa.descripcion && (
             <div className="mb-6">
-               <label className="text-sm font-bold text-gray-500">Descripción</label>
-               <p className="text-gray-700 mt-1">{excusa.descripcion}</p>
+               <label className="text-sm font-bold text-gray-500 dark:text-gray-400 block mb-2">Descripción</label>
+               <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg border border-gray-200 dark:border-gray-600">
+                 <p className="text-gray-900 dark:text-gray-100">{excusa.descripcion}</p>
+               </div>
             </div>
          )}
 
+         {/* Evidencia si existe */}
          {excusa.documento_url && (
             <div className="mb-6">
-               <label className="text-sm font-bold text-gray-500">Evidencia Adjunta</label>
+               <label className="text-sm font-bold text-gray-500 dark:text-gray-400 block mb-2">Evidencia Adjunta</label>
                <a 
                  href={`http://localhost:5000/uploads/${excusa.documento_url}`} 
                  target="_blank" 
                  rel="noreferrer"
-                 className="flex items-center gap-2 text-blue-600 hover:underline mt-1"
+                 className="flex items-center gap-2 text-blue-600 dark:text-blue-400 hover:underline bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg border border-gray-200 dark:border-gray-600"
                >
-                 <FileText size={16}/> Ver Documento
+                 <FileText size={18}/> 
+                 <span className="font-medium">Ver Documento</span>
                </a>
             </div>
          )}
 
-         <div className="flex justify-end pt-4 border-t">
-            <button onClick={onClose} className="px-6 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700">Cerrar</button>
+         {/* Observaciones si fueron rechazadas */}
+         {excusa.estado === 'rechazada' && excusa.observaciones && (
+            <div className="mb-6">
+               <label className="text-sm font-bold text-red-600 dark:text-red-400 block mb-2">Motivo del Rechazo</label>
+               <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg border border-red-200 dark:border-red-800">
+                 <p className="text-red-900 dark:text-red-200">{excusa.observaciones}</p>
+               </div>
+            </div>
+         )}
+
+         {/* Footer */}
+         <div className="flex justify-end pt-6 border-t dark:border-gray-700">
+            <button 
+              onClick={onClose} 
+              className="px-6 py-2 bg-gray-800 dark:bg-gray-700 text-white rounded-lg hover:bg-gray-900 dark:hover:bg-gray-600 font-medium transition"
+            >
+              Cerrar
+            </button>
          </div>
       </div>
     </div>
