@@ -40,6 +40,8 @@ router.use(verifyJWT);
 /**
  * POST /api/excusas
  * Registrar una excusa/justificación
+ * 
+ * VALIDACIÓN: Solo una justificación PENDIENTE o APROBADA por persona y fecha
  */
 router.post('/', upload.single('archivo'), async (req, res) => {
   try {
@@ -53,16 +55,45 @@ router.post('/', upload.single('archivo'), async (req, res) => {
         .json({ error: 'Faltan datos requeridos (motivo, tipo, ID, fecha_ausencia)' });
     }
 
+    // Validar que no exista una justificación PENDIENTE o APROBADA para esta persona en esta fecha
+    const personaId = tipo === 'alumno' ? parseInt(alumno_id) : parseInt(personal_id);
+    const personaField = tipo === 'alumno' ? 'alumno_id' : 'personal_id';
+    
+    // Normalizar fecha a medianoche local
+    const [year, month, day] = fecha_ausencia.split('-');
+    const fechaNormalizada = new Date(parseInt(year), parseInt(month) - 1, parseInt(day), 0, 0, 0, 0);
+    const fechaInicio = fechaNormalizada;
+    const fechaFin = new Date(parseInt(year), parseInt(month) - 1, parseInt(day), 23, 59, 59, 999);
+
+    const justificacionExistente = await prisma.excusa.findFirst({
+      where: {
+        [personaField]: personaId,
+        fecha_ausencia: {
+          gte: fechaInicio,
+          lte: fechaFin
+        },
+        estado: {
+          in: ['pendiente', 'aprobada'] // No permitir si ya existe pendiente o aprobada
+        }
+      }
+    });
+
+    if (justificacionExistente) {
+      if (req.file) await fs.unlink(req.file.path);
+      return res.status(409).json({ 
+        error: `Esta ${tipo === 'alumno' ? 'alumno/a' : 'persona'} ya tiene una justificación ${justificacionExistente.estado} para esta fecha.` 
+      });
+    }
+
     let documento_url = null;
     if (req.file) {
       documento_url = `justificaciones/${req.file.filename}`;
     }
 
-
     const data = {
       motivo,
       descripcion: descripcion || null,
-      fecha_ausencia: fecha_ausencia ? new Date(fecha_ausencia) : null,
+      fecha_ausencia: fechaNormalizada,
       documento_url,
       estado: 'pendiente',
       alumno_id: tipo === 'alumno' ? parseInt(alumno_id) : null,
@@ -71,7 +102,7 @@ router.post('/', upload.single('archivo'), async (req, res) => {
 
     const excusa = await prisma.excusa.create({ data });
 
-    logger.info({ excusaId: excusa.id, user: req.user.id }, 'Justificación registrada');
+    logger.info({ excusaId: excusa.id, user: req.user.id, personaId, tipo }, 'Justificación registrada');
     res.json({ success: true, excusa });
   } catch (error) {
     logger.error({ err: error }, 'Error registrando justificación');

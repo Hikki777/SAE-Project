@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   FileText, AlertCircle, Check, X, Eye, Calendar, User, Filter,
   UserX, Clock, ChevronDown, ChevronUp, FileDown, FileSpreadsheet,
-  Search, ChevronLeft, ChevronRight, Users
+  Search, ChevronLeft, ChevronRight, Users, Plus, Upload
 } from 'lucide-react';
 import client from '../api/client';
 import toast, { Toaster } from 'react-hot-toast';
@@ -43,8 +43,22 @@ export default function JustificacionesPanel() {
   const [motivoRechazo, setMotivoRechazo] = useState('');
   const [mostrarModalRechazo, setMostrarModalRechazo] = useState(false);
   const [mostrarModalJustificar, setMostrarModalJustificar] = useState(false);
+  const [mostrarModalCrear, setMostrarModalCrear] = useState(false);
   const [personaJustificar, setPersonaJustificar] = useState(null);
   const [inicializado, setInicializado] = useState(false);
+  
+  // Estado del modal crear justificación
+  const [formCrear, setFormCrear] = useState({
+    tipo: 'alumno',
+    persona_id: '',
+    motivo: '',
+    descripcion: '',
+    fecha_ausencia: '',
+    archivo: null
+  });
+  const [cargandoCrear, setCargandoCrear] = useState(false);
+  const [alumnos, setAlumnos] = useState([]);
+  const [personal, setPersonal] = useState([]);
 
   // Cargar datos iniciales
   useEffect(() => {
@@ -72,6 +86,26 @@ export default function JustificacionesPanel() {
       cargarDatos();
     }
   }, [filtros.estado, filtros.busqueda, filtros.rol, filtros.fechaInicio, filtros.fechaFin]);
+
+  // Cargar lista de alumnos y personal
+  useEffect(() => {
+    const cargarPersonas = async () => {
+      try {
+        const [alumnosRes, personalRes] = await Promise.all([
+          client.get('/alumnos'),
+          client.get('/personal')
+        ]);
+        setAlumnos(alumnosRes.data.alumnos || []);
+        setPersonal(personalRes.data.personal || []);
+      } catch (error) {
+        console.error('Error cargando personas:', error);
+      }
+    };
+    
+    if (mostrarModalCrear) {
+      cargarPersonas();
+    }
+  }, [mostrarModalCrear]);
 
   const cargarDatos = async () => {
     setLoading(true);
@@ -245,6 +279,53 @@ export default function JustificacionesPanel() {
     }
   };
 
+  const handleCrearJustificacion = async (e) => {
+    e.preventDefault();
+    
+    if (!formCrear.persona_id || !formCrear.motivo || !formCrear.fecha_ausencia) {
+      toast.error('Completa los campos requeridos');
+      return;
+    }
+
+    setCargandoCrear(true);
+    try {
+      const formData = new FormData();
+      formData.append('tipo', formCrear.tipo);
+      formData.append(formCrear.tipo === 'alumno' ? 'alumno_id' : 'personal_id', formCrear.persona_id);
+      formData.append('motivo', formCrear.motivo);
+      formData.append('descripcion', formCrear.descripcion);
+      formData.append('fecha_ausencia', formCrear.fecha_ausencia);
+      
+      if (formCrear.archivo) {
+        formData.append('archivo', formCrear.archivo);
+      }
+
+      const response = await client.post('/excusas', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+
+      if (response.data.success) {
+        toast.success('✓ Justificación registrada correctamente');
+        setMostrarModalCrear(false);
+        setFormCrear({
+          tipo: 'alumno',
+          persona_id: '',
+          motivo: '',
+          descripcion: '',
+          fecha_ausencia: '',
+          archivo: null
+        });
+        cargarDatos();
+      }
+    } catch (error) {
+      console.error('Error creando justificación:', error);
+      const mensaje = error.response?.data?.error || error.message;
+      toast.error(mensaje);
+    } finally {
+      setCargandoCrear(false);
+    }
+  };
+
   const handleExportarPDF = async () => {
     try {
       const institucionRes = await client.get('/institucion');
@@ -324,6 +405,18 @@ export default function JustificacionesPanel() {
 
   return (
     <div className="space-y-6">
+      {/* Header con Botón Crear */}
+      <div className="flex justify-between items-center">
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Justificaciones</h1>
+        <button
+          onClick={() => setMostrarModalCrear(true)}
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition shadow-md"
+        >
+          <Plus size={18} />
+          Registrar Justificación
+        </button>
+      </div>
+
       {/* Tarjetas de Estadísticas */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         <StatCard icon="📋" label="Ausentes Hoy" value={stats.ausentesHoy} color="blue" />
@@ -563,6 +656,18 @@ export default function JustificacionesPanel() {
 
       {/* Modales */}
       <AnimatePresence>
+        {mostrarModalCrear && (
+          <ModalCrearJustificacion
+            open={mostrarModalCrear}
+            onClose={() => setMostrarModalCrear(false)}
+            onSubmit={handleCrearJustificacion}
+            form={formCrear}
+            setForm={setFormCrear}
+            alumnos={alumnos}
+            personal={personal}
+            cargando={cargandoCrear}
+          />
+        )}
         {mostrarModalJustificar && personaJustificar && (
           <ModalDetalles 
             persona={personaJustificar} 
@@ -574,18 +679,18 @@ export default function JustificacionesPanel() {
         )}
         {mostrarModalRechazo && (
            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-             <div className="bg-white rounded-xl p-6 max-w-md w-full shadow-2xl">
+             <div className="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-md w-full shadow-2xl">
                 <h3 className="font-bold text-lg mb-4">Rechazar Justificación</h3>
                 <textarea 
-                  className="w-full border rounded p-2 mb-4" 
+                  className="w-full border border-gray-300 dark:border-gray-600 rounded p-2 mb-4 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100" 
                   rows={3}
                   placeholder="Motivo del rechazo..."
                   value={motivoRechazo}
                   onChange={e => setMotivoRechazo(e.target.value)}
                 />
                 <div className="flex gap-2 justify-end">
-                   <button onClick={() => setMostrarModalRechazo(false)} className="px-4 py-2 bg-gray-200 rounded">Cancelar</button>
-                   <button onClick={handleRechazar} className="px-4 py-2 bg-red-600 text-white rounded">Rechazar</button>
+                   <button onClick={() => setMostrarModalRechazo(false)} className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded">Cancelar</button>
+                   <button onClick={handleRechazar} className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">Rechazar</button>
                 </div>
              </div>
            </div>
@@ -733,129 +838,419 @@ function FilaJustificacion({ excusa, onAprobar, onRechazar, onVerDetalles }) {
 
 function ModalDetalles({ persona, excusa, onClose, formatFecha, baseUrl }) {
   const [imgError, setImgError] = useState(false);
+  const [cargandoAccion, setCargandoAccion] = useState(false);
+  const [motivoRechazo, setMotivoRechazo] = useState('');
+  const [mostrarFormRechazo, setMostrarFormRechazo] = useState(false);
   
   const fotoUrl = !imgError && persona?.foto_path 
     ? (persona.foto_path.startsWith('http') ? persona.foto_path : `http://localhost:5000/uploads/${persona.foto_path}`)
     : null;
 
+  const handleAprobar = async () => {
+    setCargandoAccion(true);
+    try {
+      await client.put(`/excusas/${excusa.id}`, { estado: 'aprobada' });
+      toast.success('✓ Justificación aprobada');
+      setTimeout(() => {
+        onClose();
+        // Recargar datos
+        window.location.reload();
+      }, 1000);
+    } catch (error) {
+      console.error('Error:', error);
+      toast.error('Error al aprobar');
+    } finally {
+      setCargandoAccion(false);
+    }
+  };
+
+  const handleRechazar = async () => {
+    if (!motivoRechazo.trim()) {
+      toast.error('Debes proporcionar un motivo');
+      return;
+    }
+    setCargandoAccion(true);
+    try {
+      await client.put(`/excusas/${excusa.id}`, { 
+        estado: 'rechazada',
+        observaciones: motivoRechazo
+      });
+      toast.success('✗ Justificación rechazada');
+      setTimeout(() => {
+        onClose();
+        window.location.reload();
+      }, 1000);
+    } catch (error) {
+      console.error('Error:', error);
+      toast.error('Error al rechazar');
+    } finally {
+      setCargandoAccion(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+      >
          {/* Header */}
-         <div className="flex justify-between items-center mb-6 border-b dark:border-gray-700 pb-4">
-            <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Detalles de Justificación</h3>
-            <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+         <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex justify-between items-center">
+            <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+              <Eye size={24} className="text-blue-600" />
+              Detalles de Justificación
+            </h3>
+            <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition">
               <X size={24}/>
             </button>
          </div>
 
-         {/* Información de la Persona */}
-         <div className="flex items-center gap-6 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-6 rounded-xl mb-6">
-            {/* Foto */}
-            <div className="w-24 h-24 rounded-full bg-gray-300 dark:bg-gray-600 overflow-hidden flex items-center justify-center flex-shrink-0 shadow-md">
-              {fotoUrl ? (
-                <img 
-                  src={fotoUrl} 
-                  onError={() => setImgError(true)} 
-                  className="w-full h-full object-cover"
-                  alt={persona?.nombres}
-                />
-              ) : (
-                <div className="text-4xl">👤</div>
-              )}
-            </div>
-            
-            {/* Datos */}
-            <div className="flex-1">
-              <h4 className="text-xl font-bold text-gray-900 dark:text-gray-100">{persona?.nombres} {persona?.apellidos}</h4>
-              <p className="text-gray-600 dark:text-gray-400 mt-1">
-                {persona?.grado ? `${persona.grado} ${persona.seccion || ''}` : persona?.cargo}
-              </p>
-              <p className="text-sm font-mono font-bold text-white bg-blue-600 dark:bg-blue-700 inline-block px-3 py-1 rounded mt-2">
-                Carnet: {persona?.carnet}
-              </p>
-            </div>
-         </div>
-
-         {/* Información de Ausencia */}
-         <div className="grid grid-cols-2 gap-4 mb-6">
-            <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
-              <label className="text-sm font-bold text-gray-500 dark:text-gray-400">Fecha de Ausencia</label>
-              <p className="text-lg font-semibold text-gray-900 dark:text-gray-100 mt-2">
-                {formatFecha(excusa.fecha_ausencia)}
-              </p>
-            </div>
-            <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
-              <label className="text-sm font-bold text-gray-500 dark:text-gray-400">Estado</label>
-              <div className="mt-2">
-                <span className={`px-3 py-2 rounded-full text-sm font-bold inline-block
-                  ${excusa.estado === 'aprobada' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 
-                    excusa.estado === 'rechazada' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300' : 
-                    'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300'}
-                `}>
-                  {excusa.estado.charAt(0).toUpperCase() + excusa.estado.slice(1)}
-                </span>
+         <div className="p-6 space-y-6">
+           {/* Información de la Persona */}
+           <div className="flex items-center gap-6 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-6 rounded-xl">
+              {/* Foto */}
+              <div className="w-24 h-24 rounded-full bg-gray-300 dark:bg-gray-600 overflow-hidden flex items-center justify-center flex-shrink-0 shadow-md">
+                {fotoUrl ? (
+                  <img 
+                    src={fotoUrl} 
+                    onError={() => setImgError(true)} 
+                    className="w-full h-full object-cover"
+                    alt={persona?.nombres}
+                  />
+                ) : (
+                  <div className="text-4xl">👤</div>
+                )}
               </div>
-            </div>
-         </div>
+              
+              {/* Datos */}
+              <div className="flex-1">
+                <h4 className="text-xl font-bold text-gray-900 dark:text-gray-100">{persona?.nombres} {persona?.apellidos}</h4>
+                <p className="text-gray-600 dark:text-gray-400 mt-1">
+                  {persona?.grado ? `${persona.grado} ${persona.seccion || ''}` : persona?.cargo}
+                </p>
+                <p className="text-sm font-mono font-bold text-white bg-blue-600 dark:bg-blue-700 inline-block px-3 py-1 rounded mt-2">
+                  Carnet: {persona?.carnet}
+                </p>
+              </div>
+           </div>
 
-         {/* Motivo */}
-         <div className="mb-6">
-            <label className="text-sm font-bold text-gray-500 dark:text-gray-400 block mb-2">Motivo de Ausencia</label>
-            <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg border border-gray-200 dark:border-gray-600">
-              <p className="text-gray-900 dark:text-gray-100 font-medium">{excusa.motivo}</p>
-            </div>
-         </div>
-         
-         {/* Descripción si existe */}
-         {excusa.descripcion && (
-            <div className="mb-6">
-               <label className="text-sm font-bold text-gray-500 dark:text-gray-400 block mb-2">Descripción</label>
-               <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg border border-gray-200 dark:border-gray-600">
-                 <p className="text-gray-900 dark:text-gray-100">{excusa.descripcion}</p>
-               </div>
-            </div>
-         )}
+           {/* Información de Ausencia */}
+           <div className="grid grid-cols-2 gap-4">
+              <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
+                <label className="text-sm font-bold text-gray-500 dark:text-gray-400">Fecha de Ausencia</label>
+                <p className="text-lg font-semibold text-gray-900 dark:text-gray-100 mt-2">
+                  {formatFecha(excusa.fecha_ausencia)}
+                </p>
+              </div>
+              <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
+                <label className="text-sm font-bold text-gray-500 dark:text-gray-400">Estado</label>
+                <div className="mt-2">
+                  <span className={`px-3 py-2 rounded-full text-sm font-bold inline-block
+                    ${excusa.estado === 'aprobada' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 
+                      excusa.estado === 'rechazada' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300' : 
+                      'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300'}
+                  `}>
+                    {excusa.estado.charAt(0).toUpperCase() + excusa.estado.slice(1)}
+                  </span>
+                </div>
+              </div>
+           </div>
 
-         {/* Evidencia si existe */}
-         {excusa.documento_url && (
-            <div className="mb-6">
-               <label className="text-sm font-bold text-gray-500 dark:text-gray-400 block mb-2">Evidencia Adjunta</label>
-               <a 
-                 href={`http://localhost:5000/uploads/${excusa.documento_url}`} 
-                 target="_blank" 
-                 rel="noreferrer"
-                 className="flex items-center gap-2 text-blue-600 dark:text-blue-400 hover:underline bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg border border-gray-200 dark:border-gray-600"
-               >
-                 <FileText size={18}/> 
-                 <span className="font-medium">Ver Documento</span>
-               </a>
-            </div>
-         )}
+           {/* Motivo */}
+           <div>
+              <label className="text-sm font-bold text-gray-500 dark:text-gray-400 block mb-2">Motivo de Ausencia</label>
+              <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg border border-gray-200 dark:border-gray-600">
+                <p className="text-gray-900 dark:text-gray-100 font-medium">{excusa.motivo}</p>
+              </div>
+           </div>
+           
+           {/* Descripción si existe */}
+           {excusa.descripcion && (
+              <div>
+                 <label className="text-sm font-bold text-gray-500 dark:text-gray-400 block mb-2">Descripción</label>
+                 <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg border border-gray-200 dark:border-gray-600">
+                   <p className="text-gray-900 dark:text-gray-100">{excusa.descripcion}</p>
+                 </div>
+              </div>
+           )}
 
-         {/* Observaciones si fueron rechazadas */}
-         {excusa.estado === 'rechazada' && excusa.observaciones && (
-            <div className="mb-6">
+           {/* Evidencia si existe */}
+           {excusa.documento_url && (
+              <div>
+                 <label className="text-sm font-bold text-gray-500 dark:text-gray-400 block mb-2">Evidencia Adjunta</label>
+                 <a 
+                   href={`http://localhost:5000/uploads/${excusa.documento_url}`} 
+                   target="_blank" 
+                   rel="noreferrer"
+                   className="flex items-center gap-2 text-blue-600 dark:text-blue-400 hover:underline bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg border border-gray-200 dark:border-gray-600 transition"
+                 >
+                   <FileText size={18}/> 
+                   <span className="font-medium">Ver Documento</span>
+                 </a>
+              </div>
+           )}
+
+           {/* Observaciones si fueron rechazadas */}
+           {excusa.estado === 'rechazada' && excusa.observaciones && (
+              <div>
+                 <label className="text-sm font-bold text-red-600 dark:text-red-400 block mb-2">Motivo del Rechazo</label>
+                 <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg border border-red-200 dark:border-red-800">
+                   <p className="text-red-900 dark:text-red-200">{excusa.observaciones}</p>
+                 </div>
+              </div>
+           )}
+
+           {/* Formulario de Rechazo si está pendiente */}
+           {excusa.estado === 'pendiente' && mostrarFormRechazo && (
+             <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg border border-red-200 dark:border-red-800">
                <label className="text-sm font-bold text-red-600 dark:text-red-400 block mb-2">Motivo del Rechazo</label>
-               <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg border border-red-200 dark:border-red-800">
-                 <p className="text-red-900 dark:text-red-200">{excusa.observaciones}</p>
-               </div>
-            </div>
-         )}
+               <textarea
+                 value={motivoRechazo}
+                 onChange={(e) => setMotivoRechazo(e.target.value)}
+                 placeholder="Explica por qué se rechaza esta justificación..."
+                 className="w-full border border-red-300 dark:border-red-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 resize-none"
+                 rows={3}
+               />
+             </div>
+           )}
 
-         {/* Footer */}
-         <div className="flex justify-end pt-6 border-t dark:border-gray-700">
-            <button 
-              onClick={onClose} 
-              className="px-6 py-2 bg-gray-800 dark:bg-gray-700 text-white rounded-lg hover:bg-gray-900 dark:hover:bg-gray-600 font-medium transition"
-            >
-              Cerrar
-            </button>
+           {/* Botones de Acción */}
+           <div className="flex gap-3 pt-6 border-t border-gray-200 dark:border-gray-700 flex-wrap">
+             {excusa.estado === 'pendiente' && (
+               <>
+                 {!mostrarFormRechazo ? (
+                   <>
+                     <button 
+                       onClick={handleAprobar}
+                       disabled={cargandoAccion}
+                       className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition disabled:opacity-50"
+                     >
+                       <Check size={18} />
+                       Aprobar
+                     </button>
+                     <button 
+                       onClick={() => setMostrarFormRechazo(true)}
+                       disabled={cargandoAccion}
+                       className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold transition disabled:opacity-50"
+                     >
+                       <X size={18} />
+                       Rechazar
+                     </button>
+                   </>
+                 ) : (
+                   <>
+                     <button 
+                       onClick={() => setMostrarFormRechazo(false)}
+                       disabled={cargandoAccion}
+                       className="flex-1 px-4 py-3 bg-gray-400 hover:bg-gray-500 text-white rounded-lg font-semibold transition disabled:opacity-50"
+                     >
+                       Cancelar
+                     </button>
+                     <button 
+                       onClick={handleRechazar}
+                       disabled={cargandoAccion || !motivoRechazo.trim()}
+                       className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold transition disabled:opacity-50"
+                     >
+                       {cargandoAccion ? (
+                         <>
+                           <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                           Rechazando...
+                         </>
+                       ) : (
+                         <>
+                           <X size={18} />
+                           Confirmar Rechazo
+                         </>
+                       )}
+                     </button>
+                   </>
+                 )}
+               </>
+             )}
+             <button 
+               onClick={onClose}
+               className="flex-1 px-4 py-3 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition"
+             >
+               Cerrar
+             </button>
+           </div>
          </div>
-      </div>
+      </motion.div>
     </div>
   );
 }
 
 // Estilos adicionales para inputs
-const inputStyle = "w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700";
+const inputStyle = "w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100";
+
+function ModalCrearJustificacion({ open, onClose, onSubmit, form, setForm, alumnos, personal, cargando }) {
+  const personasDisponibles = form.tipo === 'alumno' ? alumnos : personal;
+  
+  const getNombrePersona = (persona) => {
+    return `${persona.nombres} ${persona.apellidos}` + (persona.carnet ? ` (${persona.carnet})` : '');
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+      >
+        {/* Header */}
+        <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-6 flex justify-between items-center">
+          <div className="flex items-center gap-3">
+            <Plus className="text-blue-600" size={24} />
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Registrar Justificación</h2>
+          </div>
+          <button 
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition"
+          >
+            <X size={24} />
+          </button>
+        </div>
+
+        {/* Formulario */}
+        <form onSubmit={onSubmit} className="p-6 space-y-6">
+          {/* Tipo de Persona */}
+          <div>
+            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+              <Users className="inline w-4 h-4 mr-1" />
+              Tipo de Persona
+            </label>
+            <select
+              value={form.tipo}
+              onChange={(e) => setForm({ ...form, tipo: e.target.value, persona_id: '' })}
+              className={inputStyle}
+            >
+              <option value="alumno">Alumno/a</option>
+              <option value="personal">Personal</option>
+            </select>
+          </div>
+
+          {/* Persona */}
+          <div>
+            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+              <User className="inline w-4 h-4 mr-1" />
+              Selecciona la Persona *
+            </label>
+            <select
+              value={form.persona_id}
+              onChange={(e) => setForm({ ...form, persona_id: e.target.value })}
+              className={inputStyle}
+              required
+            >
+              <option value="">-- Selecciona una persona --</option>
+              {personasDisponibles.map(persona => (
+                <option key={persona.id} value={persona.id}>
+                  {getNombrePersona(persona)}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Fecha de Ausencia */}
+          <div>
+            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+              <Calendar className="inline w-4 h-4 mr-1" />
+              Fecha de Ausencia *
+            </label>
+            <input
+              type="date"
+              value={form.fecha_ausencia}
+              onChange={(e) => setForm({ ...form, fecha_ausencia: e.target.value })}
+              className={inputStyle}
+              required
+            />
+          </div>
+
+          {/* Motivo */}
+          <div>
+            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+              <AlertCircle className="inline w-4 h-4 mr-1" />
+              Motivo de Ausencia *
+            </label>
+            <input
+              type="text"
+              placeholder="Ej: Cita médica, Enfermedad, etc."
+              value={form.motivo}
+              onChange={(e) => setForm({ ...form, motivo: e.target.value })}
+              className={inputStyle}
+              required
+            />
+          </div>
+
+          {/* Descripción */}
+          <div>
+            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+              Descripción (Opcional)
+            </label>
+            <textarea
+              placeholder="Agrega más detalles sobre la justificación..."
+              value={form.descripcion}
+              onChange={(e) => setForm({ ...form, descripcion: e.target.value })}
+              className={`${inputStyle} resize-none`}
+              rows={3}
+            />
+          </div>
+
+          {/* Archivo Adjunto */}
+          <div>
+            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+              <Upload className="inline w-4 h-4 mr-1" />
+              Archivo Adjunto (PDF o Imagen - Máx 5MB)
+            </label>
+            <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center hover:border-blue-400 transition cursor-pointer">
+              <input
+                type="file"
+                accept="image/*,.pdf"
+                onChange={(e) => setForm({ ...form, archivo: e.target.files?.[0] || null })}
+                className="hidden"
+                id="archivo-input"
+              />
+              <label htmlFor="archivo-input" className="cursor-pointer block">
+                <Upload size={32} className="mx-auto text-gray-400 mb-2" />
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  {form.archivo ? form.archivo.name : 'Click para seleccionar archivo'}
+                </p>
+              </label>
+            </div>
+          </div>
+
+          {/* Botones */}
+          <div className="flex gap-3 justify-end pt-6 border-t border-gray-200 dark:border-gray-700">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={cargando}
+              className="px-6 py-2 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg font-medium hover:bg-gray-300 dark:hover:bg-gray-600 transition disabled:opacity-50"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={cargando}
+              className="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition disabled:opacity-50 flex items-center gap-2"
+            >
+              {cargando ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Registrando...
+                </>
+              ) : (
+                <>
+                  <Check size={18} />
+                  Registrar Justificación
+                </>
+              )}
+            </button>
+          </div>
+        </form>
+      </motion.div>
+    </div>
+  );
+}
