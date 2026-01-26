@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   FileText, AlertCircle, Check, X, Eye, Calendar, User, Filter,
   UserX, Clock, ChevronDown, ChevronUp, FileDown, FileSpreadsheet,
-  Search, ChevronLeft, ChevronRight, Users, Plus, Upload
+  Search, ChevronLeft, ChevronRight, Users, Upload
 } from 'lucide-react';
 import client from '../api/client';
 import toast, { Toaster } from 'react-hot-toast';
@@ -43,22 +43,8 @@ export default function JustificacionesPanel() {
   const [motivoRechazo, setMotivoRechazo] = useState('');
   const [mostrarModalRechazo, setMostrarModalRechazo] = useState(false);
   const [mostrarModalJustificar, setMostrarModalJustificar] = useState(false);
-  const [mostrarModalCrear, setMostrarModalCrear] = useState(false);
   const [personaJustificar, setPersonaJustificar] = useState(null);
   const [inicializado, setInicializado] = useState(false);
-  
-  // Estado del modal crear justificación
-  const [formCrear, setFormCrear] = useState({
-    tipo: 'alumno',
-    persona_id: '',
-    motivo: '',
-    descripcion: '',
-    fecha_ausencia: '',
-    archivo: null
-  });
-  const [cargandoCrear, setCargandoCrear] = useState(false);
-  const [alumnos, setAlumnos] = useState([]);
-  const [personal, setPersonal] = useState([]);
 
   // Cargar datos iniciales
   useEffect(() => {
@@ -101,11 +87,7 @@ export default function JustificacionesPanel() {
         console.error('Error cargando personas:', error);
       }
     };
-    
-    if (mostrarModalCrear) {
-      cargarPersonas();
-    }
-  }, [mostrarModalCrear]);
+  }, []);
 
   const cargarDatos = async () => {
     setLoading(true);
@@ -279,53 +261,6 @@ export default function JustificacionesPanel() {
     }
   };
 
-  const handleCrearJustificacion = async (e) => {
-    e.preventDefault();
-    
-    if (!formCrear.persona_id || !formCrear.motivo || !formCrear.fecha_ausencia) {
-      toast.error('Completa los campos requeridos');
-      return;
-    }
-
-    setCargandoCrear(true);
-    try {
-      const formData = new FormData();
-      formData.append('tipo', formCrear.tipo);
-      formData.append(formCrear.tipo === 'alumno' ? 'alumno_id' : 'personal_id', formCrear.persona_id);
-      formData.append('motivo', formCrear.motivo);
-      formData.append('descripcion', formCrear.descripcion);
-      formData.append('fecha_ausencia', formCrear.fecha_ausencia);
-      
-      if (formCrear.archivo) {
-        formData.append('archivo', formCrear.archivo);
-      }
-
-      const response = await client.post('/excusas', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
-
-      if (response.data.success) {
-        toast.success('✓ Justificación registrada correctamente');
-        setMostrarModalCrear(false);
-        setFormCrear({
-          tipo: 'alumno',
-          persona_id: '',
-          motivo: '',
-          descripcion: '',
-          fecha_ausencia: '',
-          archivo: null
-        });
-        cargarDatos();
-      }
-    } catch (error) {
-      console.error('Error creando justificación:', error);
-      const mensaje = error.response?.data?.error || error.message;
-      toast.error(mensaje);
-    } finally {
-      setCargandoCrear(false);
-    }
-  };
-
   const handleExportarPDF = async () => {
     try {
       const institucionRes = await client.get('/institucion');
@@ -405,18 +340,6 @@ export default function JustificacionesPanel() {
 
   return (
     <div className="space-y-6">
-      {/* Header con Botón Crear */}
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Justificaciones</h1>
-        <button
-          onClick={() => setMostrarModalCrear(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition shadow-md"
-        >
-          <Plus size={18} />
-          Registrar Justificación
-        </button>
-      </div>
-
       {/* Tarjetas de Estadísticas */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         <StatCard icon="📋" label="Ausentes Hoy" value={stats.ausentesHoy} color="blue" />
@@ -656,18 +579,6 @@ export default function JustificacionesPanel() {
 
       {/* Modales */}
       <AnimatePresence>
-        {mostrarModalCrear && (
-          <ModalCrearJustificacion
-            open={mostrarModalCrear}
-            onClose={() => setMostrarModalCrear(false)}
-            onSubmit={handleCrearJustificacion}
-            form={formCrear}
-            setForm={setFormCrear}
-            alumnos={alumnos}
-            personal={personal}
-            cargando={cargandoCrear}
-          />
-        )}
         {mostrarModalJustificar && personaJustificar && (
           <ModalDetalles 
             persona={personaJustificar} 
@@ -751,7 +662,7 @@ function FilaJustificacion({ excusa, onAprobar, onRechazar, onVerDetalles }) {
             <p className="font-bold text-gray-900 dark:text-gray-100 text-sm">
               {persona?.nombres || 'N/A'}
             </p>
-            <p className="font-semibold text-gray-700 dark:text-gray-200 text-sm">
+            <p className="font-bold text-gray-700 dark:text-gray-200 text-sm">
               {persona?.apellidos || 'N/A'}
             </p>
             <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">
@@ -1089,173 +1000,3 @@ function ModalDetalles({ persona, excusa, onClose, formatFecha, baseUrl }) {
 
 // Estilos adicionales para inputs
 const inputStyle = "w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100";
-
-function ModalCrearJustificacion({ open, onClose, onSubmit, form, setForm, alumnos, personal, cargando }) {
-  const personasDisponibles = form.tipo === 'alumno' ? alumnos : personal;
-  
-  const getNombrePersona = (persona) => {
-    return `${persona.nombres} ${persona.apellidos}` + (persona.carnet ? ` (${persona.carnet})` : '');
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.95 }}
-        className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
-      >
-        {/* Header */}
-        <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-6 flex justify-between items-center">
-          <div className="flex items-center gap-3">
-            <Plus className="text-blue-600" size={24} />
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Registrar Justificación</h2>
-          </div>
-          <button 
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition"
-          >
-            <X size={24} />
-          </button>
-        </div>
-
-        {/* Formulario */}
-        <form onSubmit={onSubmit} className="p-6 space-y-6">
-          {/* Tipo de Persona */}
-          <div>
-            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
-              <Users className="inline w-4 h-4 mr-1" />
-              Tipo de Persona
-            </label>
-            <select
-              value={form.tipo}
-              onChange={(e) => setForm({ ...form, tipo: e.target.value, persona_id: '' })}
-              className={inputStyle}
-            >
-              <option value="alumno">Alumno/a</option>
-              <option value="personal">Personal</option>
-            </select>
-          </div>
-
-          {/* Persona */}
-          <div>
-            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
-              <User className="inline w-4 h-4 mr-1" />
-              Selecciona la Persona *
-            </label>
-            <select
-              value={form.persona_id}
-              onChange={(e) => setForm({ ...form, persona_id: e.target.value })}
-              className={inputStyle}
-              required
-            >
-              <option value="">-- Selecciona una persona --</option>
-              {personasDisponibles.map(persona => (
-                <option key={persona.id} value={persona.id}>
-                  {getNombrePersona(persona)}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Fecha de Ausencia */}
-          <div>
-            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
-              <Calendar className="inline w-4 h-4 mr-1" />
-              Fecha de Ausencia *
-            </label>
-            <input
-              type="date"
-              value={form.fecha_ausencia}
-              onChange={(e) => setForm({ ...form, fecha_ausencia: e.target.value })}
-              className={inputStyle}
-              required
-            />
-          </div>
-
-          {/* Motivo */}
-          <div>
-            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
-              <AlertCircle className="inline w-4 h-4 mr-1" />
-              Motivo de Ausencia *
-            </label>
-            <input
-              type="text"
-              placeholder="Ej: Cita médica, Enfermedad, etc."
-              value={form.motivo}
-              onChange={(e) => setForm({ ...form, motivo: e.target.value })}
-              className={inputStyle}
-              required
-            />
-          </div>
-
-          {/* Descripción */}
-          <div>
-            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
-              Descripción (Opcional)
-            </label>
-            <textarea
-              placeholder="Agrega más detalles sobre la justificación..."
-              value={form.descripcion}
-              onChange={(e) => setForm({ ...form, descripcion: e.target.value })}
-              className={`${inputStyle} resize-none`}
-              rows={3}
-            />
-          </div>
-
-          {/* Archivo Adjunto */}
-          <div>
-            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
-              <Upload className="inline w-4 h-4 mr-1" />
-              Archivo Adjunto (PDF o Imagen - Máx 5MB)
-            </label>
-            <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center hover:border-blue-400 transition cursor-pointer">
-              <input
-                type="file"
-                accept="image/*,.pdf"
-                onChange={(e) => setForm({ ...form, archivo: e.target.files?.[0] || null })}
-                className="hidden"
-                id="archivo-input"
-              />
-              <label htmlFor="archivo-input" className="cursor-pointer block">
-                <Upload size={32} className="mx-auto text-gray-400 mb-2" />
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  {form.archivo ? form.archivo.name : 'Click para seleccionar archivo'}
-                </p>
-              </label>
-            </div>
-          </div>
-
-          {/* Botones */}
-          <div className="flex gap-3 justify-end pt-6 border-t border-gray-200 dark:border-gray-700">
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={cargando}
-              className="px-6 py-2 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg font-medium hover:bg-gray-300 dark:hover:bg-gray-600 transition disabled:opacity-50"
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              disabled={cargando}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition disabled:opacity-50 flex items-center gap-2"
-            >
-              {cargando ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  Registrando...
-                </>
-              ) : (
-                <>
-                  <Check size={18} />
-                  Registrar Justificación
-                </>
-              )}
-            </button>
-          </div>
-        </form>
-      </motion.div>
-    </div>
-  );
-}

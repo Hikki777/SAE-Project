@@ -323,6 +323,14 @@ export const generateJustificacionesPDF = async (data) => {
   doc.setFontSize(16);
   doc.setTextColor(31, 71, 136);
   doc.text(institucion?.nombre || 'Instituto Educativo', 105, 22, { align: 'center' });
+
+  doc.setFontSize(10);
+  doc.setTextColor(0);
+  const infoLine1 = [institucion?.direccion, institucion?.telefono ? `Tel: ${institucion.telefono}` : null].filter(Boolean).join(' | ');
+  doc.text(infoLine1, 105, 30, { align: 'center' });
+  const infoLine2 = [institucion?.email, institucion?.municipio, institucion?.departamento, institucion?.pais].filter(Boolean).join(' | ');
+  doc.text(infoLine2, 105, 36, { align: 'center' });
+
   doc.setFontSize(14);
   doc.setTextColor(50);
   doc.text('REPORTE DE JUSTIFICACIONES', 105, 50, { align: 'center' });
@@ -382,13 +390,27 @@ export const generateJustificacionesExcel = async (data) => {
   sheet.getCell('A1').font = { size: 16, bold: true, color: { argb: 'FF1F4788' } };
   sheet.getCell('A1').alignment = { horizontal: 'center' };
 
-  sheet.mergeCells('A2:G2');
-  sheet.getCell('A2').value = 'REPORTE DE JUSTIFICACIONES';
-  sheet.getCell('A2').font = { size: 14, bold: true };
-  sheet.getCell('A2').alignment = { horizontal: 'center' };
+  if (institucion?.direccion || institucion?.telefono || institucion?.email) {
+    sheet.mergeCells('A2:G2');
+    const infoLine1 = [institucion?.direccion, institucion?.telefono ? `Tel: ${institucion.telefono}` : null].filter(Boolean).join(' | ');
+    sheet.getCell('A2').value = infoLine1;
+    sheet.getCell('A2').font = { size: 10 };
+    sheet.getCell('A2').alignment = { horizontal: 'center' };
+
+    sheet.mergeCells('A3:G3');
+    const infoLine2 = [institucion?.email, institucion?.municipio, institucion?.departamento, institucion?.pais].filter(Boolean).join(' | ');
+    sheet.getCell('A3').value = infoLine2;
+    sheet.getCell('A3').font = { size: 10 };
+    sheet.getCell('A3').alignment = { horizontal: 'center' };
+  }
+
+  sheet.mergeCells('A4:G4');
+  sheet.getCell('A4').value = 'REPORTE DE JUSTIFICACIONES';
+  sheet.getCell('A4').font = { size: 14, bold: true };
+  sheet.getCell('A4').alignment = { horizontal: 'center' };
 
   const headers = ['Fecha', 'Carnet', 'Nombre', 'Rol/Grado', 'Motivo', 'Estado', 'Obs.'];
-  const headerRow = sheet.getRow(4);
+  const headerRow = sheet.getRow(6);
   headerRow.values = headers;
   headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
   headerRow.eachCell(cell => {
