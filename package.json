@@ -1,6 +1,6 @@
 {
   "name": "sae-sistema-administracion-educativa",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "SAE - Sistema de Administración Educativa | Gestión Educativa Libre para instituciones de Guatemala",
   "main": "backend/server.js",
   "type": "commonjs",
