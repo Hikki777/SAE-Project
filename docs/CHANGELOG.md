@@ -5,6 +5,15 @@ Todos los cambios notables en este proyecto serán documentados en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [1.0.1] - 2026-01-26
+
+### 🚀 Publicación y Mantenimiento
+- **Sincronización de Repositorio:** Actualización y limpieza de archivos no rastreados.
+- **Build de Producción:** Generación de instalador v1.0.1 firmado y verificado.
+- **Preparación de Release:** Alineación de versiones en todos los módulos (Root, Frontend).
+
+---
+
 ## [1.0.0] - 2026-01-24 🎉 PRIMERA VERSIÓN ESTABLE
 
 ### 🎉 Release de Producción
