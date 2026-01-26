@@ -736,35 +736,40 @@ function FilaJustificacion({ excusa, onAprobar, onRechazar, onVerDetalles }) {
   return (
     <tr className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
       {/* Persona con Foto y Carnet */}
-      <td className="px-6 py-4">
-        <div className="flex items-center gap-4">
-          {/* Foto más grande y mejor visualizada */}
-          <div className="w-12 h-12 rounded-full bg-gray-200 dark:bg-gray-600 overflow-hidden flex items-center justify-center flex-shrink-0">
+      <td className="px-4 py-3">
+        <div className="flex items-start gap-3">
+          {/* Foto más compacta */}
+          <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-600 overflow-hidden flex items-center justify-center flex-shrink-0 mt-0.5">
             {fotoUrl ? (
               <img src={fotoUrl} onError={() => setImgError(true)} className="w-full h-full object-cover" alt={persona?.nombres}/>
             ) : (
-              <span className="text-lg">{esAlumno ? '👨‍🎓' : '👨‍🏫'}</span>
+              <span className="text-sm">{esAlumno ? '👨‍🎓' : '👨‍🏫'}</span>
             )}
           </div>
           
           <div className="flex-1 min-w-0">
-            <p className="font-semibold text-gray-900 dark:text-gray-100 truncate">{persona?.nombres} {persona?.apellidos}</p>
-            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+            <p className="font-bold text-gray-900 dark:text-gray-100 text-sm">
+              {persona?.nombres || 'N/A'}
+            </p>
+            <p className="font-semibold text-gray-700 dark:text-gray-200 text-sm">
+              {persona?.apellidos || 'N/A'}
+            </p>
+            <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">
               {esAlumno 
                 ? `${persona?.grado || ''} ${persona?.seccion || ''}`.trim()
                 : persona?.cargo || 'Personal'}
             </p>
             {/* Carnet mostrado prominentemente */}
-            <p className="text-xs font-mono font-bold text-blue-700 dark:text-blue-300 mt-1 bg-blue-50 dark:bg-blue-900/30 inline-block px-2 py-1 rounded">
-              Carnet: {persona?.carnet || 'N/A'}
+            <p className="text-xs font-mono font-bold text-blue-700 dark:text-blue-300 mt-0.5 bg-blue-50 dark:bg-blue-900/30 inline-block px-2 py-0.5 rounded">
+              {persona?.carnet || 'N/A'}
             </p>
           </div>
         </div>
       </td>
 
       {/* Jornada */}
-      <td className="px-6 py-4 text-center">
-        <span className={`px-3 py-1 rounded text-xs font-semibold
+      <td className="px-4 py-3 text-center">
+        <span className={`px-2 py-1 rounded text-xs font-semibold
           ${persona?.jornada === 'Matutina' ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300' : 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300'}
         `}>
           {persona?.jornada || 'N/A'}
@@ -772,15 +777,15 @@ function FilaJustificacion({ excusa, onAprobar, onRechazar, onVerDetalles }) {
       </td>
 
       {/* Motivo de Ausencia */}
-      <td className="px-6 py-4">
+      <td className="px-4 py-3">
         <p className="text-sm text-gray-700 dark:text-gray-300 font-medium">{excusa.motivo}</p>
         {excusa.descripcion && (
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{excusa.descripcion}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{excusa.descripcion}</p>
         )}
       </td>
 
       {/* Fecha */}
-      <td className="px-6 py-4 text-center">
+      <td className="px-4 py-3 text-center">
         <p className="text-sm text-gray-700 dark:text-gray-300 font-medium">
           {new Date(excusa.fecha_ausencia).toLocaleDateString('es-ES', { 
             weekday: 'short', 
@@ -792,8 +797,8 @@ function FilaJustificacion({ excusa, onAprobar, onRechazar, onVerDetalles }) {
       </td>
 
       {/* Estado */}
-      <td className="px-6 py-4 text-center">
-        <span className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap
+      <td className="px-4 py-3 text-center">
+        <span className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap inline-block
           ${excusa.estado === 'aprobada' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 
             excusa.estado === 'rechazada' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300' : 
             'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300'}
@@ -803,8 +808,8 @@ function FilaJustificacion({ excusa, onAprobar, onRechazar, onVerDetalles }) {
       </td>
 
       {/* Acciones */}
-      <td className="px-6 py-4">
-        <div className="flex justify-center gap-2">
+      <td className="px-4 py-3">
+        <div className="flex justify-center gap-1">
           {excusa.estado === 'pendiente' && (
             <>
               <button 
@@ -812,14 +817,14 @@ function FilaJustificacion({ excusa, onAprobar, onRechazar, onVerDetalles }) {
                 title="Aprobar"
                 className="p-2 text-green-600 hover:bg-green-100 dark:hover:bg-green-900/30 rounded-lg transition"
               >
-                <Check size={18} />
+                <Check size={20} />
               </button>
               <button 
                 onClick={() => onRechazar(excusa)}
                 title="Rechazar"
                 className="p-2 text-red-600 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg transition"
               >
-                <X size={18} />
+                <X size={20} />
               </button>
             </>
           )}
@@ -828,7 +833,7 @@ function FilaJustificacion({ excusa, onAprobar, onRechazar, onVerDetalles }) {
             title="Ver detalles"
             className="p-2 text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-lg transition"
           >
-            <Eye size={18} />
+            <Eye size={20} />
           </button>
         </div>
       </td>
