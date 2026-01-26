@@ -44,34 +44,70 @@ export default function JustificacionesPanel() {
   const [mostrarModalRechazo, setMostrarModalRechazo] = useState(false);
   const [mostrarModalJustificar, setMostrarModalJustificar] = useState(false);
   const [personaJustificar, setPersonaJustificar] = useState(null);
+  const [inicializado, setInicializado] = useState(false);
 
+  // Cargar datos iniciales
   useEffect(() => {
-    // Inicializar rango hoy si no hay fechas
-    if (!filtros.fechaInicio && !filtros.fechaFin) {
-      handleRangoRapido('hoy');
-    } else {
+    if (!inicializado) {
+      const hoy = new Date();
+      const formatDate = (date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      };
+      setFiltros(prev => ({
+        ...prev,
+        rangoRapido: 'hoy',
+        fechaInicio: formatDate(hoy),
+        fechaFin: formatDate(hoy)
+      }));
+      setInicializado(true);
+    }
+  }, []);
+
+  // Cargar datos cuando cambien los filtros
+  useEffect(() => {
+    if (inicializado) {
       cargarDatos();
     }
-  }, [filtros]); 
+  }, [filtros.estado, filtros.busqueda, filtros.rol, filtros.fechaInicio, filtros.fechaFin]);
 
   const cargarDatos = async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams();
-      if (filtros.estado) params.append('estado', filtros.estado);
+      // NO incluir estado en la búsqueda para estadísticas - las estadísticas deben ser globales
       if (filtros.busqueda) params.append('busqueda', filtros.busqueda);
       if (filtros.fechaInicio) params.append('fechaInicio', filtros.fechaInicio);
       if (filtros.fechaFin) params.append('fechaFin', filtros.fechaFin);
+      
       // Filtros opcionales de rol
       if (filtros.rol === 'alumno') params.append('personaTipo', 'alumno');
       if (filtros.rol === 'personal') params.append('personaTipo', 'personal');
 
-      const response = await client.get(`/excusas?${params.toString()}`);
+      const urlFinal = `/excusas?${params.toString()}`;
+      console.log('📡 Llamando API:', urlFinal);
+
+      // Obtener datos sin filtro de estado para las estadísticas
+      const response = await client.get(urlFinal);
       const excusasData = response.data.excusas || [];
-      setExcusas(excusasData);
+
+      console.log(`✓ Datos recibidos: ${excusasData.length} excusas`);
+      
+      // Calcular estadísticas globales sobre todos los datos
       calcularEstadisticas(excusasData);
+      
+      // Si hay filtro de estado, filtrar localmente para la tabla
+      let excusasParaMostrar = excusasData;
+      if (filtros.estado) {
+        console.log(`🔽 Filtrando por estado: ${filtros.estado}`);
+        excusasParaMostrar = excusasData.filter(e => e.estado === filtros.estado);
+      }
+      
+      setExcusas(excusasParaMostrar);
     } catch (error) {
-      console.error('Error cargando datos:', error);
+      console.error('❌ Error cargando datos:', error);
       toast.error('Error al cargar justificaciones');
     } finally {
       setLoading(false);
@@ -79,27 +115,62 @@ export default function JustificacionesPanel() {
   };
 
   const calcularEstadisticas = (excusasData) => {
+    // Helper para normalizar fechas ignorando zona horaria
+    // Convierte la fecha a medianoche del día local
+    const normalizarFecha = (fechaStr) => {
+      const fecha = new Date(fechaStr);
+      // Usar hora local, no UTC
+      return new Date(fecha.getFullYear(), fecha.getMonth(), fecha.getDate(), 0, 0, 0, 0);
+    };
+
     const hoy = new Date();
+    const hoyNormalizado = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate(), 0, 0, 0, 0);
+    
     const hace7Dias = new Date();
     hace7Dias.setDate(hoy.getDate() - 7);
-    const inicioMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+    const hace7DiasNormalizado = new Date(hace7Dias.getFullYear(), hace7Dias.getMonth(), hace7Dias.getDate(), 0, 0, 0, 0);
+    
+    const inicioMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1, 0, 0, 0, 0);
+
+    // Contar ausentes para cada período
+    const ausentesHoy = excusasData.filter(e => {
+      const fechaNormalizada = normalizarFecha(e.fecha_ausencia);
+      return fechaNormalizada.getTime() === hoyNormalizado.getTime();
+    }).length;
+
+    const ausentesSemana = excusasData.filter(e => {
+      const fechaNormalizada = normalizarFecha(e.fecha_ausencia);
+      return fechaNormalizada >= hace7DiasNormalizado && fechaNormalizada <= hoyNormalizado;
+    }).length;
+
+    const ausentesMes = excusasData.filter(e => {
+      const fechaNormalizada = normalizarFecha(e.fecha_ausencia);
+      return fechaNormalizada >= inicioMes && fechaNormalizada <= hoyNormalizado;
+    }).length;
 
     const stats = {
-      ausentesHoy: excusasData.filter(e => {
-        const fecha = new Date(e.fecha_ausencia);
-        return fecha.toDateString() === hoy.toDateString();
-      }).length,
-      ausentesSemana: excusasData.filter(e => {
-        const fecha = new Date(e.fecha_ausencia);
-        return fecha >= hace7Dias;
-      }).length,
-      ausentesMes: excusasData.filter(e => {
-        const fecha = new Date(e.fecha_ausencia);
-        return fecha >= inicioMes;
-      }).length,
+      ausentesHoy,
+      ausentesSemana,
+      ausentesMes,
       pendientes: excusasData.filter(e => e.estado === 'pendiente').length,
       rechazadas: excusasData.filter(e => e.estado === 'rechazada').length
     };
+
+    console.log('📊 Estadísticas calculadas:', {
+      totalExcusas: excusasData.length,
+      hoy: hoyNormalizado.toLocaleDateString('es-ES'),
+      hace7Dias: hace7DiasNormalizado.toLocaleDateString('es-ES'),
+      inicioMes: inicioMes.toLocaleDateString('es-ES'),
+      stats,
+      muestraDatos: excusasData.slice(0, 2).map(e => ({
+        id: e.id,
+        fecha_ausencia: e.fecha_ausencia,
+        fecha_normalizada: normalizarFecha(e.fecha_ausencia).toLocaleDateString('es-ES'),
+        motivo: e.motivo,
+        estado: e.estado
+      }))
+    });
+
     setStats(stats);
   };
 
@@ -131,7 +202,6 @@ export default function JustificacionesPanel() {
         inicio = formatDate(inicioMes);
         break;
       default:
-        // personalizada o pendientes, no cambiamos fechas aqui
         return; 
     }
 
@@ -303,10 +373,23 @@ export default function JustificacionesPanel() {
           </div>
           <button
             onClick={() => {
+              const hoy = new Date();
+              const formatDate = (date) => {
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+              };
+              const hoyFormato = formatDate(hoy);
               setFiltros({
-                busqueda: '', estado: '', rol: '', fechaInicio: '', fechaFin: '', rangoRapido: ''
+                busqueda: '', 
+                estado: '', 
+                rol: '', 
+                fechaInicio: hoyFormato, 
+                fechaFin: hoyFormato, 
+                rangoRapido: 'hoy'
               });
-              handleRangoRapido('hoy'); // Reset a hoy
+              setPaginaActual(1);
             }}
             className="text-sm text-blue-600 hover:underline"
           >
@@ -633,11 +716,11 @@ function ModalDetalles({ persona, excusa, onClose, formatFecha, baseUrl }) {
             </div>
          )}
 
-         {excusa.archivo_path && (
+         {excusa.documento_url && (
             <div className="mb-6">
                <label className="text-sm font-bold text-gray-500">Evidencia Adjunta</label>
                <a 
-                 href={`http://localhost:5000/uploads/${excusa.archivo_path}`} 
+                 href={`http://localhost:5000/uploads/${excusa.documento_url}`} 
                  target="_blank" 
                  rel="noreferrer"
                  className="flex items-center gap-2 text-blue-600 hover:underline mt-1"

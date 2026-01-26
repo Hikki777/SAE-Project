@@ -95,16 +95,19 @@ router.get('/', async (req, res) => {
 
     const where = {};
 
+    // Filtrar por fecha_ausencia
     if (fechaInicio || fechaFin) {
       where.fecha_ausencia = {};
       if (fechaInicio) {
-        const start = new Date(fechaInicio);
-        start.setHours(0, 0, 0, 0);
+        // Interpretar como fecha local en formato YYYY-MM-DD
+        const [year, month, day] = fechaInicio.split('-');
+        const start = new Date(year, month - 1, day, 0, 0, 0, 0);
         where.fecha_ausencia.gte = start;
       }
       if (fechaFin) {
-        const end = new Date(fechaFin);
-        end.setHours(23, 59, 59, 999);
+        // Interpretar como fecha local en formato YYYY-MM-DD
+        const [year, month, day] = fechaFin.split('-');
+        const end = new Date(year, month - 1, day, 23, 59, 59, 999);
         where.fecha_ausencia.lte = end;
       }
     }
@@ -145,7 +148,7 @@ router.get('/', async (req, res) => {
           } 
         },
       },
-      orderBy: { fecha: 'desc' },
+      orderBy: { fecha_ausencia: 'desc' },
     });
 
     res.json({ excusas });
