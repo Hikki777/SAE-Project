@@ -2,7 +2,47 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import offlineQueueService from '../services/offlineQueue';
 
-const API_BASE = localStorage.getItem('api_url') || import.meta.env.VITE_API_URL || '/api';
+const getApiUrl = () => {
+  // 1. Intentar usar variable de entorno de Vite (desde .env.development/.env.production)
+  if (import.meta.env.VITE_API_URL) {
+    console.log('[API Client] Usando VITE_API_URL:', import.meta.env.VITE_API_URL);
+    return import.meta.env.VITE_API_URL;
+  }
+
+  // 2. Intentar usar URL guardada en localStorage
+  let url = localStorage.getItem('api_url');
+  
+  // FILTRO DE SEGURIDAD: Ignorar URLs de nube antiguas que causan error 404
+  if (url && (url.includes('railway.app') || url.includes('herokuapp'))) {
+    console.warn('[API Client] Detectada URL legacy (Railway/Heroku), ignorando y limpiando...');
+    localStorage.removeItem('api_url');
+    url = null;
+  }
+
+  if (url) {
+    console.log('[API Client] Usando URL guardada:', url);
+    return url;
+  }
+
+  // 3. En Electron (file://) usar http://localhost:5000/api
+  if (typeof window !== 'undefined' && window.location.protocol === 'file:') {
+    console.log('[API Client] Detectado Electron (file://), usando http://localhost:5000/api');
+    return 'http://localhost:5000/api';
+  }
+
+  // 4. En desarrollo con Vite (http://localhost:5173) usar backend en 5000
+  if (typeof window !== 'undefined' && window.location.hostname === 'localhost' && window.location.port === '5173') {
+    console.log('[API Client] Detectado Vite dev, usando http://localhost:5000/api');
+    return 'http://localhost:5000/api';
+  }
+
+  // 5. Default fallback
+  console.log('[API Client] Usando default fallback: http://localhost:5000/api');
+  return 'http://localhost:5000/api';
+};
+
+const API_BASE = getApiUrl();
+console.log('[API Client] API Base URL resuelto como:', API_BASE);
 
 const client = axios.create({
   baseURL: API_BASE,

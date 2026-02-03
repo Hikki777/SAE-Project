@@ -1,8 +1,8 @@
 {
-  "name": "sae-sistema-administracion-educativa",
-  "version": "1.0.1",
+  "name": "sae-project",
+  "version": "1.0.3",
   "description": "SAE - Sistema de Administración Educativa | Gestión Educativa Libre para instituciones de Guatemala",
-  "main": "backend/server.js",
+  "main": "electron/main.js",
   "type": "commonjs",
   "scripts": {
     "start": "node scripts/start-dynamic.js backend/server.js",
@@ -33,10 +33,13 @@
     "lint:fix": "eslint backend --ext .js --fix",
     "validate:emojis": "node scripts/validate-no-emojis.js",
     "validate:all": "npm run lint && npm run validate:emojis",
-    "electron": "node scripts/start-electron.js",
+    "electron": "wscript.exe start-sae.vbs",
+    "electron:silent": "node scripts/start-electron-dev.js",
+    "electron:debug": "node scripts/start-electron-dev.js",
     "electron:dev": "electron electron/main.js",
     "dist": "npm run build:frontend && electron-builder",
     "dist:win": "npm run build:frontend && electron-builder --win",
+    "dist:debug": "npm run build:frontend && electron-builder --dir",
     "dist:linux": "npm run build:frontend && electron-builder --linux",
     "dist:mac": "npm run build:frontend && electron-builder --mac"
   },
@@ -46,7 +49,7 @@
     "colegio",
     "control"
   ],
-  "author": "Kevin Gabriel Pérez García - SAE Project",
+  "author": "Kevin Pérez",
   "license": "GPL-3.0",
   "dependencies": {
     "@prisma/client": "^5.22.0",
@@ -92,14 +95,37 @@
       "electron/**/*",
       "frontend/dist/**/*",
       "backend/**/*",
+      ".env",
       "package.json",
-      "node_modules/**/*"
+      "node_modules/**/*",
+      "node_modules/.prisma/**/*",
+      "node_modules/@prisma/client/**/*"
     ],
     "win": {
-      "target": "nsis",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
       "icon": "frontend/public/logo.ico",
-      "signAndEditExecutable": false
+      "signAndEditExecutable": false,
+      "executableName": "SAE"
     },
+    "extraFiles": [
+      {
+        "from": "frontend/public/logo.ico",
+        "to": "logo.ico"
+      }
+    ],
     "linux": {
       "target": "AppImage",
       "category": "Education"
@@ -110,13 +136,52 @@
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
-      "createDesktopShortcut": true
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "SAE",
+      "deleteAppDataOnUninstall": false,
+      "license": "LICENSE",
+      "installerIcon": "frontend/public/logo.ico",
+      "uninstallerIcon": "frontend/public/logo.ico",
+      "installerHeaderIcon": "frontend/public/logo.ico",
+      "include": "build/installer.nsh",
+      "displayLanguageSelector": false,
+      "artifactName": "SAE-${version}-Setup.exe"
     },
-    "asar": false,
+    "asar": true,
+    "asarUnpack": [
+      "backend/**/*",
+      "prisma/**/*",
+      "node_modules/**/*"
+    ],
     "extraResources": [
       {
         "from": "prisma/schema.prisma",
         "to": "prisma/schema.prisma"
+      },
+      {
+        "from": "prisma/migrations",
+        "to": "prisma/migrations"
+      },
+      {
+        "from": "prisma/dev.db",
+        "to": "prisma/dev.db"
+      },
+      {
+        "from": "node_modules/.prisma",
+        "to": "node_modules/.prisma"
+      },
+      {
+        "from": "node_modules/@prisma/client",
+        "to": "node_modules/@prisma/client"
+      },
+      {
+        "from": ".env",
+        "to": ".env"
+      },
+      {
+        "from": "build/node.exe",
+        "to": "node.exe"
       }
     ],
     "publish": {

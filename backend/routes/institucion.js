@@ -59,6 +59,20 @@ const qrService = require('../services/qrService');
 
 // GET /api/institucion - Obtener datos de la institución
 router.get('/', async (req, res) => {
+  console.log('!!! [DEBUG] ENTRANDO ROUTE GET /api/institucion !!!');
+  
+  // DIAGNOSIS: Check physical schema from backend perspective
+  try {
+      const tableInfo = await prisma.$queryRawUnsafe('PRAGMA table_info(institucion)');
+      // Fix BigInt serialization
+      const tableInfoStr = JSON.stringify(tableInfo, (key, value) => 
+        typeof value === 'bigint' ? value.toString() : value
+      );
+      console.log('[DEBUG_BACKEND_PRAGMA] Columns:', tableInfoStr);
+  } catch(e) {
+      console.error('[DEBUG_BACKEND_PRAGMA] Error querying pragma:', e);
+  }
+
   try {
     let institucion = await prisma.institucion.findFirst({
       where: { id: 1 },
@@ -74,6 +88,7 @@ router.get('/', async (req, res) => {
           horario_salida: '13:00',
           margen_puntualidad_min: 5,
           inicializado: false,
+          ciclo_escolar: 2026
         },
       });
       logger.info('Institución creada con valores por defecto');
@@ -81,6 +96,30 @@ router.get('/', async (req, res) => {
 
     res.json(institucion);
   } catch (error) {
+    console.error('\n[DEBUG_INSTITUCION_ERROR] ==============================');
+    console.error('Stack:', error.stack);
+    console.error('Message:', error.message);
+    
+    // AUTO-HEALING: Si falta la columna, intentar agregarla manualmente
+    if (error.message && error.message.includes('ciclo_escolar') && error.message.includes('does not exist')) {
+        console.log('!!! DETECTADA COLUMNA FALTANTE - INICIANDO AUTO-REPARACIÓN !!!');
+        try {
+            await prisma.$executeRawUnsafe('ALTER TABLE institucion ADD COLUMN ciclo_escolar INTEGER DEFAULT 2026');
+            console.log('!!! AUTO-REPARACIÓN EXITOSA - REINTENTANDO QUERY !!!');
+            
+            // Reintentar query
+            let institucion = await prisma.institucion.findFirst({ where: { id: 1 } });
+            // Si funciona ahora, devolver respuesta y SALIR
+            return res.json(institucion);
+            
+        } catch (repairError) {
+            console.error('!!! FALLO LA AUTO-REPARACIÓN !!!', repairError);
+            console.error('Message:', repairError.message);
+        }
+    }
+
+    console.error('==========================================================\n');
+    
     logger.error('Error al obtener institución:', error);
     res.status(500).json({
       error: 'Error al obtener datos de la institución',

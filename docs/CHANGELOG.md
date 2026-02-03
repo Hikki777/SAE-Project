@@ -1,5 +1,40 @@
 # Changelog
 
+## [1.0.2] - 2026-01-27
+
+### 🔧 Correcciones Críticas del Instalador
+
+#### Solucionado
+- **[CRÍTICO]** Corregido punto de entrada en `package.json` de `backend/server.js` a `electron/main.js`
+  - La aplicación ahora se ejecuta correctamente después de la instalación
+  - Electron crea ventanas apropiadamente en modo producción
+  
+- **[CRÍTICO]** Implementado inicio automático del backend en modo producción
+  - `electron/main.js` ahora inicia `backend/server.js` automáticamente cuando está empaquetado
+  - Agregado health check para esperar a que el backend esté listo antes de mostrar la interfaz
+  - La interfaz se carga desde `http://localhost:5000` en producción
+  
+- **[IMPORTANTE]** Agregada página de licencia GPL-3.0 al instalador
+  - Los usuarios ahora pueden revisar los términos de licencia durante la instalación
+  - Configurado `"license": "LICENSE"` en NSIS settings
+  
+- **[MENOR]** Corregidas rutas de iconos para modo producción
+  - Implementada lógica condicional para resolver rutas según el entorno
+  - Los iconos ahora se muestran correctamente en la aplicación empaquetada
+
+#### Mejorado
+- Simplificado `build/installer.nsh` removiendo configuraciones redundantes
+- Actualizado `.gitignore` para excluir artefactos de electron-builder
+- Agregada limpieza automática del proceso backend al cerrar la aplicación
+
+#### Archivos Modificados
+- `package.json` - Punto de entrada y configuración NSIS
+- `electron/main.js` - Reescrito para soportar modo producción
+- `build/installer.nsh` - Simplificado
+- `.gitignore` - Agregadas exclusiones de electron-builder
+- `docs/INSTALLER_FIX_v1.0.2.md` - Documentación detallada de correcciones
+
+
 Todos los cambios notables en este proyecto serán documentados en este archivo.
 
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/),

@@ -424,7 +424,7 @@ export default function SetupWizard({ onComplete }) {
           <div className="bg-gradient-to-br from-blue-900 to-blue-800 text-white p-8 md:w-1/3 flex flex-col justify-between">
             <div>
               <div className="flex flex-col items-center text-center gap-4 mb-8">
-                <img src="/logo.png" alt="Logo SAE" className="h-24 object-contain drop-shadow-md" />
+                <img src="./logo.png" alt="Logo SAE" className="h-24 object-contain drop-shadow-md" />
                 <div>
                   <h1 className="text-2xl font-bold">SAE</h1>
                   <p className="text-sm text-blue-100 mt-1">Sistema de Administración Educativa</p>

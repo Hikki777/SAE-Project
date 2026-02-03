@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Link, Navigate } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, Link, Navigate } from 'react-router-dom';
 import { Menu, X, LogOut, Home, Settings, BarChart3, Wrench, User, Clock, Users, FileText, Activity, ClipboardList, LogIn } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ThemeToggle from './components/ThemeToggle';
@@ -41,25 +41,38 @@ function App() {
   }, []);
 
   const checkInitialization = async () => {
-    try {
-      // Usar endpoint publico/protegido segun sea el caso. 
-      // Institucion suele ser publica o requerir token. Si requiere token y no estamos logged in, fallara.
-      // Pero /institucion/init es para setup. Asumamos que /api/institucion GET es publico o el usuario tiene token.
-      // Si no tiene token, no cargará el logo, lo cual es aceptable hasta el login.
-      const res = await client.get('/institucion');
-      if (res.data) {
-         setInstitucion(res.data); // Guardamos la info de la institución (logo, nombre)
-         if (res.data.inicializado) {
-            setIsInitialized(true);
-         } else {
-            setIsInitialized(false);
-         }
-      } else {
-         setIsInitialized(false);
+    let retries = 0;
+    // Intentar conectar durante 15 segundos (backend startup)
+    while (retries < 15) {
+      try {
+        const res = await client.get('/institucion');
+        if (res.data) {
+           setInstitucion(res.data); 
+           if (res.data.inicializado) {
+              setIsInitialized(true);
+           } else {
+              setIsInitialized(false);
+           }
+           return; // Éxito
+        } else {
+           setIsInitialized(false);
+           return;
+        }
+      } catch (error) {
+        // Si es error de red (Backend iniciándose), reintentar
+        if (!error.response || error.code === 'ERR_NETWORK' || error.message.includes('Network Error')) {
+            console.log(`Backend no listo, reintentando (${retries + 1}/15)...`);
+            retries++;
+            await new Promise(r => setTimeout(r, 1000));
+            continue;
+        }
+        
+        console.error('Error de inicialización:', error);
+        setIsInitialized(false);
+        return;
       }
-    } catch (error) {
-      setIsInitialized(false);
     }
+    setIsInitialized(false); // Timeout
   };
 
   useEffect(() => {
@@ -250,7 +263,13 @@ function App() {
   }
 
   const getBaseUrl = () => {
-    const api = localStorage.getItem('api_url') || import.meta.env.VITE_API_URL || '';
+    let api = localStorage.getItem('api_url') || import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+    
+    // FILTRO DE SEGURIDAD: Bloquear URLs legacy
+    if (api && (api.includes('railway.app') || api.includes('herokuapp'))) {
+        api = 'http://localhost:5000/api';
+    }
+
     if (api.startsWith('http')) {
       return api.replace(/\/api$/, '').replace(/\/$/, '');
     }
@@ -323,7 +342,7 @@ function App() {
             <div className="flex items-center gap-4 min-w-max">
               <div className="w-8 flex justify-center flex-shrink-0">
                   <img 
-                    src="/logo.png" 
+                    src="./logo.png" 
                     alt="Logo" 
                     className="w-8 h-8 object-contain" 
                   />
@@ -406,7 +425,7 @@ function App() {
                    institucion?.logo_path?.startsWith('http') 
                      ? institucion.logo_path 
                      : institucion?.logo_path 
-                       ? `${import.meta.env.VITE_API_URL}/uploads/${institucion.logo_path}` 
+                       ? `${getBaseUrl()}/uploads/${institucion.logo_path}` 
                        : "/logo.png"
                  } 
                  alt="Logo" 

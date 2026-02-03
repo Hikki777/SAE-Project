@@ -3,9 +3,17 @@ import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 
 // https://vite.dev/config/
+// https://vite.dev/config/
 export default defineConfig({
+  base: './', // Usar rutas relativas para que funcione con file://
+  
+  // Cargar variables de entorno desde .env.development y .env.production
+  envDir: './', // Por defecto Vite busca en el mismo nivel
+  
   plugins: [
     react(),
+    // VitePWA deshabilitado temporalmente para evitar problemas con file://
+    /*
     VitePWA({
       registerType: "autoUpdate",
       includeAssets: [
@@ -55,75 +63,22 @@ export default defineConfig({
         ],
       },
     }),
+    */
   ],
   build: {
-    sourcemap: false, // Ahorrar memoria en producción
-    reportCompressedSize: false, // Acelerar build
-    chunkSizeWarningLimit: 500, // Reducido para detectar chunks grandes
+    sourcemap: false,
+    reportCompressedSize: false,
+    chunkSizeWarningLimit: 1000, // Aumentado
     rollupOptions: {
       output: {
-        manualChunks(id) {
-          // Separar React y sus dependencias principales
-          if (
-            id.includes("node_modules/react") ||
-            id.includes("node_modules/react-dom")
-          ) {
-            return "vendor-react";
-          }
-
-          // Separar librerías de gráficos
-          if (
-            id.includes("node_modules/recharts") ||
-            id.includes("node_modules/d3-")
-          ) {
-            return "vendor-charts";
-          }
-
-          // Separar librerías de PDF (pesadas)
-          if (
-            id.includes("node_modules/jspdf") ||
-            id.includes("node_modules/exceljs")
-          ) {
-            return "vendor-pdf";
-          }
-
-          // Separar componentes de UI y animaciones
-          if (
-            id.includes("node_modules/framer-motion") ||
-            id.includes("node_modules/lucide-react")
-          ) {
-            return "vendor-ui";
-          }
-
-          // Separar utilidades HTTP y fechas
-          if (
-            id.includes("node_modules/axios") ||
-            id.includes("node_modules/date-fns")
-          ) {
-            return "vendor-utils";
-          }
-
-          // Separar react-router
-          if (id.includes("node_modules/react-router")) {
-            return "vendor-router";
-          }
-
-          // Separar react-hot-toast
-          if (id.includes("node_modules/react-hot-toast")) {
-            return "vendor-toast";
-          }
-
-          // Resto de node_modules en un chunk general
-          if (id.includes("node_modules")) {
-            return "vendor-misc";
-          }
-        },
+        // manualChunks eliminado para dejar que Vite maneje las dependencias correctamente
+        // Esto soluciona el error "Cannot read properties of undefined (reading 'forwardRef')"
       },
     },
   },
   server: {
     port: 5173,
-    strictPort: true, // Fail if port is busy
+    strictPort: true,
     host: "0.0.0.0",
     proxy: {
       "/api": {
@@ -137,6 +92,6 @@ export default defineConfig({
     },
   },
   optimizeDeps: {
-    exclude: ['qr-scanner'] // Evitar que Vite optimice/pre-bundlee qr-scanner para que el worker cargue correctamente
+    exclude: ['qr-scanner']
   }
 });

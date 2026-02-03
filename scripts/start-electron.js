@@ -81,37 +81,52 @@ async function waitForFrontend() {
 
 /**
  * Matar proceso en puerto específico (Windows/Linux/Mac)
+ * Solución sin shell=true para evitar deprecation warnings
  */
 async function killPort(port) {
   return new Promise((resolve) => {
-    const command = process.platform === 'win32'
-      ? `netstat -ano | findstr :${port}`
-      : `lsof -i :${port} -t`;
-
-    const check = spawn(process.platform === 'win32' ? 'cmd' : 'sh', ['/c', command], { shell: true });
-    
-    let pid = '';
-    check.stdout.on('data', (data) => { pid += data.toString(); });
-    
-    check.on('close', async () => {
-      const pids = pid.match(/\d+$/gm); // Extraer PIDs al final de linea (Windows) o lista (Linux)
-      if (pids && pids.length > 0) {
-        // Filtrar PIDs vacíos y únicos
-        const uniquePids = [...new Set(pids.filter(p => p.trim().length > 0 && p !== '0'))];
-        
-        if (uniquePids.length > 0) {
-          log(`[AUTO-CLEAN] Liberando puerto ${port} (Matando PIDs: ${uniquePids.join(', ')})...`, colors.yellow);
-          
-          const killCmd = process.platform === 'win32' 
-            ? `taskkill /F /PID ${uniquePids.join(' /PID ')}`
-            : `kill -9 ${uniquePids.join(' ')}`;
-            
-          const killer = spawn(process.platform === 'win32' ? 'cmd' : 'sh', ['/c', killCmd], { shell: true });
-          await new Promise(r => killer.on('close', r));
+    if (process.platform === 'win32') {
+      // Windows: usar tasklist + taskkill
+      const { execSync } = require('child_process');
+      try {
+        const output = execSync(`netstat -ano | findstr :${port}`, { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'ignore'] });
+        const pids = output.match(/\s+(\d+)\s*$/gm);
+        if (pids && pids.length > 0) {
+          const uniquePids = [...new Set(pids.map(p => p.trim()))];
+          for (const pid of uniquePids) {
+            try {
+              execSync(`taskkill /F /PID ${pid}`, { stdio: 'ignore' });
+              log(`[AUTO-CLEAN] PID ${pid} liberado`, colors.yellow);
+            } catch (e) {
+              // Ignorar errores, el puerto puede ya estar libero
+            }
+          }
         }
+      } catch (e) {
+        // Ignorar errores, el puerto probablemente está libre
       }
       resolve();
-    });
+    } else {
+      // Linux/Mac: usar lsof + kill
+      const { execSync } = require('child_process');
+      try {
+        const output = execSync(`lsof -i :${port} -t`, { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'ignore'] });
+        const pids = output.trim().split('\n').filter(p => p.trim());
+        if (pids && pids.length > 0) {
+          for (const pid of pids) {
+            try {
+              execSync(`kill -9 ${pid}`, { stdio: 'ignore' });
+              log(`[AUTO-CLEAN] PID ${pid} liberado`, colors.yellow);
+            } catch (e) {
+              // Ignorar errores
+            }
+          }
+        }
+      } catch (e) {
+        // Ignorar errores
+      }
+      resolve();
+    }
   });
 }
 
@@ -156,15 +171,16 @@ async function startElectron() {
   // Paso 3: Iniciar frontend
   log('[3/4] Iniciando frontend...', colors.cyan);
   
-  const frontend = spawn(
-    process.platform === 'win32' ? 'npm.cmd' : 'npm',
-    ['run', 'dev'],
-    {
-      cwd: path.join(__dirname, '../frontend'),
-      stdio: ['ignore', 'inherit', 'inherit'],
-      shell: true
-    }
-  );
+  const npxCommand = process.platform === 'win32' ? process.env.ComSpec || 'cmd.exe' : '/bin/bash';
+  const npxArgs = process.platform === 'win32' 
+    ? ['/c', 'npm', 'run', 'dev']
+    : ['-c', 'npm run dev'];
+  
+  const frontend = spawn(npxCommand, npxArgs, {
+    cwd: path.join(__dirname, '../frontend'),
+    stdio: ['ignore', 'inherit', 'inherit'],
+    shell: false
+  });
   
   frontend.on('error', (err) => {
     log(`\n[ERROR] Error al iniciar frontend: ${err.message}`, colors.yellow);
@@ -189,12 +205,16 @@ async function startElectron() {
     ? path.join(__dirname, '..', 'node_modules', '.bin', 'electron.cmd')
     : path.join(__dirname, '..', 'node_modules', '.bin', 'electron');
 
-  const electron = spawn(
-    `"${electronPath}"`,
-    ['electron/main.js'],
+  // En Windows, usar cmd /c para ejecutar electron.cmd
+  const shellCommand = process.platform === 'win32' 
+    ? `"${electronPath}" electron/main.js`
+    : electronPath;
+
+  const electron = spawn(process.platform === 'win32' ? 'cmd.exe' : electronPath, 
+    process.platform === 'win32' ? ['/c', shellCommand] : ['electron/main.js'],
     {
       stdio: 'inherit',
-      shell: true,
+      shell: false,
       cwd: path.join(__dirname, '..')
     }
   );

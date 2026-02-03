@@ -1,0 +1,14 @@
+
+> sae-project@1.0.1 dist:win
+> npm run build:frontend && electron-builder --win
+
+
+> sae-project@1.0.1 build:frontend
+> cd frontend && npm run build
+
+
+> frontend@1.0.1 build
+> vite build
+
+[36mvite v7.3.0 [32mbuilding client environment for production...[36m[39m
+transforming...

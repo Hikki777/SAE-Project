@@ -29,7 +29,7 @@ const filesToProcess = [
   'backend/services/reportService.js',
   'backend/services/qrService.js',
   'backend/services/tokenService.js',
-  'backend/services/cloudinaryService.js',
+
   'backend/routes/reportes.js',
   'backend/routes/asistencias.js',
   'backend/routes/usuarios.js',

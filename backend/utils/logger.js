@@ -63,6 +63,8 @@ const developmentTransport = {
 };
 
 // Configuración de transporte para producción (archivos + console)
+const logDestination = process.env.LOGS_PATH || path.join(__dirname, '../../logs');
+
 const productionTransports = [
   // Console output en JSON
   {
@@ -73,7 +75,7 @@ const productionTransports = [
   {
     target: 'pino/file',
     options: { 
-      destination: path.join(__dirname, '../../logs/app.log'),
+      destination: path.join(logDestination, 'app.log'),
       mkdir: true
     }
   },
@@ -82,7 +84,7 @@ const productionTransports = [
     target: 'pino/file',
     level: 'error',
     options: { 
-      destination: path.join(__dirname, '../../logs/error.log'),
+      destination: path.join(logDestination, 'error.log'),
       mkdir: true
     }
   }

@@ -17,10 +17,22 @@ const DB_PATH = (isProduction && resourcesPath)
   : path.join(__dirname, '../../prisma/dev.db');
 
 // Frontend estático (para servir desde Express en prod)
-const FRONTEND_DIR = path.join(__dirname, '../../frontend/dist');
+// En producción empaquetada, el frontend está en resources/app/frontend/dist
+const FRONTEND_DIR = (isProduction && resourcesPath)
+  ? path.join(resourcesPath, 'app', 'frontend', 'dist')
+  : path.join(__dirname, '../../frontend/dist');
+
+console.log('[PATHS] Configuración:');
+console.log(`  - NODE_ENV: ${process.env.NODE_ENV}`);
+console.log(`  - isProduction: ${isProduction}`);
+console.log(`  - resourcesPath: ${resourcesPath}`);
+console.log(`  - UPLOADS_DIR: ${UPLOADS_DIR}`);
+console.log(`  - FRONTEND_DIR: ${FRONTEND_DIR}`);
+console.log(`  - DB_PATH: ${DB_PATH}`);
 
 module.exports = {
   UPLOADS_DIR,
   DB_PATH,
   FRONTEND_DIR
 };
+

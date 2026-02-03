@@ -5,7 +5,27 @@ const compression = require('compression');
 const NodeCache = require('node-cache');
 const path = require('path');
 const fs = require('fs-extra');
-require('dotenv').config({ path: path.join(__dirname, '.env') });
+
+// Buscar .env en múltiples ubicaciones (para desarrollo y Electron)
+const projectRoot = path.join(__dirname, '..');
+const envPaths = [
+  path.join(__dirname, '.env'),           // backend/.env
+  path.join(projectRoot, '.env'),         // .env (raíz)
+  path.join(projectRoot, 'resources', 'app', '.env'), // Electron
+];
+
+let envLoaded = false;
+for (const envPath of envPaths) {
+  if (fs.existsSync(envPath)) {
+    require('dotenv').config({ path: envPath });
+    console.log(`[ENV] Variables de entorno cargadas desde: ${envPath}`);
+    envLoaded = true;
+    break;
+  }
+}
+if (!envLoaded) {
+  console.log('[ENV] Advertencia: No se encontró archivo .env en ubicaciones esperadas');
+}
 
 // Inicializar caché en memoria (TTL: 10 minutos)
 const cache = new NodeCache({ stdTTL: 600, checkperiod: 120 });
@@ -108,14 +128,27 @@ const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:5174',
   'http://localhost:3000',
+  'http://localhost:5000',
+  'http://127.0.0.1:5173',
+  'http://127.0.0.1:5174',
+  'http://127.0.0.1:3000',
+  'http://127.0.0.1:5000',
   process.env.FRONTEND_URL,
 ].filter(Boolean);
 
 app.use(
   cors({
-    origin: (origin, callback) => {
-      // Permitir requests sin origin (móviles, Postman, etc.)
+    origin: (origin, callback) =>{
+      // Permitir requests sin origin (móviles, Postman, Electron con file://, etc.)
       if (!origin) return callback(null, true);
+      
+      // Permitir file:// protocol (Electron)
+      if (origin.startsWith('file://')) return callback(null, true);
+      
+      // Permitir localhost en cualquier versión (127.0.0.1 o localhost)
+      if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
+        return callback(null, true);
+      }
 
       if (allowedOrigins.includes(origin)) {
         callback(null, true);
@@ -125,8 +158,8 @@ app.use(
       }
     },
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   })
 );
 
@@ -284,7 +317,7 @@ async function iniciar() {
       // Hacer io accesible desde las rutas
       app.set('io', io);
       
-      server.listen(PORT, '0.0.0.0', () => {
+      server.listen(PORT, '127.0.0.1', () => {
         logSystemStart({
           port: PORT,
           databaseUrl: process.env.DATABASE_URL,

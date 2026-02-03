@@ -115,6 +115,8 @@ temp/
 # ============================================
 electron/dist/
 electron/build/
+.icon-ico/
+node_modules/.cache/
 
 # ============================================
 # PRISMA
