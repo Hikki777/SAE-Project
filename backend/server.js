@@ -92,11 +92,7 @@ checkEnv();
 // Configurar handlers globales de errores
 setupGlobalErrorHandlers();
 
-console.log('='.repeat(50));
-console.log('  [DEBUG] SERVER CONFIGURATION');
-console.log('  UPLOADS_DIR:', UPLOADS_DIR);
-console.log('  DATABASE_URL:', process.env.DATABASE_URL);
-console.log('='.repeat(50));
+logger.info({ uploadsDir: UPLOADS_DIR, dbUrl: process.env.DATABASE_URL?.substring(0, 20) + '...' }, '[CONFIG] Configuración del servidor');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -294,8 +290,7 @@ app.use((err, req, res, next) => {
 async function iniciar() {
   try {
     // Conectar BD
-    console.log('\n\n🔍 --- DEBUG MODE: BACKEND RELOADED SUCCESSFULLY --- 🔍\n');
-    logger.info('[DB] Probando conexion a base de datos...');
+    logger.info('[DB] Probando conexión a base de datos...');
 
     // DEBUG: Verificar formato de URL (sin revelar credenciales)
     const dbUrl = process.env.DATABASE_URL || '';
@@ -360,5 +355,4 @@ process.on('SIGTERM', async () => {
 });
 
 module.exports = app;
-// FORCE RESTART
-// FORCE RESTART 2
+

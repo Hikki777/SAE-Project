@@ -28,11 +28,7 @@ router.get('/stats', async (req, res) => {
     // Helper para verificar activo
     const esActivo = (a) => a.estado === 'activo';
 
-    // Log para debug
-    console.log('📊 Dashboard Stats - Total alumnos:', alumnos.length);
-    console.log('📊 Alumnos activos:', alumnos.filter(a => esActivo(a)).length);
-    console.log('📊 Niveles únicos:', [...new Set(alumnos.map(a => a.nivel_actual))]);
-    console.log('📊 Sexos únicos:', [...new Set(alumnos.map(a => a.sexo))]);
+
 
     // Estadísticas por nivel académico (case-insensitive)
     const porNivel = {
@@ -44,7 +40,6 @@ router.get('/stats', async (req, res) => {
       diversificado: alumnos.filter(a => a.nivel_actual?.toLowerCase() === 'diversificado' && esActivo(a)).length,
     };
 
-    console.log('📊 Por Nivel:', porNivel);
 
     // Estadísticas por grado
     const gradosUnicos = [...new Set(alumnos.filter(a => esActivo(a)).map(a => a.grado))].sort();
@@ -53,7 +48,6 @@ router.get('/stats', async (req, res) => {
       porGrado[grado] = alumnos.filter(a => a.grado === grado && esActivo(a)).length;
     });
 
-    console.log('📊 Por Grado:', porGrado);
 
     // Estadísticas por sexo (case-insensitive y flexible)
     const porSexo = {
@@ -67,7 +61,6 @@ router.get('/stats', async (req, res) => {
       }).length,
     };
 
-    console.log('📊 Por Sexo:', porSexo);
 
     // Totales
     const totales = {
@@ -122,11 +115,6 @@ router.get('/stats', async (req, res) => {
       alumnosPorJornada[jornada] = alumnos.filter(a => a.jornada === jornada && esActivo(a)).length;
     });
 
-    console.log('📊 Personal por Sexo:', personalPorSexo);
-    console.log('📊 Personal por Cargo:', personalPorCargo);
-    console.log('📊 Personal por Jornada:', personalPorJornada);
-    console.log('📊 Jornadas únicas de alumnos:', alumnosJornadasUnicas);
-    console.log('📊 Alumnos por Jornada:', alumnosPorJornada);
 
     const personal = personalData.length;
 
@@ -291,7 +279,7 @@ router.get('/top-grados', async (req, res) => {
     res.json({ topGrados: top5 });
 
   } catch (error) {
-    console.error('Error obteniendo top grados:', error);
+    logger.error({ err: error }, '[ERROR] Error obteniendo top grados');
     res.status(500).json({ error: 'Error al obtener top grados' });
   }
 });

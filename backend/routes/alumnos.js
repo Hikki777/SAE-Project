@@ -194,7 +194,7 @@ router.post('/', invalidateCacheMiddleware('/api/alumnos'), validarCrearAlumno, 
 
 const qrService = require('../services/qrService');
 
-// ...
+
 
     const alumno = await prisma.alumno.create({
       data: {

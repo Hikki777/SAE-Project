@@ -242,7 +242,8 @@ exports.Prisma.ExcusaScalarFieldEnum = {
   fecha_ausencia: 'fecha_ausencia',
   documento_url: 'documento_url',
   observaciones: 'observaciones',
-  creado_en: 'creado_en'
+  creado_en: 'creado_en',
+  actualizado_en: 'actualizado_en'
 };
 
 exports.Prisma.HistorialAcademicoScalarFieldEnum = {

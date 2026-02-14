@@ -1,6 +1,6 @@
 {
   "name": "sae-project",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "SAE - Sistema de Administración Educativa | Gestión Educativa Libre para instituciones de Guatemala",
   "main": "electron/main.js",
   "type": "commonjs",
@@ -195,7 +195,7 @@
     "@types/jest": "^30.0.0",
     "concurrently": "^9.2.1",
     "cross-env": "^10.1.0",
-    "electron": "^39.2.7",
+    "electron": "^35.7.5",
     "electron-builder": "^26.5.0",
     "jest": "^30.2.0",
     "jimp": "^1.6.0",

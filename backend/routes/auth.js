@@ -91,7 +91,8 @@ router.post('/reset-admin', async (req, res) => {
       return res.status(500).json({ error: 'El sistema no tiene una llave maestra configurada' });
     }
 
-    if (masterKey !== institucion.master_recovery_key) {
+    const keyMatch = await bcrypt.compare(masterKey, institucion.master_recovery_key);
+    if (!keyMatch) {
       logger.warn({ email }, '[SECURITY] Intento de reset-admin con llave maestra incorrecta');
       return res.status(401).json({ error: 'Llave Maestra incorrecta' });
     }

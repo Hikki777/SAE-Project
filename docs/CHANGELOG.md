@@ -1,6 +1,28 @@
 # Changelog
 
-## [1.0.2] - 2026-01-27
+## [1.0.4] - 2026-02-14
+
+### 🔧 Correcciones Críticas de Base de Datos y Electron
+
+#### Solucionado
+- **[CRÍTICO]** Corregido error 500 en `/api/institucion` debido a ruta de base de datos incorrecta.
+  - Prisma CLI resolvía `file:./prisma/dev.db` relativo a `prisma/schema.prisma` (creando `prisma/prisma/dev.db`).
+  - Backend resolvía relativo a root (`prisma/dev.db`), encontrando DB vacía.
+  - **Fix:** Actualizado `.env` a `DATABASE_URL="file:./dev.db"` y movido archivo DB a la ubicación correcta.
+  
+- **[CRÍTICO]** Corregido fallo de inicio de Electron (`TypeError: Cannot read properties of undefined (reading 'isPackaged')`).
+  - Causa: Variable de entorno `ELECTRON_RUN_AS_NODE=1` forzaba a Electron a comportarse como Node.js puro.
+  - **Fix:** Scripts de lanzamiento (`launcher.js`, `scripts/start-electron-dev.js`) ahora eliminan explícitamente esta variable antes de iniciar.
+
+#### Archivos Modificados
+- `.env` - Actualizada `DATABASE_URL`
+- `package.json` - Versión bumped a 1.0.4
+- `launcher.js` - Agregada limpieza de env var
+- `scripts/start-electron-dev.js` - Agregada limpieza de env var
+
+---
+
+## [1.0.3] - 2026-02-03
 
 ### 🔧 Correcciones Críticas del Instalador
 

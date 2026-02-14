@@ -11,37 +11,32 @@ const fs = require('fs');
 let prismaInstance = null;
 
 function getDatabaseUrl() {
-  // Si ya viene inyectada desde main.js, usarla
-  if (process.env.DATABASE_URL) {
-    return process.env.DATABASE_URL;
+  // Recuperar URL de entorno
+  let url = process.env.DATABASE_URL;
+
+  // Si no hay URL, usar default relativa (pero será corregida abajo)
+  if (!url) {
+    url = 'file:./prisma/dev.db';
   }
 
-  // Detectar si estamos en Electron (por variable inyectada o rutas)
-  const isElectron = process.env.RESOURCES_PATH || process.versions.electron;
-
-  if (isElectron) {
-    // EN PRODUCION: Usar AppData (inyectado idealmente, o calculado)
-    // Nota: El proceso Node no tiene acceso a app.getPath,
-    // por eso main.js DEBE inyectar DATABASE_URL o ARTIFACTS_PATH.
-    // Si no está inyectado, fallback a relativo (peligroso en Program Files)
-    return 'file:./prisma/dev.db';
+  // Si es SQLite con ruta relativa, convertir a absoluta basada en __dirname
+  if (url.startsWith('file:') && (url.includes('./') || url.includes('../'))) {
+    const relativePath = url.replace('file:', '').trim();
+    // __dirname es backend/, db debería estar en backend/../prisma/dev.db
+    // Independientemente de lo que diga la ruta relativa (ej ./prisma/dev.db), 
+    // sabemos dónde DEBE estar la DB en relación a este archivo.
+    const projectRoot = path.resolve(__dirname, '..');
+    const absoluteDbPath = path.resolve(projectRoot, 'prisma', 'dev.db');
+    
+    console.log(`[PrismaClient] Corrigiendo ruta relativa a absoluta: ${absoluteDbPath}`);
+    return `file:${absoluteDbPath}`;
   }
 
-  // DESARROLLO
-  return 'file:./prisma/dev.db';
+  return url;
 }
 
-  if (!prismaInstance) {
+if (!prismaInstance) {
   const url = getDatabaseUrl();
-  
-  // DEBUG PATH
-  if (url.startsWith('file:')) {
-      const relativePath = url.replace('file:', '');
-      const absolutePath = path.resolve(process.cwd(), relativePath);
-      console.log(`[DEBUG_PRISMA] URL=${url}`);
-      console.log(`[DEBUG_PRISMA] CWD=${process.cwd()}`);
-      console.log(`[DEBUG_PRISMA] Absolute DB Path=${absolutePath}`);
-  }
 
   console.log(`[PrismaClient] Inicializando con URL: ${url}`);
   

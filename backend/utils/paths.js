@@ -22,13 +22,7 @@ const FRONTEND_DIR = (isProduction && resourcesPath)
   ? path.join(resourcesPath, 'app', 'frontend', 'dist')
   : path.join(__dirname, '../../frontend/dist');
 
-console.log('[PATHS] Configuración:');
-console.log(`  - NODE_ENV: ${process.env.NODE_ENV}`);
-console.log(`  - isProduction: ${isProduction}`);
-console.log(`  - resourcesPath: ${resourcesPath}`);
-console.log(`  - UPLOADS_DIR: ${UPLOADS_DIR}`);
-console.log(`  - FRONTEND_DIR: ${FRONTEND_DIR}`);
-console.log(`  - DB_PATH: ${DB_PATH}`);
+console.log(`[PATHS] UPLOADS=${UPLOADS_DIR} | DB=${DB_PATH} | ENV=${process.env.NODE_ENV || 'development'}`);
 
 module.exports = {
   UPLOADS_DIR,

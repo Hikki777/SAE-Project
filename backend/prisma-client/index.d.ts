@@ -9548,6 +9548,7 @@ export namespace Prisma {
     documento_url: string | null
     observaciones: string | null
     creado_en: Date | null
+    actualizado_en: Date | null
   }
 
   export type ExcusaMaxAggregateOutputType = {
@@ -9562,6 +9563,7 @@ export namespace Prisma {
     documento_url: string | null
     observaciones: string | null
     creado_en: Date | null
+    actualizado_en: Date | null
   }
 
   export type ExcusaCountAggregateOutputType = {
@@ -9576,6 +9578,7 @@ export namespace Prisma {
     documento_url: number
     observaciones: number
     creado_en: number
+    actualizado_en: number
     _all: number
   }
 
@@ -9604,6 +9607,7 @@ export namespace Prisma {
     documento_url?: true
     observaciones?: true
     creado_en?: true
+    actualizado_en?: true
   }
 
   export type ExcusaMaxAggregateInputType = {
@@ -9618,6 +9622,7 @@ export namespace Prisma {
     documento_url?: true
     observaciones?: true
     creado_en?: true
+    actualizado_en?: true
   }
 
   export type ExcusaCountAggregateInputType = {
@@ -9632,6 +9637,7 @@ export namespace Prisma {
     documento_url?: true
     observaciones?: true
     creado_en?: true
+    actualizado_en?: true
     _all?: true
   }
 
@@ -9733,6 +9739,7 @@ export namespace Prisma {
     documento_url: string | null
     observaciones: string | null
     creado_en: Date
+    actualizado_en: Date
     _count: ExcusaCountAggregateOutputType | null
     _avg: ExcusaAvgAggregateOutputType | null
     _sum: ExcusaSumAggregateOutputType | null
@@ -9766,6 +9773,7 @@ export namespace Prisma {
     documento_url?: boolean
     observaciones?: boolean
     creado_en?: boolean
+    actualizado_en?: boolean
     alumno?: boolean | Excusa$alumnoArgs<ExtArgs>
     personal?: boolean | Excusa$personalArgs<ExtArgs>
   }, ExtArgs["result"]["excusa"]>
@@ -9782,6 +9790,7 @@ export namespace Prisma {
     documento_url?: boolean
     observaciones?: boolean
     creado_en?: boolean
+    actualizado_en?: boolean
     alumno?: boolean | Excusa$alumnoArgs<ExtArgs>
     personal?: boolean | Excusa$personalArgs<ExtArgs>
   }, ExtArgs["result"]["excusa"]>
@@ -9798,6 +9807,7 @@ export namespace Prisma {
     documento_url?: boolean
     observaciones?: boolean
     creado_en?: boolean
+    actualizado_en?: boolean
   }
 
   export type ExcusaInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -9827,6 +9837,7 @@ export namespace Prisma {
       documento_url: string | null
       observaciones: string | null
       creado_en: Date
+      actualizado_en: Date
     }, ExtArgs["result"]["excusa"]>
     composites: {}
   }
@@ -10233,6 +10244,7 @@ export namespace Prisma {
     readonly documento_url: FieldRef<"Excusa", 'String'>
     readonly observaciones: FieldRef<"Excusa", 'String'>
     readonly creado_en: FieldRef<"Excusa", 'DateTime'>
+    readonly actualizado_en: FieldRef<"Excusa", 'DateTime'>
   }
     
 
@@ -13689,7 +13701,8 @@ export namespace Prisma {
     fecha_ausencia: 'fecha_ausencia',
     documento_url: 'documento_url',
     observaciones: 'observaciones',
-    creado_en: 'creado_en'
+    creado_en: 'creado_en',
+    actualizado_en: 'actualizado_en'
   };
 
   export type ExcusaScalarFieldEnum = (typeof ExcusaScalarFieldEnum)[keyof typeof ExcusaScalarFieldEnum]
@@ -14513,6 +14526,7 @@ export namespace Prisma {
     documento_url?: StringNullableFilter<"Excusa"> | string | null
     observaciones?: StringNullableFilter<"Excusa"> | string | null
     creado_en?: DateTimeFilter<"Excusa"> | Date | string
+    actualizado_en?: DateTimeFilter<"Excusa"> | Date | string
     alumno?: XOR<AlumnoNullableRelationFilter, AlumnoWhereInput> | null
     personal?: XOR<PersonalNullableRelationFilter, PersonalWhereInput> | null
   }
@@ -14529,6 +14543,7 @@ export namespace Prisma {
     documento_url?: SortOrderInput | SortOrder
     observaciones?: SortOrderInput | SortOrder
     creado_en?: SortOrder
+    actualizado_en?: SortOrder
     alumno?: AlumnoOrderByWithRelationInput
     personal?: PersonalOrderByWithRelationInput
   }
@@ -14548,6 +14563,7 @@ export namespace Prisma {
     documento_url?: StringNullableFilter<"Excusa"> | string | null
     observaciones?: StringNullableFilter<"Excusa"> | string | null
     creado_en?: DateTimeFilter<"Excusa"> | Date | string
+    actualizado_en?: DateTimeFilter<"Excusa"> | Date | string
     alumno?: XOR<AlumnoNullableRelationFilter, AlumnoWhereInput> | null
     personal?: XOR<PersonalNullableRelationFilter, PersonalWhereInput> | null
   }, "id">
@@ -14564,6 +14580,7 @@ export namespace Prisma {
     documento_url?: SortOrderInput | SortOrder
     observaciones?: SortOrderInput | SortOrder
     creado_en?: SortOrder
+    actualizado_en?: SortOrder
     _count?: ExcusaCountOrderByAggregateInput
     _avg?: ExcusaAvgOrderByAggregateInput
     _max?: ExcusaMaxOrderByAggregateInput
@@ -14586,6 +14603,7 @@ export namespace Prisma {
     documento_url?: StringNullableWithAggregatesFilter<"Excusa"> | string | null
     observaciones?: StringNullableWithAggregatesFilter<"Excusa"> | string | null
     creado_en?: DateTimeWithAggregatesFilter<"Excusa"> | Date | string
+    actualizado_en?: DateTimeWithAggregatesFilter<"Excusa"> | Date | string
   }
 
   export type HistorialAcademicoWhereInput = {
@@ -15612,6 +15630,7 @@ export namespace Prisma {
     documento_url?: string | null
     observaciones?: string | null
     creado_en?: Date | string
+    actualizado_en?: Date | string
     alumno?: AlumnoCreateNestedOneWithoutExcusasInput
     personal?: PersonalCreateNestedOneWithoutExcusasInput
   }
@@ -15628,6 +15647,7 @@ export namespace Prisma {
     documento_url?: string | null
     observaciones?: string | null
     creado_en?: Date | string
+    actualizado_en?: Date | string
   }
 
   export type ExcusaUpdateInput = {
@@ -15639,6 +15659,7 @@ export namespace Prisma {
     documento_url?: NullableStringFieldUpdateOperationsInput | string | null
     observaciones?: NullableStringFieldUpdateOperationsInput | string | null
     creado_en?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizado_en?: DateTimeFieldUpdateOperationsInput | Date | string
     alumno?: AlumnoUpdateOneWithoutExcusasNestedInput
     personal?: PersonalUpdateOneWithoutExcusasNestedInput
   }
@@ -15655,6 +15676,7 @@ export namespace Prisma {
     documento_url?: NullableStringFieldUpdateOperationsInput | string | null
     observaciones?: NullableStringFieldUpdateOperationsInput | string | null
     creado_en?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizado_en?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type ExcusaCreateManyInput = {
@@ -15669,6 +15691,7 @@ export namespace Prisma {
     documento_url?: string | null
     observaciones?: string | null
     creado_en?: Date | string
+    actualizado_en?: Date | string
   }
 
   export type ExcusaUpdateManyMutationInput = {
@@ -15680,6 +15703,7 @@ export namespace Prisma {
     documento_url?: NullableStringFieldUpdateOperationsInput | string | null
     observaciones?: NullableStringFieldUpdateOperationsInput | string | null
     creado_en?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizado_en?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type ExcusaUncheckedUpdateManyInput = {
@@ -15694,6 +15718,7 @@ export namespace Prisma {
     documento_url?: NullableStringFieldUpdateOperationsInput | string | null
     observaciones?: NullableStringFieldUpdateOperationsInput | string | null
     creado_en?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizado_en?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type HistorialAcademicoCreateInput = {
@@ -16625,6 +16650,7 @@ export namespace Prisma {
     documento_url?: SortOrder
     observaciones?: SortOrder
     creado_en?: SortOrder
+    actualizado_en?: SortOrder
   }
 
   export type ExcusaAvgOrderByAggregateInput = {
@@ -16645,6 +16671,7 @@ export namespace Prisma {
     documento_url?: SortOrder
     observaciones?: SortOrder
     creado_en?: SortOrder
+    actualizado_en?: SortOrder
   }
 
   export type ExcusaMinOrderByAggregateInput = {
@@ -16659,6 +16686,7 @@ export namespace Prisma {
     documento_url?: SortOrder
     observaciones?: SortOrder
     creado_en?: SortOrder
+    actualizado_en?: SortOrder
   }
 
   export type ExcusaSumOrderByAggregateInput = {
@@ -17582,6 +17610,7 @@ export namespace Prisma {
     documento_url?: string | null
     observaciones?: string | null
     creado_en?: Date | string
+    actualizado_en?: Date | string
     personal?: PersonalCreateNestedOneWithoutExcusasInput
   }
 
@@ -17596,6 +17625,7 @@ export namespace Prisma {
     documento_url?: string | null
     observaciones?: string | null
     creado_en?: Date | string
+    actualizado_en?: Date | string
   }
 
   export type ExcusaCreateOrConnectWithoutAlumnoInput = {
@@ -17732,6 +17762,7 @@ export namespace Prisma {
     documento_url?: StringNullableFilter<"Excusa"> | string | null
     observaciones?: StringNullableFilter<"Excusa"> | string | null
     creado_en?: DateTimeFilter<"Excusa"> | Date | string
+    actualizado_en?: DateTimeFilter<"Excusa"> | Date | string
   }
 
   export type HistorialAcademicoUpsertWithWhereUniqueWithoutAlumnoInput = {
@@ -17838,6 +17869,7 @@ export namespace Prisma {
     documento_url?: string | null
     observaciones?: string | null
     creado_en?: Date | string
+    actualizado_en?: Date | string
     alumno?: AlumnoCreateNestedOneWithoutExcusasInput
   }
 
@@ -17852,6 +17884,7 @@ export namespace Prisma {
     documento_url?: string | null
     observaciones?: string | null
     creado_en?: Date | string
+    actualizado_en?: Date | string
   }
 
   export type ExcusaCreateOrConnectWithoutPersonalInput = {
@@ -18789,6 +18822,7 @@ export namespace Prisma {
     documento_url?: string | null
     observaciones?: string | null
     creado_en?: Date | string
+    actualizado_en?: Date | string
   }
 
   export type HistorialAcademicoCreateManyAlumnoInput = {
@@ -18881,6 +18915,7 @@ export namespace Prisma {
     documento_url?: NullableStringFieldUpdateOperationsInput | string | null
     observaciones?: NullableStringFieldUpdateOperationsInput | string | null
     creado_en?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizado_en?: DateTimeFieldUpdateOperationsInput | Date | string
     personal?: PersonalUpdateOneWithoutExcusasNestedInput
   }
 
@@ -18895,6 +18930,7 @@ export namespace Prisma {
     documento_url?: NullableStringFieldUpdateOperationsInput | string | null
     observaciones?: NullableStringFieldUpdateOperationsInput | string | null
     creado_en?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizado_en?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type ExcusaUncheckedUpdateManyWithoutAlumnoInput = {
@@ -18908,6 +18944,7 @@ export namespace Prisma {
     documento_url?: NullableStringFieldUpdateOperationsInput | string | null
     observaciones?: NullableStringFieldUpdateOperationsInput | string | null
     creado_en?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizado_en?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type HistorialAcademicoUpdateWithoutAlumnoInput = {
@@ -18977,6 +19014,7 @@ export namespace Prisma {
     documento_url?: string | null
     observaciones?: string | null
     creado_en?: Date | string
+    actualizado_en?: Date | string
   }
 
   export type AsistenciaUpdateWithoutPersonalInput = {
@@ -19058,6 +19096,7 @@ export namespace Prisma {
     documento_url?: NullableStringFieldUpdateOperationsInput | string | null
     observaciones?: NullableStringFieldUpdateOperationsInput | string | null
     creado_en?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizado_en?: DateTimeFieldUpdateOperationsInput | Date | string
     alumno?: AlumnoUpdateOneWithoutExcusasNestedInput
   }
 
@@ -19072,6 +19111,7 @@ export namespace Prisma {
     documento_url?: NullableStringFieldUpdateOperationsInput | string | null
     observaciones?: NullableStringFieldUpdateOperationsInput | string | null
     creado_en?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizado_en?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type ExcusaUncheckedUpdateManyWithoutPersonalInput = {
@@ -19085,6 +19125,7 @@ export namespace Prisma {
     documento_url?: NullableStringFieldUpdateOperationsInput | string | null
     observaciones?: NullableStringFieldUpdateOperationsInput | string | null
     creado_en?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizado_en?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type AuditoriaCreateManyUsuarioInput = {

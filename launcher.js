@@ -1,3 +1,6 @@
+// Eliminar ELECTRON_RUN_AS_NODE para que Electron funcione correctamente
+delete process.env.ELECTRON_RUN_AS_NODE;
+
 const { spawn } = require('child_process');
 const path = require('path');
 

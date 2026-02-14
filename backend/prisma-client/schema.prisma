@@ -171,6 +171,7 @@ model Excusa {
   documento_url  String?
   observaciones  String?
   creado_en      DateTime  @default(now())
+  actualizado_en DateTime  @updatedAt
   alumno         Alumno?   @relation("alumno_excusa", fields: [alumno_id], references: [id], onDelete: Cascade)
   personal       Personal? @relation("personal_excusa", fields: [personal_id], references: [id], onDelete: Cascade)
 

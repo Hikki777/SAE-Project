@@ -169,7 +169,7 @@ router.post('/', invalidateCacheMiddleware('/api/docentes'), (req, res, next) =>
 
 const qrService = require('../services/qrService');
 
-// ...
+
 
     const docente = await prisma.personal.create({
       data: {

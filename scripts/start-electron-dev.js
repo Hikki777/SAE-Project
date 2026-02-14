@@ -1,3 +1,7 @@
+// IMPORTANTE: Eliminar ELECTRON_RUN_AS_NODE para que Electron funcione correctamente
+// Si esta variable está definida, Electron se ejecuta como Node.js puro y no carga sus APIs
+delete process.env.ELECTRON_RUN_AS_NODE;
+
 const { spawn } = require('child_process');
 const path = require('path');
 const http = require('http');
@@ -228,13 +232,16 @@ async function startElectronDev() {
     ? ['/c', 'npx', 'electron', 'electron/main.js']
     : ['electron', 'electron/main.js'];
   
+  const electronEnv = { ...process.env, NODE_NO_WARNINGS: '1' };
+  delete electronEnv.ELECTRON_RUN_AS_NODE;  // Asegurar que Electron NO se ejecute como Node.js puro
+  
   const electron = spawn(electronCommand, electronArgs, {
     stdio: ['ignore', 'ignore', 'ignore'],
     cwd: rootDir,
     windowsHide: true,
     detached: false,
     creationFlags: isWindows ? CREATE_NO_WINDOW : undefined,
-    env: { ...process.env, NODE_NO_WARNINGS: '1' }
+    env: electronEnv
   });
 
   electron.on('error', (err) => {

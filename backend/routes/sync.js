@@ -11,29 +11,29 @@ const { logger } = require('../utils/logger');
 router.get('/initial', verifyJWT, async (req, res) => {
   try {
     logger.info('[SYNC] Iniciando sincronización inicial completa');
-    
+
     // Obtener todos los datos necesarios
     const [alumnos, personal, asistencias, excusas, institucion] = await Promise.all([
       prisma.alumno.findMany({
         include: {
-          codigoQr: true,
-          historialAcademico: true
-        }
+          codigos_qr: true,
+          historial: true,
+        },
       }),
       prisma.personal.findMany({
         include: {
-          codigoQr: true
-        }
+          codigos_qr: true,
+        },
       }),
       prisma.asistencia.findMany({
-        orderBy: { fecha: 'desc' },
-        take: 1000 // Últimas 1000 asistencias
+        orderBy: { timestamp: 'desc' },
+        take: 1000, // Últimas 1000 asistencias
       }),
       prisma.excusa.findMany({
-        orderBy: { fecha_inicio: 'desc' },
-        take: 500 // Últimas 500 excusas
+        orderBy: { fecha: 'desc' },
+        take: 500, // Últimas 500 excusas
       }),
-      prisma.institucion.findFirst()
+      prisma.institucion.findFirst(),
     ]);
 
     const syncData = {
@@ -43,14 +43,14 @@ router.get('/initial', verifyJWT, async (req, res) => {
         personal,
         asistencias,
         excusas,
-        institucion
+        institucion,
       },
       counts: {
         alumnos: alumnos.length,
         personal: personal.length,
         asistencias: asistencias.length,
-        excusas: excusas.length
-      }
+        excusas: excusas.length,
+      },
     };
 
     logger.info({ counts: syncData.counts }, '[SYNC] Sincronización inicial completada');
@@ -68,7 +68,7 @@ router.get('/initial', verifyJWT, async (req, res) => {
 router.get('/incremental', verifyJWT, async (req, res) => {
   try {
     const { since } = req.query;
-    
+
     if (!since) {
       return res.status(400).json({ error: 'Parámetro "since" requerido' });
     }
@@ -80,40 +80,31 @@ router.get('/incremental', verifyJWT, async (req, res) => {
     const [alumnos, personal, asistencias, excusas] = await Promise.all([
       prisma.alumno.findMany({
         where: {
-          OR: [
-            { creado_en: { gte: sinceDate } },
-            { actualizado_en: { gte: sinceDate } }
-          ]
+          OR: [{ creado_en: { gte: sinceDate } }, { actualizado_en: { gte: sinceDate } }],
         },
         include: {
-          codigoQr: true,
-          historialAcademico: true
-        }
+          codigos_qr: true,
+          historial: true,
+        },
       }),
       prisma.personal.findMany({
         where: {
-          OR: [
-            { creado_en: { gte: sinceDate } },
-            { actualizado_en: { gte: sinceDate } }
-          ]
+          OR: [{ creado_en: { gte: sinceDate } }, { actualizado_en: { gte: sinceDate } }],
         },
         include: {
-          codigoQr: true
-        }
+          codigos_qr: true,
+        },
       }),
       prisma.asistencia.findMany({
         where: {
-          creado_en: { gte: sinceDate }
-        }
+          creado_en: { gte: sinceDate },
+        },
       }),
       prisma.excusa.findMany({
         where: {
-          OR: [
-            { creado_en: { gte: sinceDate } },
-            { actualizado_en: { gte: sinceDate } }
-          ]
-        }
-      })
+          creado_en: { gte: sinceDate },
+        },
+      }),
     ]);
 
     const syncData = {
@@ -123,14 +114,14 @@ router.get('/incremental', verifyJWT, async (req, res) => {
         alumnos,
         personal,
         asistencias,
-        excusas
+        excusas,
       },
       counts: {
         alumnos: alumnos.length,
         personal: personal.length,
         asistencias: asistencias.length,
-        excusas: excusas.length
-      }
+        excusas: excusas.length,
+      },
     };
 
     logger.info({ counts: syncData.counts }, '[SYNC] Sincronización incremental completada');
@@ -148,7 +139,7 @@ router.get('/incremental', verifyJWT, async (req, res) => {
 router.post('/push', verifyJWT, async (req, res) => {
   try {
     const { changes, equipoId } = req.body;
-    
+
     if (!changes || !equipoId) {
       return res.status(400).json({ error: 'Cambios y equipoId requeridos' });
     }
@@ -158,14 +149,14 @@ router.post('/push', verifyJWT, async (req, res) => {
     const results = {
       success: [],
       errors: [],
-      conflicts: []
+      conflicts: [],
     };
 
     // Procesar cada cambio
     for (const change of changes) {
       try {
         const { type, action, data, id } = change;
-        
+
         // Verificar si hay conflicto (last-write-wins)
         if (action === 'update' && id) {
           const existing = await getExistingRecord(type, id);
@@ -173,7 +164,7 @@ router.post('/push', verifyJWT, async (req, res) => {
             results.conflicts.push({
               type,
               id,
-              reason: 'Server has newer version'
+              reason: 'Server has newer version',
             });
             continue;
           }
@@ -192,7 +183,7 @@ router.post('/push', verifyJWT, async (req, res) => {
         logger.error({ err: error, change }, '[SYNC] Error aplicando cambio');
         results.errors.push({
           change,
-          error: error.message
+          error: error.message,
         });
       }
     }
@@ -228,7 +219,7 @@ async function getExistingRecord(type, id) {
  */
 async function applyChange(type, action, data, id) {
   const model = getModel(type);
-  
+
   switch (action) {
     case 'create':
       await model.create({ data });
@@ -236,12 +227,12 @@ async function applyChange(type, action, data, id) {
     case 'update':
       await model.update({
         where: { id: parseInt(id) },
-        data
+        data,
       });
       break;
     case 'delete':
       await model.delete({
-        where: { id: parseInt(id) }
+        where: { id: parseInt(id) },
       });
       break;
     default:
