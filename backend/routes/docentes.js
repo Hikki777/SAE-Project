@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const prisma = require('../prismaClient');
-const { generatePersonalCarnet, validateCarnet, getCarnetPrefix } = require('../utils/carnetGenerator');
+const { generatePersonalCarnet, previewPersonalCarnet, validateCarnet, getCarnetPrefix } = require('../utils/carnetGenerator');
 const multer = require('multer');
 const { 
   validarCrearDocente, 
@@ -12,6 +12,7 @@ const { logger } = require('../utils/logger');
 const { cacheMiddleware, invalidateCacheMiddleware } = require('../middlewares/cache');
 const { uploadBuffer } = require('../services/imageService');
 const { getFolderByCargo } = require('../utils/uploadHelpers');
+const qrService = require('../services/qrService');
 
 // Configurar multer para memoria (no guardar en disco)
 const upload = multer({ 
@@ -29,7 +30,7 @@ router.get('/next-carnet', async (req, res) => {
     if (!cargo) {
       return res.status(400).json({ error: 'Cargo es requerido' });
     }
-    const nextCarnet = await generatePersonalCarnet(cargo);
+    const nextCarnet = await previewPersonalCarnet(cargo);
     const prefix = getCarnetPrefix(cargo);
     res.json({ carnet: nextCarnet, prefix });
   } catch (error) {
@@ -166,10 +167,6 @@ router.post('/', invalidateCacheMiddleware('/api/docentes'), (req, res, next) =>
       const result = await uploadBuffer(req.file.buffer, folder, publicId);
       foto_url = result.secure_url; // Es ruta relativa: "docentes/docentes_D-2026001.png"
     }
-
-const qrService = require('../services/qrService');
-
-
 
     const docente = await prisma.personal.create({
       data: {

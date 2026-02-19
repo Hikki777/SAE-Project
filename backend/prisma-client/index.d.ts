@@ -1856,6 +1856,7 @@ export namespace Prisma {
     id: number | null
     margen_puntualidad_min: number | null
     ciclo_escolar: number | null
+    carnet_counter_global: number | null
     carnet_counter_personal: number | null
     carnet_counter_alumnos: number | null
   }
@@ -1864,6 +1865,7 @@ export namespace Prisma {
     id: number | null
     margen_puntualidad_min: number | null
     ciclo_escolar: number | null
+    carnet_counter_global: number | null
     carnet_counter_personal: number | null
     carnet_counter_alumnos: number | null
   }
@@ -1884,6 +1886,7 @@ export namespace Prisma {
     telefono: string | null
     ciclo_escolar: number | null
     inicializado: boolean | null
+    carnet_counter_global: number | null
     carnet_counter_personal: number | null
     carnet_counter_alumnos: number | null
     creado_en: Date | null
@@ -1907,6 +1910,7 @@ export namespace Prisma {
     telefono: string | null
     ciclo_escolar: number | null
     inicializado: boolean | null
+    carnet_counter_global: number | null
     carnet_counter_personal: number | null
     carnet_counter_alumnos: number | null
     creado_en: Date | null
@@ -1930,6 +1934,7 @@ export namespace Prisma {
     telefono: number
     ciclo_escolar: number
     inicializado: number
+    carnet_counter_global: number
     carnet_counter_personal: number
     carnet_counter_alumnos: number
     creado_en: number
@@ -1943,6 +1948,7 @@ export namespace Prisma {
     id?: true
     margen_puntualidad_min?: true
     ciclo_escolar?: true
+    carnet_counter_global?: true
     carnet_counter_personal?: true
     carnet_counter_alumnos?: true
   }
@@ -1951,6 +1957,7 @@ export namespace Prisma {
     id?: true
     margen_puntualidad_min?: true
     ciclo_escolar?: true
+    carnet_counter_global?: true
     carnet_counter_personal?: true
     carnet_counter_alumnos?: true
   }
@@ -1971,6 +1978,7 @@ export namespace Prisma {
     telefono?: true
     ciclo_escolar?: true
     inicializado?: true
+    carnet_counter_global?: true
     carnet_counter_personal?: true
     carnet_counter_alumnos?: true
     creado_en?: true
@@ -1994,6 +2002,7 @@ export namespace Prisma {
     telefono?: true
     ciclo_escolar?: true
     inicializado?: true
+    carnet_counter_global?: true
     carnet_counter_personal?: true
     carnet_counter_alumnos?: true
     creado_en?: true
@@ -2017,6 +2026,7 @@ export namespace Prisma {
     telefono?: true
     ciclo_escolar?: true
     inicializado?: true
+    carnet_counter_global?: true
     carnet_counter_personal?: true
     carnet_counter_alumnos?: true
     creado_en?: true
@@ -2127,6 +2137,7 @@ export namespace Prisma {
     telefono: string | null
     ciclo_escolar: number
     inicializado: boolean
+    carnet_counter_global: number
     carnet_counter_personal: number
     carnet_counter_alumnos: number
     creado_en: Date
@@ -2169,6 +2180,7 @@ export namespace Prisma {
     telefono?: boolean
     ciclo_escolar?: boolean
     inicializado?: boolean
+    carnet_counter_global?: boolean
     carnet_counter_personal?: boolean
     carnet_counter_alumnos?: boolean
     creado_en?: boolean
@@ -2192,6 +2204,7 @@ export namespace Prisma {
     telefono?: boolean
     ciclo_escolar?: boolean
     inicializado?: boolean
+    carnet_counter_global?: boolean
     carnet_counter_personal?: boolean
     carnet_counter_alumnos?: boolean
     creado_en?: boolean
@@ -2215,6 +2228,7 @@ export namespace Prisma {
     telefono?: boolean
     ciclo_escolar?: boolean
     inicializado?: boolean
+    carnet_counter_global?: boolean
     carnet_counter_personal?: boolean
     carnet_counter_alumnos?: boolean
     creado_en?: boolean
@@ -2242,6 +2256,7 @@ export namespace Prisma {
       telefono: string | null
       ciclo_escolar: number
       inicializado: boolean
+      carnet_counter_global: number
       carnet_counter_personal: number
       carnet_counter_alumnos: number
       creado_en: Date
@@ -2655,6 +2670,7 @@ export namespace Prisma {
     readonly telefono: FieldRef<"Institucion", 'String'>
     readonly ciclo_escolar: FieldRef<"Institucion", 'Int'>
     readonly inicializado: FieldRef<"Institucion", 'Boolean'>
+    readonly carnet_counter_global: FieldRef<"Institucion", 'Int'>
     readonly carnet_counter_personal: FieldRef<"Institucion", 'Int'>
     readonly carnet_counter_alumnos: FieldRef<"Institucion", 'Int'>
     readonly creado_en: FieldRef<"Institucion", 'DateTime'>
@@ -13573,6 +13589,7 @@ export namespace Prisma {
     telefono: 'telefono',
     ciclo_escolar: 'ciclo_escolar',
     inicializado: 'inicializado',
+    carnet_counter_global: 'carnet_counter_global',
     carnet_counter_personal: 'carnet_counter_personal',
     carnet_counter_alumnos: 'carnet_counter_alumnos',
     creado_en: 'creado_en',
@@ -13831,6 +13848,7 @@ export namespace Prisma {
     telefono?: StringNullableFilter<"Institucion"> | string | null
     ciclo_escolar?: IntFilter<"Institucion"> | number
     inicializado?: BoolFilter<"Institucion"> | boolean
+    carnet_counter_global?: IntFilter<"Institucion"> | number
     carnet_counter_personal?: IntFilter<"Institucion"> | number
     carnet_counter_alumnos?: IntFilter<"Institucion"> | number
     creado_en?: DateTimeFilter<"Institucion"> | Date | string
@@ -13854,6 +13872,7 @@ export namespace Prisma {
     telefono?: SortOrderInput | SortOrder
     ciclo_escolar?: SortOrder
     inicializado?: SortOrder
+    carnet_counter_global?: SortOrder
     carnet_counter_personal?: SortOrder
     carnet_counter_alumnos?: SortOrder
     creado_en?: SortOrder
@@ -13880,6 +13899,7 @@ export namespace Prisma {
     telefono?: StringNullableFilter<"Institucion"> | string | null
     ciclo_escolar?: IntFilter<"Institucion"> | number
     inicializado?: BoolFilter<"Institucion"> | boolean
+    carnet_counter_global?: IntFilter<"Institucion"> | number
     carnet_counter_personal?: IntFilter<"Institucion"> | number
     carnet_counter_alumnos?: IntFilter<"Institucion"> | number
     creado_en?: DateTimeFilter<"Institucion"> | Date | string
@@ -13903,6 +13923,7 @@ export namespace Prisma {
     telefono?: SortOrderInput | SortOrder
     ciclo_escolar?: SortOrder
     inicializado?: SortOrder
+    carnet_counter_global?: SortOrder
     carnet_counter_personal?: SortOrder
     carnet_counter_alumnos?: SortOrder
     creado_en?: SortOrder
@@ -13934,6 +13955,7 @@ export namespace Prisma {
     telefono?: StringNullableWithAggregatesFilter<"Institucion"> | string | null
     ciclo_escolar?: IntWithAggregatesFilter<"Institucion"> | number
     inicializado?: BoolWithAggregatesFilter<"Institucion"> | boolean
+    carnet_counter_global?: IntWithAggregatesFilter<"Institucion"> | number
     carnet_counter_personal?: IntWithAggregatesFilter<"Institucion"> | number
     carnet_counter_alumnos?: IntWithAggregatesFilter<"Institucion"> | number
     creado_en?: DateTimeWithAggregatesFilter<"Institucion"> | Date | string
@@ -14846,6 +14868,7 @@ export namespace Prisma {
     telefono?: string | null
     ciclo_escolar?: number
     inicializado?: boolean
+    carnet_counter_global?: number
     carnet_counter_personal?: number
     carnet_counter_alumnos?: number
     creado_en?: Date | string
@@ -14869,6 +14892,7 @@ export namespace Prisma {
     telefono?: string | null
     ciclo_escolar?: number
     inicializado?: boolean
+    carnet_counter_global?: number
     carnet_counter_personal?: number
     carnet_counter_alumnos?: number
     creado_en?: Date | string
@@ -14891,6 +14915,7 @@ export namespace Prisma {
     telefono?: NullableStringFieldUpdateOperationsInput | string | null
     ciclo_escolar?: IntFieldUpdateOperationsInput | number
     inicializado?: BoolFieldUpdateOperationsInput | boolean
+    carnet_counter_global?: IntFieldUpdateOperationsInput | number
     carnet_counter_personal?: IntFieldUpdateOperationsInput | number
     carnet_counter_alumnos?: IntFieldUpdateOperationsInput | number
     creado_en?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -14914,6 +14939,7 @@ export namespace Prisma {
     telefono?: NullableStringFieldUpdateOperationsInput | string | null
     ciclo_escolar?: IntFieldUpdateOperationsInput | number
     inicializado?: BoolFieldUpdateOperationsInput | boolean
+    carnet_counter_global?: IntFieldUpdateOperationsInput | number
     carnet_counter_personal?: IntFieldUpdateOperationsInput | number
     carnet_counter_alumnos?: IntFieldUpdateOperationsInput | number
     creado_en?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -14937,6 +14963,7 @@ export namespace Prisma {
     telefono?: string | null
     ciclo_escolar?: number
     inicializado?: boolean
+    carnet_counter_global?: number
     carnet_counter_personal?: number
     carnet_counter_alumnos?: number
     creado_en?: Date | string
@@ -14959,6 +14986,7 @@ export namespace Prisma {
     telefono?: NullableStringFieldUpdateOperationsInput | string | null
     ciclo_escolar?: IntFieldUpdateOperationsInput | number
     inicializado?: BoolFieldUpdateOperationsInput | boolean
+    carnet_counter_global?: IntFieldUpdateOperationsInput | number
     carnet_counter_personal?: IntFieldUpdateOperationsInput | number
     carnet_counter_alumnos?: IntFieldUpdateOperationsInput | number
     creado_en?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -14982,6 +15010,7 @@ export namespace Prisma {
     telefono?: NullableStringFieldUpdateOperationsInput | string | null
     ciclo_escolar?: IntFieldUpdateOperationsInput | number
     inicializado?: BoolFieldUpdateOperationsInput | boolean
+    carnet_counter_global?: IntFieldUpdateOperationsInput | number
     carnet_counter_personal?: IntFieldUpdateOperationsInput | number
     carnet_counter_alumnos?: IntFieldUpdateOperationsInput | number
     creado_en?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -16039,6 +16068,7 @@ export namespace Prisma {
     telefono?: SortOrder
     ciclo_escolar?: SortOrder
     inicializado?: SortOrder
+    carnet_counter_global?: SortOrder
     carnet_counter_personal?: SortOrder
     carnet_counter_alumnos?: SortOrder
     creado_en?: SortOrder
@@ -16050,6 +16080,7 @@ export namespace Prisma {
     id?: SortOrder
     margen_puntualidad_min?: SortOrder
     ciclo_escolar?: SortOrder
+    carnet_counter_global?: SortOrder
     carnet_counter_personal?: SortOrder
     carnet_counter_alumnos?: SortOrder
   }
@@ -16070,6 +16101,7 @@ export namespace Prisma {
     telefono?: SortOrder
     ciclo_escolar?: SortOrder
     inicializado?: SortOrder
+    carnet_counter_global?: SortOrder
     carnet_counter_personal?: SortOrder
     carnet_counter_alumnos?: SortOrder
     creado_en?: SortOrder
@@ -16093,6 +16125,7 @@ export namespace Prisma {
     telefono?: SortOrder
     ciclo_escolar?: SortOrder
     inicializado?: SortOrder
+    carnet_counter_global?: SortOrder
     carnet_counter_personal?: SortOrder
     carnet_counter_alumnos?: SortOrder
     creado_en?: SortOrder
@@ -16104,6 +16137,7 @@ export namespace Prisma {
     id?: SortOrder
     margen_puntualidad_min?: SortOrder
     ciclo_escolar?: SortOrder
+    carnet_counter_global?: SortOrder
     carnet_counter_personal?: SortOrder
     carnet_counter_alumnos?: SortOrder
   }

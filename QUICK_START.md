@@ -217,6 +217,6 @@ Si todos están ✓: **Listo para usar**
 
 ---
 
-**Última actualización**: 29 de Enero de 2026  
-**Versión**: 1.0.2
+**Última actualización**: 18 de Febrero de 2026  
+**Versión**: 1.0.5
 

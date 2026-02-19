@@ -1,6 +1,6 @@
 {
   "name": "sae-project",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "SAE - Sistema de Administración Educativa | Gestión Educativa Libre para instituciones de Guatemala",
   "main": "electron/main.js",
   "type": "commonjs",
@@ -20,7 +20,7 @@
     "test:integration": "cross-env NODE_ENV=test jest backend/__tests__/asistencias-integration.test.js",
     "seed": "node backend/prisma/seed.js",
     "prisma:studio": "npx prisma studio",
-    "db:reset": "node backend/scripts/reset-db.js",
+    "db:reset": "node backend/scripts/reset-db-clean.js",
     "prisma:push": "npx prisma db push",
     "prisma:reset": "npx prisma migrate reset --force",
     "utils": "node scripts/utils.js",
@@ -97,9 +97,7 @@
       "backend/**/*",
       ".env",
       "package.json",
-      "node_modules/**/*",
-      "node_modules/.prisma/**/*",
-      "node_modules/@prisma/client/**/*"
+      "node_modules/**/*"
     ],
     "win": {
       "target": [
@@ -116,7 +114,7 @@
           ]
         }
       ],
-      "icon": "frontend/public/logo.ico",
+      "icon": "logo.ico",
       "signAndEditExecutable": false,
       "executableName": "SAE"
     },
@@ -141,9 +139,9 @@
       "shortcutName": "SAE",
       "deleteAppDataOnUninstall": false,
       "license": "LICENSE",
-      "installerIcon": "frontend/public/logo.ico",
-      "uninstallerIcon": "frontend/public/logo.ico",
-      "installerHeaderIcon": "frontend/public/logo.ico",
+      "installerIcon": "logo.ico",
+      "uninstallerIcon": "logo.ico",
+      "installerHeaderIcon": "logo.ico",
       "include": "build/installer.nsh",
       "displayLanguageSelector": false,
       "artifactName": "SAE-${version}-Setup.exe"
@@ -166,14 +164,6 @@
       {
         "from": "prisma/dev.db",
         "to": "prisma/dev.db"
-      },
-      {
-        "from": "node_modules/.prisma",
-        "to": "node_modules/.prisma"
-      },
-      {
-        "from": "node_modules/@prisma/client",
-        "to": "node_modules/@prisma/client"
       },
       {
         "from": ".env",

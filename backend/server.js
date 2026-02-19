@@ -8,10 +8,13 @@ const fs = require('fs-extra');
 
 // Buscar .env en múltiples ubicaciones (para desarrollo y Electron)
 const projectRoot = path.join(__dirname, '..');
+// En producción Electron, resourcesPath = release/win-unpacked/resources (un nivel sobre app.asar.unpacked)
+const electronResourcesPath = process.env.RESOURCES_PATH || path.join(__dirname, '..', '..');
 const envPaths = [
-  path.join(__dirname, '.env'),           // backend/.env
-  path.join(projectRoot, '.env'),         // .env (raíz)
-  path.join(projectRoot, 'resources', 'app', '.env'), // Electron
+  path.join(electronResourcesPath, '.env'), // resources/.env (producción Electron) ← PRIMERO
+  path.join(__dirname, '.env'),              // backend/.env
+  path.join(projectRoot, '.env'),            // raíz del proyecto (desarrollo)
+  path.join(projectRoot, 'resources', 'app', '.env'), // legacy
 ];
 
 let envLoaded = false;
@@ -197,8 +200,10 @@ app.get('/uploads/*', (req, res) => {
   res.sendFile(filePath);
 });
 
-// Servir frontend HTML
-app.use(express.static(FRONTEND_DIR));
+// Servir frontend HTML (solo en desarrollo — en producción Electron usa loadFile())
+if (FRONTEND_DIR) {
+  app.use(express.static(FRONTEND_DIR));
+}
 
 // Servir qr-mobile.html para celular (SIN LOGO)
 app.get('/qr-mobile.html', (req, res) => {

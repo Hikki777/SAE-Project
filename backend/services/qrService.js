@@ -127,7 +127,7 @@ async function generarQrParaPersona(tipo, id) {
         // const token = tokenService.generarToken(tipo, id);
         
         const tokenData = {
-          tipo: tipo === 'personal' ? 'docente' : tipo, // Normalizar 'personal' a 'docente' para compatibilidad con escáner existente si es necesario, o mantener 'personal' y actualizar escáner
+          tipo: tipo, // Usar el tipo real: 'alumno' o 'personal'
           id: id,
           carnet: persona.carnet
         };

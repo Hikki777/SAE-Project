@@ -243,10 +243,6 @@ function App() {
 
 
   const handleLogout = () => {
-    // Play logout sound
-    const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3');
-    audio.play().catch(e => console.error('Error playing sound:', e));
-
     setShowLogoutModal(true);
 
     setTimeout(() => {

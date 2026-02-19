@@ -29,11 +29,11 @@ async function createSystemBackup(password) {
     archive.pipe(output);
 
     // DB
-    const dbPath = path.join(__dirname, '../backend/prisma/dev.db');
+    const dbPath = path.join(__dirname, '../prisma/dev.db');
     if (fs.existsSync(dbPath)) archive.file(dbPath, { name: 'dev.db' });
 
     // Uploads
-    const uploadsPath = path.join(__dirname, '../backend/uploads');
+    const uploadsPath = path.join(__dirname, '../uploads');
     if (fs.existsSync(uploadsPath)) archive.directory(uploadsPath, 'uploads');
 
     // Config & Env
@@ -101,13 +101,13 @@ async function restoreSystemBackup(backupPath, password) {
   await extract(tempZipPath, { dir: extractPath });
 
   // Restore DB
-  const dbPath = path.join(__dirname, '../backend/prisma/dev.db');
+  const dbPath = path.join(__dirname, '../prisma/dev.db');
   if (fs.existsSync(path.join(extractPath, 'dev.db'))) {
     fs.copyFileSync(path.join(extractPath, 'dev.db'), dbPath);
   }
 
   // Restore Uploads
-  const uploadsPath = path.join(__dirname, '../backend/uploads');
+  const uploadsPath = path.join(__dirname, '../uploads');
   if (fs.existsSync(path.join(extractPath, 'uploads'))) {
     fs.rmSync(uploadsPath, { recursive: true, force: true });
     fs.cpSync(path.join(extractPath, 'uploads'), uploadsPath, { recursive: true });

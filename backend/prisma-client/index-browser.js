@@ -135,6 +135,7 @@ exports.Prisma.InstitucionScalarFieldEnum = {
   telefono: 'telefono',
   ciclo_escolar: 'ciclo_escolar',
   inicializado: 'inicializado',
+  carnet_counter_global: 'carnet_counter_global',
   carnet_counter_personal: 'carnet_counter_personal',
   carnet_counter_alumnos: 'carnet_counter_alumnos',
   creado_en: 'creado_en',

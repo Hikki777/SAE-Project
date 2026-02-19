@@ -35,7 +35,7 @@ router.post('/generar', async (req, res) => {
     }
 
     // Obtener institución y logo
-    const institucion = await prisma.institucion.findUnique({ where: { id: 1 } });
+    const institucion = await prisma.institucion.findFirst();
     if (!institucion || !institucion.logo_base64) {
       return res.status(400).json({
         error: 'Institución no inicializada o logo faltante'
@@ -70,7 +70,7 @@ router.post('/generar', async (req, res) => {
       // const token = tokenService.generarToken(persona_tipo, persona_id);
       
       const tokenData = {
-        tipo: persona_tipo === 'personal' ? 'docente' : persona_tipo, // Frontend antiguo/escáner suele esperar 'docente' o 'alumno'
+        tipo: persona_tipo, // Usar el tipo real: 'alumno' o 'personal'
         id: persona_id,
         carnet: persona.carnet
       };
@@ -192,7 +192,7 @@ router.get('/:id/png', async (req, res) => {
     // PNG falta: intentar regenerar
     logger.warn({ qrId: id }, `[WARNING] PNG faltante para QR ${id}, regenerando...`);
 
-    const institucion = await prisma.institucion.findUnique({ where: { id: 1 } });
+    const institucion = await prisma.institucion.findFirst();
     if (!institucion || !institucion.logo_base64) {
       return res.status(500).json({
         error: 'No se puede regenerar sin logo'

@@ -121,7 +121,7 @@ router.post('/', invalidateCacheMiddleware('/api/asistencias'), async (req, res)
     // Calcular estado de puntualidad (solo para entradas)
     let estado_puntualidad = null;
     if (tipo_evento === 'entrada') {
-      const institucion = await prisma.institucion.findUnique({ where: { id: 1 } });
+      const institucion = await prisma.institucion.findFirst();
       if (institucion?.horario_inicio) {
         const [horaInicio, minInicio] = institucion.horario_inicio.split(':').map(Number);
         const horarioInicio = new Date(fechaAsistencia);

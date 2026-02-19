@@ -302,21 +302,30 @@ async function startElectronDev() {
     }, 1000);
   });
 
-  // Si Electron falla, SOLO mostrar log - NO hacer nada automático
-  electron.on('exit', (code, signal) => {
-    log(`[ELECTRON DEV] Electron salió (código: ${code}, señal: ${signal})`, colors.yellow);
+  // Manejar salida de Electron
+  electron.on('close', (code) => {
+    log(`[ELECTRON DEV] Electron cerrado (código: ${code})`, colors.yellow);
     
-    // Solo informar, sin cerrar nada
-    if (!sigintReceived) {
-      if (code === 0) {
-        log('[ELECTRON DEV] Puedes cerrar Electron nuevamente con Ctrl+C.', colors.yellow);
-      } else if (code === null && signal === 'SIGTERM') {
-        // Cierre normal por SIGTERM
-        log('[ELECTRON DEV] Electron cerrado correctamente.', colors.green);
+    // Si el usuario cerró la ventana voluntariamente (código 0), cerramos todo
+    if (code === 0) {
+      log('[ELECTRON DEV] Cerrando servicios restantes...', colors.cyan);
+      
+      // Matar procesos hijos
+      if (isWindows) {
+        try {
+          if (pids.frontend) execSync(`taskkill /PID ${pids.frontend} /F /T`, { stdio: 'ignore' });
+          if (pids.backend) execSync(`taskkill /PID ${pids.backend} /F /T`, { stdio: 'ignore' });
+        } catch (e) {}
       } else {
-        log('[ELECTRON DEV] Backend y Frontend siguen en ejecución.', colors.cyan);
-        log('[ELECTRON DEV] Presiona Ctrl+C para detener todo.', colors.yellow);
+        frontend.kill();
+        backend.kill();
       }
+      
+      process.exit(0);
+    } else {
+      // Si fue un crash, mantenemos vivos los servicios para debug
+      log('[ELECTRON DEV] Backend y Frontend siguen en ejecución para depuración.', colors.cyan);
+      log('[ELECTRON DEV] Presiona Ctrl+C para detener todo.', colors.yellow);
     }
   });
 }

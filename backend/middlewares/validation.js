@@ -274,7 +274,7 @@ exports.validarRegistrarAsistencia = [
 exports.validarGenerarQR = [
   body('persona_tipo')
     .notEmpty().withMessage('El tipo de persona es requerido')
-    .isIn(['alumno', 'docente']).withMessage('Tipo de persona inválido'),
+    .isIn(['alumno', 'personal']).withMessage('Tipo de persona inválido'),
   
   body('persona_id')
     .isInt({ min: 1 }).withMessage('ID de persona inválido'),

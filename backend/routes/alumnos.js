@@ -1,7 +1,7 @@
 const express = require('express');
 const prisma = require('../prismaClient');
 const { verifyJWT } = require('../middlewares/auth');
-const { generateAlumnoCarnet, validateCarnet } = require('../utils/carnetGenerator');
+const { generateAlumnoCarnet, previewAlumnoCarnet, validateCarnet } = require('../utils/carnetGenerator');
 const { 
   validarCrearAlumno, 
   validarActualizarAlumno, 
@@ -11,6 +11,7 @@ const { logger } = require('../utils/logger');
 const { cacheMiddleware, invalidateCacheMiddleware } = require('../middlewares/cache');
 const multer = require('multer');
 const { uploadBuffer } = require('../services/imageService');
+const qrService = require('../services/qrService');
 
 const upload = multer({ storage: multer.memoryStorage() });
 
@@ -54,7 +55,7 @@ function calcularNivelActual(grado) {
  */
 router.get('/next-carnet', async (req, res) => {
   try {
-    const nextCarnet = await generateAlumnoCarnet();
+    const nextCarnet = await previewAlumnoCarnet();
     res.json({ carnet: nextCarnet });
   } catch (error) {
     logger.error({ err: error }, '[ERROR] Error generando preview de carnet');
@@ -191,10 +192,6 @@ router.post('/', invalidateCacheMiddleware('/api/alumnos'), validarCrearAlumno, 
         return res.status(400).json({ error: validation.error });
       }
     }
-
-const qrService = require('../services/qrService');
-
-
 
     const alumno = await prisma.alumno.create({
       data: {
