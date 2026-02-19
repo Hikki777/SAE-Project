@@ -95,3 +95,17 @@ npm run dist:win
 - El `electron/main.js` en modo **desarrollo** (`!app.isPackaged`) no arranca el backend, comportamiento idéntico al anterior (el desarrollador corre el backend por separado).
 - La splash screen es HTML embebido (sin archivo externo), compatible con ASAR.
 - El path de `node.exe` se lee de `process.resourcesPath`, que corresponde a `extraResources` configurado en `package.json`.
+
+### 🟢 Correcciones RC1 (19 Feb 2026)
+
+Se aplicaron 9 parches adicionales para garantizar la estabilidad del instalador final:
+
+1. **Ruta `userData` forzada**: Se fija en `%APPDATA%\SAE` para evitar problemas con nombres de usuario que contengan espacios o tildes.
+2. **Backslashes en `DATABASE_URL`**: Se convierten a separadores tipo Unix (`/`) para compatibilidad total con Prisma SQLite en Windows.
+3. **Íconos de Splash**: Se corrigió la ruta de carga de íconos en producción (`process.resourcesPath`) para que la ventana de carga muestre el logo correctamente.
+4. **Íconos de Ventana Principal**: Se aplicó la misma corrección de ruta para el ícono de la barra de tareas.
+5. **Fallback de Emoji eliminado**: La splash screen ya no muestra un emoji si falla la carga del logo (ahora falla silenciosamente sin romper la estética).
+6. **Build Icon**: Se apuntó `win.icon` a `frontend/public/logo.ico` en `package.json`.
+7. **Instalador NSIS**: Se actualizaron los íconos del instalador/desinstalador a la ruta correcta.
+8. **Progreso de Instalación**: Se añadió `frontend/dist` al `asarUnpack` para que la barra de progreso del instalador sea más fluida y realista.
+9. **Recursos Extra**: Se incluyeron explícitamente `logo.png` y `logo.ico` en `extraResources` para su acceso en runtime.

@@ -25,10 +25,15 @@ function initLogFile() {
     const logFile = path.join(logDir, "main.log");
     logStream = fs.createWriteStream(logFile, { flags: "a" });
     logStream.write(`\n\n=== SAE Start ${new Date().toISOString()} ===\n`);
-  } catch (e) { /* ignore */ }
+  } catch (e) {
+    /* ignore */
+  }
 }
 function writeLog(line) {
-  if (logStream) try { logStream.write(line + "\n"); } catch (e) {}
+  if (logStream)
+    try {
+      logStream.write(line + "\n");
+    } catch (e) {}
 }
 function log(msg) {
   const line = `[Electron] ${msg}`;
@@ -49,7 +54,12 @@ async function startBackend() {
 
   const resourcesPath = process.resourcesPath;
   const nodeBin = path.join(resourcesPath, "node.exe");
-  const serverScript = path.join(resourcesPath, "app.asar.unpacked", "backend", "server.js");
+  const serverScript = path.join(
+    resourcesPath,
+    "app.asar.unpacked",
+    "backend",
+    "server.js",
+  );
 
   if (!fs.existsSync(nodeBin)) {
     logError(`node.exe no encontrado: ${nodeBin}`);
@@ -68,13 +78,17 @@ async function startBackend() {
   const dataUploadsDir = path.join(userDataPath, "uploads");
 
   // Crear directorios si no existen
-  [dataDbDir, dataUploadsDir,
-   path.join(dataUploadsDir, "alumnos"),
-   path.join(dataUploadsDir, "docentes"),
-   path.join(dataUploadsDir, "directores"),
-   path.join(dataUploadsDir, "personal"),
-   path.join(dataUploadsDir, "qr"),
-  ].forEach((dir) => { if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true }); });
+  [
+    dataDbDir,
+    dataUploadsDir,
+    path.join(dataUploadsDir, "alumnos"),
+    path.join(dataUploadsDir, "docentes"),
+    path.join(dataUploadsDir, "directores"),
+    path.join(dataUploadsDir, "personal"),
+    path.join(dataUploadsDir, "qr"),
+  ].forEach((dir) => {
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  });
 
   // Copiar BD inicial de resources si no existe en AppData (primera vez)
   const initialDb = path.join(resourcesPath, "prisma", "dev.db");
@@ -94,21 +108,28 @@ async function startBackend() {
 
   // Motor Prisma (se lanza desde asar.unpacked, puede estar en Program Files pero solo se LEE)
   const prismaEngine = path.join(
-    resourcesPath, "app.asar.unpacked", "backend", "prisma-client",
-    "query_engine-windows.dll.node"
+    resourcesPath,
+    "app.asar.unpacked",
+    "backend",
+    "prisma-client",
+    "query_engine-windows.dll.node",
   );
+
+  // FIX: Convertir backslashes a forward slashes — Prisma SQLite los requiere en Windows
+  const dbUrlPath = dataDbPath.replace(/\\/g, "/");
 
   const env = {
     ...process.env,
     NODE_ENV: "production",
     NODE_NO_WARNINGS: "1",
     RESOURCES_PATH: resourcesPath,
-    SAE_DATA_DIR: userDataPath,           // ← NUEVO: directorio escribible AppData\SAE
-    DATABASE_URL: `file:${dataDbPath}`,   // ← BD en AppData (escribible)
+    SAE_DATA_DIR: userDataPath, // ← NUEVO: directorio escribible AppData\SAE
+    DATABASE_URL: `file:${dbUrlPath}`, // ← FIX: forward slashes en la ruta
     PRISMA_SCHEMA_PATH: path.join(resourcesPath, "prisma", "schema.prisma"),
-    PRISMA_QUERY_ENGINE_LIBRARY: fs.existsSync(prismaEngine) ? prismaEngine : undefined,
+    PRISMA_QUERY_ENGINE_LIBRARY: fs.existsSync(prismaEngine)
+      ? prismaEngine
+      : undefined,
   };
-
 
   // Abrir stream de log del backend
   const backendLogFile = path.join(getLogDir(), "backend.log");
@@ -116,12 +137,18 @@ async function startBackend() {
   let backendLogStream = null;
   try {
     backendLogStream = fs.createWriteStream(backendLogFile, { flags: "a" });
-    backendLogStream.write(`\n=== Backend Start ${new Date().toISOString()} ===\n`);
-    backendLogStream.write(`CWD: ${path.join(resourcesPath, "app.asar.unpacked")}\n`);
+    backendLogStream.write(
+      `\n=== Backend Start ${new Date().toISOString()} ===\n`,
+    );
+    backendLogStream.write(
+      `CWD: ${path.join(resourcesPath, "app.asar.unpacked")}\n`,
+    );
     backendLogStream.write(`Script: ${serverScript}\n`);
     backendLogStream.write(`NODE_ENV: ${env.NODE_ENV}\n`);
     backendLogStream.write(`DATABASE_URL: ${env.DATABASE_URL}\n`);
-    backendLogStream.write(`PRISMA_QUERY_ENGINE_LIBRARY: ${env.PRISMA_QUERY_ENGINE_LIBRARY}\n`);
+    backendLogStream.write(
+      `PRISMA_QUERY_ENGINE_LIBRARY: ${env.PRISMA_QUERY_ENGINE_LIBRARY}\n`,
+    );
   } catch (e) {}
 
   backendProcess = spawn(
@@ -132,22 +159,29 @@ async function startBackend() {
       stdio: ["ignore", "pipe", "pipe"],
       env,
       windowsHide: true,
-    }
+    },
   );
 
   backendProcess.stdout.on("data", (data) => {
     const text = data.toString();
     if (backendLogStream) backendLogStream.write(text);
-    text.split("\n").filter(Boolean).forEach((l) => log(`[backend] ${l}`));
+    text
+      .split("\n")
+      .filter(Boolean)
+      .forEach((l) => log(`[backend] ${l}`));
   });
   backendProcess.stderr.on("data", (data) => {
     const text = data.toString();
     if (backendLogStream) backendLogStream.write("[ERR] " + text);
-    text.split("\n").filter(Boolean).forEach((l) => logError(`[backend] ${l}`));
+    text
+      .split("\n")
+      .filter(Boolean)
+      .forEach((l) => logError(`[backend] ${l}`));
   });
   backendProcess.on("error", (err) => {
     logError(`Spawn error: ${err.message}`);
-    if (backendLogStream) backendLogStream.write(`SPAWN ERROR: ${err.message}\n`);
+    if (backendLogStream)
+      backendLogStream.write(`SPAWN ERROR: ${err.message}\n`);
   });
   backendProcess.on("exit", (code, signal) => {
     log(`Backend terminó: code=${code} signal=${signal}`);
@@ -203,25 +237,26 @@ function waitForBackend(maxAttempts = 30, delayMs = 1000) {
 //  Mostrar ventana de carga (splash)
 // ─────────────────────────────────────────────
 function createSplashWindow() {
-  // Buscar ícono real para el splash
+  // FIX: En producción usar process.resourcesPath (fuera del asar, siempre accesible).
+  // En desarrollo, __dirname/../ apunta a la raíz del proyecto correctamente.
+  const base = isDev ? path.join(__dirname, "..") : process.resourcesPath;
+
   const iconCandidates = [
-    path.join(__dirname, "..", "logo.ico"),
-    path.join(__dirname, "..", "frontend", "public", "logo.ico"),
-    path.join(__dirname, "..", "frontend", "public", "logo.png"),
+    path.join(base, "logo.ico"),
+    path.join(base, "logo.png"),
   ];
   const splashIcon = iconCandidates.find((p) => fs.existsSync(p));
 
   // Leer logo como base64 para embeber en el HTML
   let logoDataUri = null;
   const logoCandidates = [
-    path.join(__dirname, "..", "frontend", "public", "logo.png"),
-    path.join(__dirname, "..", "frontend", "public", "logo.ico"),
-    path.join(__dirname, "..", "logo.ico"),
+    path.join(base, "logo.png"),
+    path.join(base, "logo.ico"),
   ];
   for (const p of logoCandidates) {
     if (fs.existsSync(p)) {
-      const ext = path.extname(p).slice(1).replace('ico', 'x-icon');
-      const b64 = fs.readFileSync(p).toString('base64');
+      const ext = path.extname(p).slice(1).replace("ico", "x-icon");
+      const b64 = fs.readFileSync(p).toString("base64");
       logoDataUri = `data:image/${ext};base64,${b64}`;
       break;
     }
@@ -285,9 +320,10 @@ function createSplashWindow() {
       </style>
     </head>
     <body>
-      ${logoDataUri
-        ? `<img class="logo" src="${logoDataUri}" alt="SAE Logo" />`
-        : `<div class="logo-emoji">📚</div>`
+      ${
+        logoDataUri
+          ? `<img class="logo" src="${logoDataUri}" alt="SAE Logo" />`
+          : `<img class="logo" src="" alt="SAE" style="display:none"/>`
       }
       <h1>SAE</h1>
       <div class="sub">Sistema de Administración Educativa</div>
@@ -312,7 +348,9 @@ function createSplashWindow() {
     </html>
   `;
 
-  splash.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(splashHtml)}`);
+  splash.loadURL(
+    `data:text/html;charset=utf-8,${encodeURIComponent(splashHtml)}`,
+  );
   return splash;
 }
 
@@ -322,12 +360,14 @@ function createSplashWindow() {
 function createWindow() {
   log("Creando ventana principal...");
 
-  // Buscar icono disponible
+  // FIX: En producción usar process.resourcesPath (fuera del asar, siempre accesible).
+  const base = isDev ? path.join(__dirname, "..") : process.resourcesPath;
+
   const iconCandidates = [
-    path.join(__dirname, "..", "logo.ico"),
-    path.join(__dirname, "..", "frontend", "public", "logo.ico"),
-    path.join(__dirname, "..", "frontend", "public", "logo.png"),
+    path.join(base, "logo.ico"),
+    path.join(base, "logo.png"),
   ];
+
   const icon = iconCandidates.find((p) => fs.existsSync(p));
 
   mainWindow = new BrowserWindow({
@@ -362,7 +402,13 @@ function createWindow() {
       mainWindow.webContents.openDevTools();
     }
   } else {
-    const indexPath = path.join(__dirname, "..", "frontend", "dist", "index.html");
+    const indexPath = path.join(
+      __dirname,
+      "..",
+      "frontend",
+      "dist",
+      "index.html",
+    );
     log(`Modo producción — cargando ${indexPath}`);
     mainWindow.loadFile(indexPath);
   }
@@ -378,9 +424,14 @@ function createWindow() {
     logError(`Render process gone: ${details.reason}`);
   });
 
-  mainWindow.webContents.on("did-fail-load", (event, errorCode, errorDescription) => {
-    logError(`Falló la carga de la página: ${errorDescription} (${errorCode})`);
-  });
+  mainWindow.webContents.on(
+    "did-fail-load",
+    (event, errorCode, errorDescription) => {
+      logError(
+        `Falló la carga de la página: ${errorDescription} (${errorCode})`,
+      );
+    },
+  );
 
   mainWindow.on("closed", () => {
     log("Ventana cerrada por el usuario.");
@@ -398,7 +449,9 @@ function stopBackend() {
       if (process.platform === "win32") {
         const { execSync } = require("child_process");
         try {
-          execSync(`taskkill /PID ${backendProcess.pid} /F /T`, { stdio: "ignore" });
+          execSync(`taskkill /PID ${backendProcess.pid} /F /T`, {
+            stdio: "ignore",
+          });
         } catch (_) {}
       } else {
         backendProcess.kill("SIGTERM");
@@ -414,6 +467,10 @@ function stopBackend() {
 //  Arranque de la app
 // ─────────────────────────────────────────────
 app.whenReady().then(async () => {
+  // FIX: Forzar userData a %APPDATA%\SAE — nombre simple sin espacios ni acentos
+  // Evita que productName genere rutas problemáticas para Prisma en Windows
+  app.setPath("userData", path.join(app.getPath("appData"), "SAE"));
+
   initLogFile();
   log("App lista. Iniciando...");
 
@@ -437,8 +494,9 @@ app.whenReady().then(async () => {
         "No se pudo iniciar el servidor interno de SAE.\n\n" +
           "Código: BACKEND_START_FAILED\n\n" +
           "Para diagnóstico, revise el archivo de log:\n" +
-          logDir + "\\backend.log\n\n" +
-          "Comparta ese archivo con soporte técnico."
+          logDir +
+          "\\backend.log\n\n" +
+          "Comparta ese archivo con soporte técnico.",
       );
       app.quit();
       return;

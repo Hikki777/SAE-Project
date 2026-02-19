@@ -114,7 +114,7 @@
           ]
         }
       ],
-      "icon": "logo.ico",
+      "icon": "frontend/public/logo.ico",
       "signAndEditExecutable": false,
       "executableName": "SAE"
     },
@@ -139,9 +139,9 @@
       "shortcutName": "SAE",
       "deleteAppDataOnUninstall": false,
       "license": "LICENSE",
-      "installerIcon": "logo.ico",
-      "uninstallerIcon": "logo.ico",
-      "installerHeaderIcon": "logo.ico",
+      "installerIcon": "frontend/public/logo.ico",
+      "uninstallerIcon": "frontend/public/logo.ico",
+      "installerHeaderIcon": "frontend/public/logo.ico",
       "include": "build/installer.nsh",
       "displayLanguageSelector": false,
       "artifactName": "SAE-${version}-Setup.exe"
@@ -150,7 +150,8 @@
     "asarUnpack": [
       "backend/**/*",
       "prisma/**/*",
-      "node_modules/**/*"
+      "node_modules/**/*",
+      "frontend/dist/**/*"
     ],
     "extraResources": [
       {
@@ -172,6 +173,14 @@
       {
         "from": "build/node.exe",
         "to": "node.exe"
+      },
+      {
+        "from": "frontend/public/logo.png",
+        "to": "logo.png"
+      },
+      {
+        "from": "frontend/public/logo.ico",
+        "to": "logo.ico"
       }
     ],
     "publish": {
