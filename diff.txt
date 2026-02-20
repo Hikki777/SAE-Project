@@ -1,0 +1,49 @@
+diff --git a/package.json b/package.json
+index b84b397..0986d16 100644
+--- a/package.json
++++ b/package.json
+@@ -114,7 +114,7 @@
+           ]
+         }
+       ],
+-      "icon": "frontend/public/logo.ico",
++      "icon": "build/icons/win/icon.ico",
+       "signAndEditExecutable": false,
+       "executableName": "SAE"
+     },
+@@ -139,9 +139,9 @@
+       "shortcutName": "SAE",
+       "deleteAppDataOnUninstall": false,
+       "license": "LICENSE",
+-      "installerIcon": "frontend/public/logo.ico",
+-      "uninstallerIcon": "frontend/public/logo.ico",
+-      "installerHeaderIcon": "frontend/public/logo.ico",
++      "installerIcon": "build/icons/win/icon.ico",
++      "uninstallerIcon": "build/icons/win/icon.ico",
++      "installerHeaderIcon": "build/icons/win/icon.ico",
+       "include": "build/installer.nsh",
+       "displayLanguageSelector": false,
+       "artifactName": "SAE-${version}-Setup.exe"
+@@ -175,11 +175,11 @@
+         "to": "node.exe"
+       },
+       {
+-        "from": "frontend/public/logo.png",
+-        "to": "logo.png"
++        "from": "build/icons/win/icon.ico",
++        "to": "logo.ico"
+       },
+       {
+-        "from": "frontend/public/logo.ico",
++        "from": "build/icons/win/icon.ico",
+         "to": "logo.ico"
+       }
+     ],
+@@ -196,6 +196,7 @@
+     "cross-env": "^10.1.0",
+     "electron": "^35.7.5",
+     "electron-builder": "^26.5.0",
++    "electron-icon-builder": "^2.0.1",
+     "jest": "^30.2.0",
+     "jimp": "^1.6.0",
+     "jsqr": "^1.4.0",

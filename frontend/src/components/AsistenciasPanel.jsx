@@ -388,6 +388,9 @@ export default function AsistenciasPanel() {
           carnet: alumno?.carnet || `ID: ${selectedAlumno}`,
           grado: alumno?.grado || 'N/A',
           seccion: alumno?.seccion || 'N/A',
+          jornada: alumno?.jornada || 'Matutina',
+          carrera: alumno?.carrera || 'N/A',
+          especialidad: alumno?.especialidad || 'N/A',
           foto_url: getUserPhotoUrl('alumno', alumno?.carnet, alumno)
         };
       } else {
@@ -411,6 +414,7 @@ export default function AsistenciasPanel() {
           carnet: docente?.carnet || `ID: ${selectedDocente}`,
           cargo: docente?.cargo || 'N/A',
           departamento: docente?.departamento || 'N/A',
+          jornada: docente?.jornada || 'Matutina',
           foto_url: getUserPhotoUrl('personal', docente?.carnet, docente)
         };
       }
@@ -956,6 +960,9 @@ export default function AsistenciasPanel() {
           carnet: alumno?.carnet || parsedData.carnet || `ID: ${parsedData.id}`,
           grado: alumno?.grado || 'N/A',
           seccion: alumno?.seccion || 'N/A',
+          jornada: alumno?.jornada || 'Matutina',
+          carrera: alumno?.carrera || 'N/A',
+          especialidad: alumno?.especialidad || 'N/A',
           foto_url: getUserPhotoUrl('alumno', alumno?.carnet, alumno)
         };
       } else {
@@ -977,6 +984,7 @@ export default function AsistenciasPanel() {
           carnet: docente?.carnet || parsedData.carnet || `ID: ${parsedData.id}`,
           cargo: docente?.cargo || 'N/A',
           departamento: docente?.departamento || 'N/A',
+          jornada: docente?.jornada || 'Matutina',
           foto_url: getUserPhotoUrl('personal', docente?.carnet, docente)
         };
       }
@@ -1727,24 +1735,57 @@ export default function AsistenciasPanel() {
               <div className="pt-3 border-t border-gray-200 dark:border-gray-700">
                 {modalData.grado ? (
                   // Para alumnos
-                  <div className="flex justify-center gap-4 text-sm">
-                    <div className="flex items-center gap-1">
-                      <span className="text-gray-500 dark:text-gray-400">Grado:</span>
-                      <span className="font-semibold text-gray-900 dark:text-white">{modalData.grado}</span>
-                    </div>
-                    {modalData.seccion && modalData.seccion !== 'N/A' && (
+                  <div className="flex flex-col items-center gap-2 text-sm max-w-sm mx-auto">
+                    <div className="flex justify-center gap-4 flex-wrap">
                       <div className="flex items-center gap-1">
-                        <span className="text-gray-500 dark:text-gray-400">Sección:</span>
-                        <span className="font-semibold text-gray-900 dark:text-white">{modalData.seccion}</span>
+                        <span className="text-gray-500 dark:text-gray-400">Grado:</span>
+                        <span className="font-semibold text-gray-900 dark:text-white">{modalData.grado}</span>
+                      </div>
+                      {modalData.seccion && modalData.seccion !== 'N/A' && (
+                        <div className="flex items-center gap-1">
+                          <span className="text-gray-500 dark:text-gray-400">Sección:</span>
+                          <span className="font-semibold text-gray-900 dark:text-white">{modalData.seccion}</span>
+                        </div>
+                      )}
+                      {modalData.jornada && (
+                        <div className="flex items-center gap-1">
+                          <span className="text-gray-500 dark:text-gray-400">Jornada:</span>
+                          <span className="font-semibold text-gray-900 dark:text-white capitalize">{modalData.jornada}</span>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Campos adicionales para Diversificado o Bachillerato */}
+                    {modalData.grado && typeof modalData.grado === 'string' && (modalData.grado.toLowerCase().includes('diversificado') || modalData.grado.toLowerCase().includes('bachillerato') || modalData.grado.toLowerCase().includes('madurez') || modalData.grado.toLowerCase().includes('carrera') || modalData.grado.toLowerCase().includes('perito') || modalData.grado.toLowerCase().includes('secretariado')) && (modalData.especialidad || modalData.carrera) && (
+                      <div className="flex flex-col items-center gap-1 w-full mt-1 pt-2 border-t border-gray-100 dark:border-gray-700/50">
+                        {modalData.carrera && modalData.carrera !== 'N/A' && (
+                          <div className="flex items-center gap-1 text-center">
+                            <span className="text-gray-500 dark:text-gray-400">Carrera:</span>
+                            <span className="font-semibold text-gray-900 dark:text-white">{modalData.carrera}</span>
+                          </div>
+                        )}
+                        {modalData.especialidad && modalData.especialidad !== 'N/A' && (
+                          <div className="flex items-center gap-1 text-center">
+                            <span className="text-gray-500 dark:text-gray-400 text-xs text-center border bg-gray-50 dark:bg-gray-700/50 rounded-lg px-2 py-1">Espe: <span className="font-semibold text-gray-900 dark:text-white">{modalData.especialidad}</span></span>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
                 ) : (
                   // Para personal
-                  <div className="flex flex-col items-center gap-1 text-sm">
-                    <div className="flex items-center gap-1">
-                      <span className="text-gray-500 dark:text-gray-400">Cargo:</span>
-                      <span className="font-semibold text-gray-900 dark:text-white">{modalData.cargo || modalData.tipo}</span>
+                  <div className="flex flex-col items-center gap-2 text-sm">
+                    <div className="flex justify-center gap-4 flex-wrap w-full">
+                      <div className="flex items-center gap-1">
+                        <span className="text-gray-500 dark:text-gray-400">Cargo:</span>
+                        <span className="font-semibold text-gray-900 dark:text-white">{modalData.cargo || modalData.tipo}</span>
+                      </div>
+                      {modalData.jornada && (
+                        <div className="flex items-center gap-1">
+                          <span className="text-gray-500 dark:text-gray-400">Jornada:</span>
+                          <span className="font-semibold text-gray-900 dark:text-white capitalize">{modalData.jornada}</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
