@@ -241,7 +241,7 @@ export default function Dashboard() {
                 
                 <div className="flex items-center text-sm text-blue-100/90 mt-4">
                   {/* The version stays the same */}
-                  <span className="mr-3">SAE v1.5.0</span>
+                  <span className="mr-3">SAE v1.0.6</span>
 
                   {/* --- PILL START --- */}
                   <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/20 backdrop-blur-md shadow-lg transition-all hover:bg-white/20">

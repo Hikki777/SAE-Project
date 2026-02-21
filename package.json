@@ -5,6 +5,7 @@
   "main": "electron/main.js",
   "type": "commonjs",
   "scripts": {
+    "setup": "node scripts/setup-project.js",
     "start": "node scripts/start-dynamic.js backend/server.js",
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
     "dev:old": "npm run dev:web",
@@ -114,16 +115,11 @@
           ]
         }
       ],
-      "icon": "build/icons/win/icon.ico",
+      "icon": "frontend/public/logo.ico",
       "signAndEditExecutable": false,
       "executableName": "SAE"
     },
-    "extraFiles": [
-      {
-        "from": "frontend/public/logo.ico",
-        "to": "logo.ico"
-      }
-    ],
+    "extraFiles": [],
     "linux": {
       "target": "AppImage",
       "category": "Education"
@@ -139,9 +135,9 @@
       "shortcutName": "SAE",
       "deleteAppDataOnUninstall": false,
       "license": "LICENSE",
-      "installerIcon": "build/icons/win/icon.ico",
-      "uninstallerIcon": "build/icons/win/icon.ico",
-      "installerHeaderIcon": "build/icons/win/icon.ico",
+      "installerIcon": "frontend/public/logo.ico",
+      "uninstallerIcon": "frontend/public/logo.ico",
+      "installerHeaderIcon": "frontend/public/logo.ico",
       "include": "build/installer.nsh",
       "displayLanguageSelector": false,
       "artifactName": "SAE-${version}-Setup.exe"
@@ -154,6 +150,14 @@
       "frontend/dist/**/*"
     ],
     "extraResources": [
+      {
+        "from": "frontend/public/logo.ico",
+        "to": "logo.ico"
+      },
+      {
+        "from": "frontend/public/logo.png",
+        "to": "logo.png"
+      },
       {
         "from": "prisma/schema.prisma",
         "to": "prisma/schema.prisma"
@@ -173,14 +177,6 @@
       {
         "from": "build/node.exe",
         "to": "node.exe"
-      },
-      {
-        "from": "build/icons/win/icon.ico",
-        "to": "logo.ico"
-      },
-      {
-        "from": "build/icons/win/icon.ico",
-        "to": "logo.ico"
       }
     ],
     "publish": {

@@ -199,7 +199,7 @@ export default function SetupWizard({ onComplete }) {
       if (registerData.aprobado) {
         setConnectionStatus('connected');
         setTimeout(() => {
-          window.location.href = '/login';
+          window.location.hash = '/login';
         }, 2000);
       } else {
         // Mostrar modal de espera y comenzar polling
@@ -244,7 +244,7 @@ export default function SetupWizard({ onComplete }) {
             
             // Redirigir al login
             setTimeout(() => {
-              window.location.href = '/login';
+              window.location.hash = '/login';
             }, 1500);
           }
         } else {

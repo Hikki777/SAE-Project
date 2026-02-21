@@ -4,7 +4,7 @@ import { buildAttendanceReport } from './reportBuilder';
 // Helper para cargar logo app desde URL (mismo origen)
 const loadAppLogo = async () => {
     try {
-        const response = await fetch('/logo.png');
+        const response = await fetch('./logo.png');
         const blob = await response.blob();
         return new Promise((resolve) => {
             const reader = new FileReader();

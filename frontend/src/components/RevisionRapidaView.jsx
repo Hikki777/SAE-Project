@@ -4,25 +4,74 @@ import { ArrowLeft, SkipForward, CheckCircle2, AlertCircle, User } from 'lucide-
 import toast from 'react-hot-toast';
 import CardAusente from './CardAusente';
 import ModalJustificacionRapida from './ModalJustificacionRapida';
+import client from '../api/client';
 import './RevisionRapida.css';
 
-export default function RevisionRapidaView({ ausentesIniciales, fecha, onVolver }) {
-  const [pendientes, setPendientes] = useState(ausentesIniciales);
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const BASE_URL = API_URL.replace('/api', '');
+
+export default function RevisionRapidaView({ fecha, onVolver }) {
+  const [pendientes, setPendientes] = useState([]);
   const [revisados, setRevisados] = useState([]);
   const [personaActual, setPersonaActual] = useState(null);
   const [mostrarConfetti, setMostrarConfetti] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [totalAusentes, setTotalAusentes] = useState(0);
 
-  const totalAusentes = ausentesIniciales.length;
-  const progreso = Math.round((revisados.length / totalAusentes) * 100);
+  useEffect(() => {
+    const fetchAusentes = async () => {
+      try {
+        const [ausentesRes, excusasRes] = await Promise.all([
+          client.get('/asistencias/ausentes'),
+          client.get('/excusas')
+        ]);
+        
+        const { ausentes } = ausentesRes.data;
+        const todasExcusas = excusasRes.data.excusas || [];
+        
+        // Obtener fecha local de hoy para filtrar las excusas solo de hoy
+        const hoy = new Date();
+        const hoyStr = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`;
+        
+        const excusasDeHoy = todasExcusas.filter(e => {
+          if (!e.fecha_ausencia) return false;
+          // Normalizar formato de fecha desde UTC a YYYY-MM-DD local
+          const fechaAbs = new Date(e.fecha_ausencia);
+          const eStr = `${fechaAbs.getUTCFullYear()}-${String(fechaAbs.getUTCMonth() + 1).padStart(2, '0')}-${String(fechaAbs.getUTCDate()).padStart(2, '0')}`;
+          return eStr === hoyStr;
+        });
+
+        // Filtrar aquellos que ya tienen justificación para HOY
+        const ausentesNoJustificados = (ausentes || []).filter(persona => {
+          return !excusasDeHoy.some(e => {
+             if (persona.tipo === 'alumno' && e.alumno_id === persona.id) return true;
+             if (persona.tipo === 'personal' && e.personal_id === persona.id) return true;
+             return false;
+          });
+        });
+
+        setPendientes(ausentesNoJustificados);
+        setTotalAusentes(ausentesNoJustificados.length);
+      } catch (error) {
+        console.error('Error loading ausentes in Kanban:', error);
+        toast.error('Error al cargar ausentes');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchAusentes();
+  }, []);
+
+  const progreso = totalAusentes === 0 ? 0 : Math.round((revisados.length / totalAusentes) * 100);
 
   useEffect(() => {
     // Confetti al completar todos
-    if (pendientes.length === 0 && totalAusentes > 0) {
+    if (pendientes.length === 0 && revisados.length > 0 && totalAusentes > 0) {
       setMostrarConfetti(true);
       toast.success('🎉 ¡Revisión completada!');
       setTimeout(() => setMostrarConfetti(false), 3000);
     }
-  }, [pendientes.length, totalAusentes]);
+  }, [pendientes.length, revisados.length, totalAusentes]);
 
   const handleJustificar = (persona) => {
     setPersonaActual(persona);
@@ -54,6 +103,15 @@ export default function RevisionRapidaView({ ausentesIniciales, fecha, onVolver 
       onVolver();
     }
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center p-12 text-blue-600">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <span className="ml-3 font-medium">Cargando ausentes...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="revision-rapida-container">
@@ -186,19 +244,75 @@ export default function RevisionRapidaView({ ausentesIniciales, fecha, onVolver 
                   </p>
                 </motion.div>
               ) : (
-                revisados.map((persona) => (
-                  <motion.div
-                    key={persona.id}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: 20 }}
-                    className="card-revisado"
-                  >
-                    <div className="card-header">
-                      <div className="persona-icon">
-                        {persona.tipo === 'alumno' ? '👨‍🎓' : '👨‍🏫'}
-                      </div>
-                      <div className="badge-estado">
+                revisados.map((persona) => {
+                  const getFotoUrl = () => {
+                    if (persona.foto_path) {
+                      return persona.foto_path.startsWith('http') 
+                        ? persona.foto_path 
+                        : `${BASE_URL}/uploads/${persona.foto_path}`;
+                    }
+                    if (!persona.carnet) return null;
+                    const cleanCarnet = String(persona.carnet).trim();
+                    const tipo = persona.tipo;
+                    
+                    let directory = '';
+                    let prefix = '';
+                    
+                    if (tipo === 'alumno' || tipo === 'Alumno') {
+                      directory = 'alumnos';
+                      prefix = 'alumno';
+                    } else {
+                      if (cleanCarnet.startsWith('DIR-') || cleanCarnet.startsWith('SDIR-')) {
+                        directory = 'directores';
+                        prefix = 'director';
+                      } else if (cleanCarnet.startsWith('D-')) {
+                        directory = 'docentes';
+                        prefix = 'docentes';
+                      } else {
+                        directory = 'personal';
+                        prefix = 'personal';
+                      }
+                    }
+                    return `${BASE_URL}/uploads/${directory}/${prefix}_${cleanCarnet}.png`;
+                  };
+
+                  const fotoUrl = getFotoUrl();
+                  
+                  return (
+                    <motion.div
+                      key={persona.id}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: 20 }}
+                      className="card-revisado"
+                    >
+                      <div className="card-header">
+                        <div className="persona-avatar-small w-10 h-10 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700 flex-shrink-0 relative">
+                          {fotoUrl ? (
+                            <>
+                              <img 
+                                src={fotoUrl} 
+                                alt={`${persona.nombres} ${persona.apellidos}`}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  e.target.style.display = 'none';
+                                  e.target.nextElementSibling.style.display = 'flex';
+                                }}
+                              />
+                              <div 
+                                className="w-full h-full flex items-center justify-center text-xl"
+                                style={{ display: 'none' }}
+                              >
+                                {persona.tipo === 'alumno' ? '👨‍🎓' : '👨‍🏫'}
+                              </div>
+                            </>
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-xl">
+                              {persona.tipo === 'alumno' ? '👨‍🎓' : '👨‍🏫'}
+                            </div>
+                          )}
+                        </div>
+                        <div className="badge-estado">
                         {persona.estadoRevision === 'justificado' ? (
                           <span className="badge badge-success">✅ Justificado</span>
                         ) : (
@@ -216,8 +330,9 @@ export default function RevisionRapidaView({ ausentesIniciales, fecha, onVolver 
                     </p>
                     <p className="persona-carnet">{persona.carnet}</p>
                   </motion.div>
-                ))
-              )}
+                );
+              })
+            )}
             </AnimatePresence>
           </div>
         </div>

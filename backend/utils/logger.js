@@ -63,7 +63,7 @@ const developmentTransport = {
 };
 
 // Configuración de transporte para producción (archivos + console)
-const logDestination = process.env.LOGS_PATH || path.join(__dirname, '../../logs');
+const logDestination = process.env.LOGS_PATH || (process.env.SAE_DATA_DIR ? path.join(process.env.SAE_DATA_DIR, 'logs') : path.join(__dirname, '../../logs'));
 
 const productionTransports = [
   // Console output en JSON

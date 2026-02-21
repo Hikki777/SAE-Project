@@ -295,18 +295,19 @@ export default function ReportesPanel({ initialTab = 'asistencias' }) {
 
       {/* Main Content */}
       <div className="flex-1 p-8 overflow-y-auto">
-        <header className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-3">
-            {tabs.find(t => t.id === activeTab)?.icon && React.createElement(tabs.find(t => t.id === activeTab)?.icon, { className: "text-blue-600" })}
-            {tabs.find(t => t.id === activeTab)?.label}
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-2">
-            {activeTab === 'asistencias' && 'Genera reportes detallados de asistencia en PDF y Excel.'}
-            {activeTab === 'justificaciones' && 'Gestiona las justificaciones y excusas de alumnos y personal.'}
-            {activeTab === 'documentos' && 'Genera documentos oficiales como constancias y certificados.'}
-            {activeTab === 'carnets' && 'Diseña y exporta carnets institucionales listos para imprimir.'}
-          </p>
-        </header>
+        {activeTab !== 'justificaciones' && (
+          <header className="mb-8">
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-3">
+              {tabs.find(t => t.id === activeTab)?.icon && React.createElement(tabs.find(t => t.id === activeTab)?.icon, { className: "text-blue-600" })}
+              {tabs.find(t => t.id === activeTab)?.label}
+            </h1>
+            <p className="text-gray-600 dark:text-gray-400 mt-2">
+              {activeTab === 'asistencias' && 'Genera reportes detallados de asistencia en PDF y Excel.'}
+              {activeTab === 'documentos' && 'Genera documentos oficiales como constancias y certificados.'}
+              {activeTab === 'carnets' && 'Diseña y exporta carnets institucionales listos para imprimir.'}
+            </p>
+          </header>
+        )}
 
         {activeTab === 'justificaciones' && <JustificacionesPanel />}
 

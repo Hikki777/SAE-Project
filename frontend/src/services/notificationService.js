@@ -71,7 +71,7 @@ class NotificationService {
       },
       onClick: () => {
         // Navegar a configuración cuando se hace clic
-        window.location.href = '/configuracion';
+        window.location.hash = '/configuracion';
       }
     });
     

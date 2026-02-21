@@ -2,13 +2,14 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Clock, UserCheck, UserX, Search, Calendar, TrendingUp, QrCode, Camera, CameraOff, XCircle } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 import client from '../api/client';
 import QrScanner from 'qr-scanner';
 import { TableSkeleton } from './LoadingSpinner';
 import ModalSinSalida from './ModalSinSalida';
+import ModalJustificacionRapida from './ModalJustificacionRapida';
 
 // Usamos el cliente API compartido (con baseURL '/api' e interceptor JWT)
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
@@ -20,6 +21,9 @@ export default function AsistenciasPanel() {
       const [excusaInput, setExcusaInput] = useState('');
       const [personaExcusa, setPersonaExcusa] = useState(null);
       const [excusas, setExcusas] = useState([]);
+      const [mostrarModalJustificar, setMostrarModalJustificar] = useState(false);
+      const [personaAJustificar, setPersonaAJustificar] = useState(null);
+      const [fechaAJustificar, setFechaAJustificar] = useState(null);
     const [tomaIniciada, setTomaIniciada] = useState(false);
     const [horaInternet, setHoraInternet] = useState('');
   const [asistenciasHoy, setAsistenciasHoy] = useState([]);
@@ -148,7 +152,7 @@ export default function AsistenciasPanel() {
     if (!token) {
       // Evitar llamadas sin token; el interceptor también redirige en 401
       toast.error('Sesión no iniciada. Inicia sesión para continuar.');
-      window.location.href = '/login';
+      window.location.hash = '/login';
       return;
     }
 
@@ -1434,7 +1438,7 @@ export default function AsistenciasPanel() {
           </h3>
           <div className="flex gap-2 items-center">
             {/* Toggle para mostrar ausentes */}
-            {asistenciasHoy.length > 0 && (
+            {true && (
               <button
                 onClick={() => setMostrarAusentes(!mostrarAusentes)}
                 className={`text-sm px-3 py-1.5 rounded-lg font-medium transition ${
@@ -1566,7 +1570,7 @@ export default function AsistenciasPanel() {
                   })}
                 
                   {/* Ausentes - Solo mostrar si hay asistencias Y toggle activado */}
-                  {mostrarAusentes && asistenciasHoy.length > 0 && (() => {
+                  {mostrarAusentes && (() => {
                     // Calcular ausentes
                     const asistidosIds = new Set([
                       ...asistenciasHoy.map(a => a.alumno_id),
@@ -1624,9 +1628,6 @@ export default function AsistenciasPanel() {
                             <span className="px-2 py-1 rounded-full text-xs font-bold bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300">
                               AUSENTE
                             </span>
-                          </td>
-                          <td className="px-3 py-2 text-center">
-                            <span className="text-gray-400 font-bold">-</span>
                           </td>
                           <td className="px-3 py-2 text-center">
                             <span className="text-gray-400 font-bold">-</span>
@@ -1961,7 +1962,7 @@ export default function AsistenciasPanel() {
               <button
                 onClick={() => {
                   setShowAusentesModal(false);
-                  window.location.href = '/reportes?tab=justificaciones';
+                  window.location.hash = '/reportes?tab=justificaciones';
                 }}
                 className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition font-medium shadow-md hover:translate-y-0.5"
               >
@@ -1984,6 +1985,23 @@ export default function AsistenciasPanel() {
         </div>,
         document.body
       )}
+      <AnimatePresence>
+        {mostrarModalJustificar && personaAJustificar && (
+          <ModalJustificacionRapida
+            persona={personaAJustificar}
+            fecha={fechaAJustificar}
+            onGuardar={(p) => {
+              setMostrarModalJustificar(false);
+              setPersonaAJustificar(null);
+              toast.success(`La justificación de ${p.nombres} ha sido registrada. Podrás gestionarla desde la pestaña de Reportes -> Justificaciones.`, { duration: 6000 });
+            }}
+            onCancelar={() => {
+              setMostrarModalJustificar(false);
+              setPersonaAJustificar(null);
+            }}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }

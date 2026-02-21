@@ -5,6 +5,9 @@ import { X, ArrowRight, Upload } from 'lucide-react';
 import { excusasAPI } from '../api/endpoints';
 import toast from 'react-hot-toast';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const BASE_URL = API_URL.replace('/api', '');
+
 export default function ModalJustificacionRapida({ persona, fecha, onGuardar, onCancelar }) {
   const [formData, setFormData] = useState({
     motivo: '',
@@ -91,8 +94,40 @@ export default function ModalJustificacionRapida({ persona, fecha, onGuardar, on
         <div className="persona-info-header">
           <div className="persona-avatar-large">
             {(() => {
-              // Use foto_path from backend if available
-              const fotoUrl = persona.foto_path ? `/uploads/${persona.foto_path}` : null;
+              const getFotoUrl = () => {
+                if (persona.foto_path) {
+                  return persona.foto_path.startsWith('http') 
+                    ? persona.foto_path 
+                    : `${BASE_URL}/uploads/${persona.foto_path}`;
+                }
+                
+                if (!persona.carnet) return null;
+                const cleanCarnet = String(persona.carnet).trim();
+                const tipo = persona.tipo;
+                
+                let directory = '';
+                let prefix = '';
+                
+                if (tipo === 'alumno' || tipo === 'Alumno') {
+                  directory = 'alumnos';
+                  prefix = 'alumno';
+                } else {
+                  if (cleanCarnet.startsWith('DIR-') || cleanCarnet.startsWith('SDIR-')) {
+                    directory = 'directores';
+                    prefix = 'director';
+                  } else if (cleanCarnet.startsWith('D-')) {
+                    directory = 'docentes';
+                    prefix = 'docentes';
+                  } else {
+                    directory = 'personal';
+                    prefix = 'personal';
+                  }
+                }
+                
+                return `${BASE_URL}/uploads/${directory}/${prefix}_${cleanCarnet}.png`;
+              };
+
+              const fotoUrl = getFotoUrl();
               
               return fotoUrl ? (
                 <>

@@ -57,6 +57,14 @@ client.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+  
+  // Si estamos enviando archivos (FormData), DEBEMOS eliminar el Content-Type por defecto 
+  // ('application/json') para que Axios/Navegador genere automáticamente el header 
+  // 'multipart/form-data' con el 'boundary' obligatorio.
+  if (config.data instanceof FormData) {
+    delete config.headers['Content-Type'];
+  }
+  
   return config;
 });
 
@@ -68,7 +76,7 @@ client.interceptors.response.use(
     // No mostrar si estamos en el login para evitar mensajes confusos
     if (error.response?.status === 401) {
       const isLoginRequest = error.config?.url?.includes('/auth/login');
-      const isLoginPage = typeof window !== 'undefined' && window.location.pathname === '/login';
+      const isLoginPage = typeof window !== 'undefined' && (window.location.pathname === '/login' || window.location.hash === '#/login');
 
       if (!isLoginRequest && !isLoginPage) {
         try {
@@ -77,7 +85,7 @@ client.interceptors.response.use(
         } catch {}
         localStorage.removeItem('token');
         setTimeout(() => {
-          window.location.href = '/login';
+          window.location.hash = '/login';
         }, 1500);
       }
       return Promise.reject(error);

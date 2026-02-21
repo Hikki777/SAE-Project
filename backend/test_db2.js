@@ -1,0 +1,1 @@
+const p = require('./prismaClient'); p.excusa.findFirst({where: {motivo: 'Otro', descripcion: 'Motivos Personales'}, orderBy:{id:'desc'}}).then(r => console.log(JSON.stringify(r))).finally(() => p.$disconnect());

@@ -28,7 +28,7 @@ export const exportAttendancePDF = async (apiData) => {
 
   // Logos
   try {
-     const appLogoUrl = `${window.location.origin}/logo.png`;
+     const appLogoUrl = `./logo.png`;
      const sysLogo = await loadImageBase64(appLogoUrl);
      if(sysLogo) doc.addImage(sysLogo, 'PNG', 170, 15, 25, 25);
   } catch(e){}

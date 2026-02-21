@@ -53,7 +53,7 @@ async function startBackend() {
   if (isDev) return true;
 
   const resourcesPath = process.resourcesPath;
-  const nodeBin = path.join(resourcesPath, "node.exe");
+  const nodeBin = process.execPath; // Use the bundled Electron executable
   const serverScript = path.join(
     resourcesPath,
     "app.asar.unpacked",
@@ -61,10 +61,6 @@ async function startBackend() {
     "server.js",
   );
 
-  if (!fs.existsSync(nodeBin)) {
-    logError(`node.exe no encontrado: ${nodeBin}`);
-    return false;
-  }
   if (!fs.existsSync(serverScript)) {
     logError(`server.js no encontrado: ${serverScript}`);
     return false;
@@ -120,10 +116,12 @@ async function startBackend() {
 
   const env = {
     ...process.env,
+    ELECTRON_RUN_AS_NODE: "1", // Force Electron to run as a standard Node.js process for this spawn
     NODE_ENV: "production",
     NODE_NO_WARNINGS: "1",
     RESOURCES_PATH: resourcesPath,
     SAE_DATA_DIR: userDataPath, // ← NUEVO: directorio escribible AppData\SAE
+    LOGS_PATH: path.join(userDataPath, "logs"), // ← FIX: asegurar logs en AppData
     DATABASE_URL: `file:${dbUrlPath}`, // ← FIX: forward slashes en la ruta
     PRISMA_SCHEMA_PATH: path.join(resourcesPath, "prisma", "schema.prisma"),
     PRISMA_QUERY_ENGINE_LIBRARY: fs.existsSync(prismaEngine)

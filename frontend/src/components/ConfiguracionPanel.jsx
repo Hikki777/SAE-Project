@@ -1259,7 +1259,7 @@ const SistemaSettings = ({ currentUser }) => {
       setShowRestoreModal(false);
       
       setTimeout(() => {
-        window.location.href = '/login';
+        window.location.hash = '/login';
       }, 3000);
     } catch (error) {
       console.error('Error restaurando:', error);
@@ -1300,7 +1300,7 @@ const SistemaSettings = ({ currentUser }) => {
       toast.success('Sistema restablecido correctamente. Recargando...');
       setTimeout(() => {
         localStorage.clear();
-        window.location.href = '/setup';
+        window.location.hash = '/setup';
       }, 2000);
     } catch (error) {
       console.error(error);
@@ -1332,7 +1332,7 @@ const SistemaSettings = ({ currentUser }) => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4">
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Versión</p>
-            <p className="text-xl font-bold text-gray-900 dark:text-gray-100">SAE v1.5.0</p>
+            <p className="text-xl font-bold text-gray-900 dark:text-gray-100">SAE v1.0.6</p>
           </div>
 
           <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4">

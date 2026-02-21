@@ -2,6 +2,9 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import ExcelJS from 'exceljs';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const BASE_URL = API_URL.replace('/api', '');
+
 /**
  * Cargar imagen desde URL y convertir a Base64
  */
@@ -61,13 +64,13 @@ export const generatePDF = async (data) => {
   const doc = new jsPDF();
 
   try {
-    const appLogoUrl = `${window.location.origin}/logo.png`;
+    const appLogoUrl = `./logo.png`;
     await loadImageBase64(appLogoUrl);
   } catch (e) {}
 
   try {
     const imgApp = new Image();
-    imgApp.src = `${window.location.origin}/logo.png`;
+    imgApp.src = `./logo.png`;
     doc.addImage(imgApp, 'PNG', 170, 15, 25, 25);
   } catch (e) {}
 
@@ -312,6 +315,24 @@ export const generateJustificacionesPDF = async (data) => {
   const { excusas, institucion, stats, filtrosGenerated } = data;
   const doc = new jsPDF();
   
+  // Cargar logo de la app (SAE)
+  try {
+    const appLogoUrl = `./logo.png`;
+    await loadImageBase64(appLogoUrl);
+    const imgApp = new Image();
+    imgApp.src = `./logo.png`;
+    doc.addImage(imgApp, 'PNG', 170, 15, 25, 25);
+  } catch (e) {}
+
+  // Cargar logo de la institución
+  if (institucion && !institucion.logo_base64 && institucion.logo_path) {
+    try {
+      const logoUrl = `${BASE_URL}/uploads/${institucion.logo_path}`;
+      const base64 = await loadImageBase64(logoUrl);
+      if (base64) institucion.logo_base64 = base64;
+    } catch (e) {}
+  }
+
   if (institucion?.logo_base64) {
     try {
       let logoData = institucion.logo_base64;
@@ -385,10 +406,26 @@ export const generateJustificacionesExcel = async (data) => {
   const workbook = new ExcelJS.Workbook();
   const sheet = workbook.addWorksheet('Justificaciones');
 
+  // Cargar logo de la institución
+  if (institucion && !institucion.logo_base64 && institucion.logo_path) {
+    try {
+      const logoUrl = `${BASE_URL}/uploads/${institucion.logo_path}`;
+      const base64 = await loadImageBase64(logoUrl);
+      if (base64) institucion.logo_base64 = base64;
+    } catch (e) {}
+  }
+
   sheet.mergeCells('A1:G1');
   sheet.getCell('A1').value = institucion?.nombre || 'Instituto Educativo';
   sheet.getCell('A1').font = { size: 16, bold: true, color: { argb: 'FF1F4788' } };
   sheet.getCell('A1').alignment = { horizontal: 'center' };
+
+  if (institucion?.logo_base64) {
+    try {
+      const imageId = workbook.addImage({ base64: institucion.logo_base64, extension: 'png' });
+      sheet.addImage(imageId, { tl: { col: 0, row: 0 }, ext: { width: 80, height: 80 } });
+    } catch (e) {}
+  }
 
   if (institucion?.direccion || institucion?.telefono || institucion?.email) {
     sheet.mergeCells('A2:G2');

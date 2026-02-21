@@ -8,11 +8,23 @@ import {
 import client from '../api/client';
 import toast, { Toaster } from 'react-hot-toast';
 import { generateJustificacionesPDF, generateJustificacionesExcel } from '../utils/reportGenerator';
+import RevisionRapidaView from './RevisionRapidaView';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 const BASE_URL = API_URL.replace('/api', '');
 
 export default function JustificacionesPanel() {
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const isModoRevision = searchParams.get('modo') === 'revision';
+  const [ausentesRevision, setAusentesRevision] = useState(() => {
+    if (isModoRevision) {
+      const almacenados = sessionStorage.getItem('ausentes_revision');
+      return almacenados ? JSON.parse(almacenados) : [];
+    }
+    return [];
+  });
   const [excusas, setExcusas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
@@ -20,6 +32,7 @@ export default function JustificacionesPanel() {
     ausentesSemana: 0,
     ausentesMes: 0,
     pendientes: 0,
+    aprobadas: 0,
     rechazadas: 0
   });
 
@@ -66,12 +79,19 @@ export default function JustificacionesPanel() {
     }
   }, []);
 
-  // Cargar datos cuando cambien los filtros
+  // Cargar datos cuando cambien los filtros o al inicializar
   useEffect(() => {
-    if (inicializado) {
+    if (inicializado && !isModoRevision) {
       cargarDatos();
     }
-  }, [filtros.estado, filtros.busqueda, filtros.rol, filtros.fechaInicio, filtros.fechaFin]);
+  }, [filtros.estado, filtros.busqueda, filtros.rol, filtros.fechaInicio, filtros.fechaFin, inicializado]);
+
+  // Refrescar al volver del Kanban
+  useEffect(() => {
+    if (inicializado && !isModoRevision) {
+      cargarDatos();
+    }
+  }, [isModoRevision]);
 
   // Cargar lista de alumnos y personal
   useEffect(() => {
@@ -105,20 +125,26 @@ export default function JustificacionesPanel() {
       const urlFinal = `/excusas?${params.toString()}`;
       console.log('📡 Llamando API:', urlFinal);
 
-      // Obtener datos sin filtro de estado para las estadísticas
-      const response = await client.get(urlFinal);
-      const excusasData = response.data.excusas || [];
+      // Obtener datos filtrados para la tabla, Y datos sin filtrar para estadísticas globales
+      const [response, statsRes, ausentesRes] = await Promise.all([
+        client.get(urlFinal),
+        client.get('/excusas'), // Todas para stats globales
+        client.get('/asistencias/ausentes').catch(() => ({ data: { total: 0 } }))
+      ]);
+      const tableData = response.data.excusas || [];
+      const globalData = statsRes.data.excusas || [];
+      const verdaderosAusentesHoy = ausentesRes.data.total || 0;
 
-      console.log(`✓ Datos recibidos: ${excusasData.length} excusas`);
+      console.log(`✓ Datos recibidos: Tabla(${tableData.length}) Global(${globalData.length})`);
       
       // Calcular estadísticas globales sobre todos los datos
-      calcularEstadisticas(excusasData);
+      calcularEstadisticas(globalData, verdaderosAusentesHoy);
       
       // Si hay filtro de estado, filtrar localmente para la tabla
-      let excusasParaMostrar = excusasData;
+      let excusasParaMostrar = tableData;
       if (filtros.estado) {
         console.log(`🔽 Filtrando por estado: ${filtros.estado}`);
-        excusasParaMostrar = excusasData.filter(e => e.estado === filtros.estado);
+        excusasParaMostrar = tableData.filter(e => e.estado === filtros.estado);
       }
       
       setExcusas(excusasParaMostrar);
@@ -130,13 +156,13 @@ export default function JustificacionesPanel() {
     }
   };
 
-  const calcularEstadisticas = (excusasData) => {
+  const calcularEstadisticas = (excusasData, verdaderosAusentesHoy = 0) => {
     // Helper para normalizar fechas ignorando zona horaria
     // Convierte la fecha a medianoche del día local
     const normalizarFecha = (fechaStr) => {
       const fecha = new Date(fechaStr);
-      // Usar hora local, no UTC
-      return new Date(fecha.getFullYear(), fecha.getMonth(), fecha.getDate(), 0, 0, 0, 0);
+      // Extraemos los valores de acuerdo a la cadena original UTC para que la zona horaria local no cambie de día
+      return new Date(fecha.getUTCFullYear(), fecha.getUTCMonth(), fecha.getUTCDate(), 0, 0, 0, 0);
     };
 
     const hoy = new Date();
@@ -149,11 +175,6 @@ export default function JustificacionesPanel() {
     const inicioMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1, 0, 0, 0, 0);
 
     // Contar ausentes para cada período
-    const ausentesHoy = excusasData.filter(e => {
-      const fechaNormalizada = normalizarFecha(e.fecha_ausencia);
-      return fechaNormalizada.getTime() === hoyNormalizado.getTime();
-    }).length;
-
     const ausentesSemana = excusasData.filter(e => {
       const fechaNormalizada = normalizarFecha(e.fecha_ausencia);
       return fechaNormalizada >= hace7DiasNormalizado && fechaNormalizada <= hoyNormalizado;
@@ -165,10 +186,11 @@ export default function JustificacionesPanel() {
     }).length;
 
     const stats = {
-      ausentesHoy,
+      ausentesHoy: verdaderosAusentesHoy,
       ausentesSemana,
       ausentesMes,
       pendientes: excusasData.filter(e => e.estado === 'pendiente').length,
+      aprobadas: excusasData.filter(e => e.estado === 'aprobada').length,
       rechazadas: excusasData.filter(e => e.estado === 'rechazada').length
     };
 
@@ -284,6 +306,47 @@ export default function JustificacionesPanel() {
     }
   };
 
+  const handleVerAusentes = async () => {
+    try {
+      const response = await client.get('/asistencias/ausentes');
+      const { ausentes, total } = response.data;
+      
+      if (total === 0) {
+        toast.success('¡Todos presentes hoy!', { icon: '✅' });
+        return;
+      }
+      
+      // Obtener excusas actualizadas para saber si ya están justificados
+      const excusasRes = await client.get('/excusas');
+      const todasExcusas = excusasRes.data.excusas || [];
+      const hoyStr = new Date().toISOString().split('T')[0];
+      
+      const excusasDeHoy = todasExcusas.filter(e => {
+        if (!e.fecha_ausencia) return false;
+        const eStr = new Date(e.fecha_ausencia).toISOString().split('T')[0];
+        return eStr === hoyStr;
+      });
+
+      const ausentesNoJustificados = (ausentes || []).filter(persona => {
+        return !excusasDeHoy.some(e => {
+           if (persona.tipo === 'alumno' && e.alumno_id === persona.id) return true;
+           if (persona.tipo === 'personal' && e.personal_id === persona.id) return true;
+           return false;
+        });
+      });
+
+      if (ausentesNoJustificados.length === 0) {
+        toast.success('¡Todas las ausencias de hoy ya están justificadas!', { icon: '✅' });
+        return;
+      }
+      
+      navigate('?modo=revision');
+    } catch (error) {
+      console.error('Error obteniendo ausentes:', error);
+      toast.error('Error al obtener la lista de ausentes');
+    }
+  };
+
   const handleExportarExcel = async () => {
     try {
       const institucionRes = await client.get('/institucion');
@@ -338,14 +401,56 @@ export default function JustificacionesPanel() {
   const indiceInicio = (paginaActual - 1) * itemsPorPagina;
   const excusasPaginadas = excusasFiltradas.slice(indiceInicio, indiceInicio + itemsPorPagina);
 
+  const getFechaLocalString = () => {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  if (isModoRevision) {
+    return (
+      <RevisionRapidaView 
+        ausentesIniciales={ausentesRevision} 
+        fecha={getFechaLocalString()} 
+        onVolver={() => {
+          sessionStorage.removeItem('ausentes_revision');
+          sessionStorage.removeItem('fecha_revision');
+          navigate('/justificaciones');
+        }} 
+      />
+    );
+  }
+
   return (
     <div className="space-y-6">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+            <FileText className="text-red-600" size={28} />
+            Gestión de Justificaciones
+          </h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-1">
+            Revisa, aprueba o rechaza los motivos de ausencia recibidos.
+          </p>
+        </div>
+        <button
+          onClick={handleVerAusentes}
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium shadow-sm"
+        >
+          <UserX size={20} />
+          Ver Ausentes para Justificar
+        </button>
+      </div>
+
       {/* Tarjetas de Estadísticas */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-        <StatCard icon="📋" label="Ausentes Hoy" value={stats.ausentesHoy} color="blue" />
-        <StatCard icon="📅" label="Semana" value={stats.ausentesSemana} color="blue" />
-        <StatCard icon="📆" label="Mes" value={stats.ausentesMes} color="teal" />
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        <StatCard icon="📋" label="Ausentes Hoy" value={stats.ausentesHoy} color="red" />
+        <StatCard icon="📅" label="Recibidas Semana" value={stats.ausentesSemana} color="blue" />
+        <StatCard icon="📆" label="Recibidas Mes" value={stats.ausentesMes} color="teal" />
         <StatCard icon="⏳" label="Pendientes" value={stats.pendientes} color="orange" />
+        <StatCard icon="✔" label="Aprobadas" value={stats.aprobadas} color="green" />
         <StatCard icon="✗" label="Rechazadas" value={stats.rechazadas} color="red" />
       </div>
 
@@ -472,9 +577,9 @@ export default function JustificacionesPanel() {
                   busqueda: '', 
                   estado: '', 
                   rol: '', 
-                  fechaInicio: hoyFormato, 
-                  fechaFin: hoyFormato, 
-                  rangoRapido: 'hoy'
+                  fechaInicio: '', 
+                  fechaFin: '', 
+                  rangoRapido: 'todos'
                 });
                 setPaginaActual(1);
               }}
@@ -805,7 +910,7 @@ function ModalDetalles({ persona, excusa, onClose, formatFecha, baseUrl }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999] p-4">
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -897,7 +1002,7 @@ function ModalDetalles({ persona, excusa, onClose, formatFecha, baseUrl }) {
               <div>
                  <label className="text-sm font-bold text-gray-500 dark:text-gray-400 block mb-2">Evidencia Adjunta</label>
                  <a 
-                   href={`http://localhost:5000/uploads/${excusa.documento_url}`} 
+                   href={`${BASE_URL}/uploads/${excusa.documento_url}`} 
                    target="_blank" 
                    rel="noreferrer"
                    className="flex items-center gap-2 text-blue-600 dark:text-blue-400 hover:underline bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg border border-gray-200 dark:border-gray-600 transition"

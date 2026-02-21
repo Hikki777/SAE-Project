@@ -250,7 +250,7 @@ function App() {
       setIsLoggedIn(false);
       setUser(null);
       setShowLogoutModal(false);
-      window.location.href = '/login';
+      window.location.hash = '/login';
     }, 2000);
   };
 
@@ -422,7 +422,7 @@ function App() {
                      ? institucion.logo_path 
                      : institucion?.logo_path 
                        ? `${getBaseUrl()}/uploads/${institucion.logo_path}` 
-                       : "/logo.png"
+                       : "./logo.png"
                  } 
                  alt="Logo" 
                  className="w-8 h-8 object-contain" 
@@ -460,7 +460,7 @@ function App() {
               <Route path="/alumnos" element={isLoggedIn ? <AlumnosPanel /> : <Navigate to="/login" />} />
               <Route path="/docentes" element={isLoggedIn ? <PersonalPanel /> : <Navigate to="/login" />} />
               <Route path="/asistencias" element={isLoggedIn ? <AsistenciasPanel /> : <Navigate to="/login" />} />
-              <Route path="/justificaciones" element={isLoggedIn ? <JustificacionesPanel /> : <Navigate to="/login" />} />
+              <Route path="/justificaciones" element={isLoggedIn ? <ReportesPanel initialTab="justificaciones" /> : <Navigate to="/login" />} />
 
               <Route path="/reportes" element={isLoggedIn ? <ReportesPanel /> : <Navigate to="/login" />} />
               <Route path="/metricas" element={isLoggedIn ? <MetricsPanel /> : <Navigate to="/login" />} />

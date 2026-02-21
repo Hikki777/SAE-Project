@@ -1,0 +1,1 @@
+const p = require('./prismaClient'); p.excusa.updateMany({where: {fecha_ausencia: new Date('2026-02-21T06:00:00.000Z')}, data: {fecha_ausencia: new Date('2026-02-20T06:00:00.000Z')}}).then(r => console.log(r)).finally(()=>p.$disconnect());

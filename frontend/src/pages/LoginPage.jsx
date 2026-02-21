@@ -63,7 +63,7 @@ export default function LoginPage() {
         
         // Wait for animation before redirect
         setTimeout(() => {
-          window.location.href = '/';
+          window.location.reload();
         }, 2000);
       } else {
         throw new Error('Respuesta inesperada del servidor');
@@ -297,7 +297,7 @@ export default function LoginPage() {
           <div className="mb-6 relative inline-block">
             <div className="absolute inset-0 bg-blue-500/10 blur-2xl rounded-full"></div>
             <div className="relative bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
-              <img src="/logo.png" alt="Logo SAE" className="h-16 w-16 mx-auto object-contain" />
+              <img src="./logo.png" alt="Logo SAE" className="h-16 w-16 mx-auto object-contain" />
             </div>
           </div>
           <div className="text-center">
