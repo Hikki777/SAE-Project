@@ -88,7 +88,7 @@ npm run electron
 ## 5️⃣ Archivos Clave
 
 | Archivo | Propósito | Cambio |
-|---------|-----------|--------|
+| --------- | --------- | ------ |
 | `.env` | Variables base de datos | ✏️ dev.db |
 | `frontend/.env.development` | Variables frontend | ✨ NUEVO |
 | `frontend/src/api/client.js` | Cliente HTTP | ✏️ Centralizado |
@@ -127,12 +127,12 @@ npm run db:reset
 ## 7️⃣ URLs Importantes
 
 | Servicio | URL | Propósito |
-|----------|-----|----------|
-| Backend | http://localhost:5000 | API REST |
-| API Health | http://localhost:5000/api/health | Verificar backend |
-| Frontend | http://localhost:5173 | Interfaz Vite |
-| Electron | file:// | Aplicación de escritorio |
-| Uploads | http://localhost:5000/uploads | Archivos estáticos |
+| -------- | --- | --------- |
+| Backend | <http://localhost:5000> | API REST |
+| API Health | <http://localhost:5000/api/health> | Verificar backend |
+| Frontend | <http://localhost:5173> | Interfaz Vite |
+| Electron | `file://` | Aplicación de escritorio |
+| Uploads | <http://localhost:5000/uploads> | Archivos estáticos |
 
 ---
 
@@ -217,6 +217,5 @@ Si todos están ✓: **Listo para usar**
 
 ---
 
-**Última actualización**: 18 de Febrero de 2026  
-**Versión**: 1.0.5
-
+**Última actualización**: 20 de Febrero de 2026  
+**Versión**: 1.0.6

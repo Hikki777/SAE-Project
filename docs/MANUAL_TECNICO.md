@@ -1,7 +1,7 @@
 # 📘 Manual Técnico - SAE Sistema de Administración Educativa
 
-**Versión:** 1.0.0  
-**Fecha:** 24 de Enero, 2026  
+**Versión:** 1.0.6  
+**Fecha:** 20 de Febrero, 2026  
 **Stack:** Electron + React + Node.js + SQLite  
 **Licencia:** GPL v3.0
 
@@ -68,7 +68,7 @@ SAE es una **aplicación de escritorio** construida con Electron que funciona co
 
 1. **Descargar instalador**
    - Ir a [Releases en GitHub](https://github.com/Hikki777/SAE-Project/releases)
-   - Descargar `SAE-Setup-1.0.0.exe`
+   - Descargar `SAE-Setup-1.0.6.exe`
 
 2. **Ejecutar instalador**
    - Doble click en el archivo `.exe`
@@ -347,7 +347,7 @@ Esto genera en `release/`:
 
 ### Publicar Release en GitHub
 1. Crear nuevo release en GitHub
-2. Tag: `v1.0.0`
+2. Tag: `v1.0.6`
 3. Subir el archivo `.exe`
 4. Publicar
 
@@ -373,5 +373,5 @@ Los usuarios con v1.0+ recibirán notificación automática.
 
 ---
 
-**Última actualización:** 24 de Enero, 2026  
-**Versión del documento:** 1.0.0
+**Última actualización:** 20 de Febrero, 2026  
+**Versión del documento:** 1.0.6

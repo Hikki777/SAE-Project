@@ -1,10 +1,10 @@
 # SAE - Sistema de Administración Educativa
 
-![Version](https://img.shields.io/badge/version-1.0.0-brightgreen.svg) ![Electron](https://img.shields.io/badge/Electron-v39-9FEAF9.svg) ![React](https://img.shields.io/badge/React-18-61DAFB.svg) ![Node](https://img.shields.io/badge/Node-18%2B-339933.svg) ![Status](https://img.shields.io/badge/Status-Stable-brightgreen.svg) ![License](https://img.shields.io/badge/License-GPL--3.0-blue.svg)
+![Version](https://img.shields.io/badge/version-1.0.6-brightgreen.svg) ![Electron](https://img.shields.io/badge/Electron-v39-9FEAF9.svg) ![React](https://img.shields.io/badge/React-18-61DAFB.svg) ![Node](https://img.shields.io/badge/Node-18%2B-339933.svg) ![Status](https://img.shields.io/badge/Status-Stable-brightgreen.svg) ![License](https://img.shields.io/badge/License-GPL--3.0-blue.svg)
 
 **Gestión Educativa Libre** para instituciones de Guatemala
 
-> **✅ VERSIÓN 1.0.0 ESTABLE**: Primera versión de producción lista para uso en instituciones educativas.
+> **✅ VERSIÓN 1.0.6 ESTABLE**: Versión de producción optimizada con mejoras de UI, fixes en PDF/Excel y arquitectura 100% local finalizada.
 
 ---
 
@@ -34,7 +34,7 @@
 
 1. **Descargar instalador:**
    - Ir a [Releases en GitHub](https://github.com/Hikki777/SAE-Project/releases)
-   - Descargar la última versión `SAE-Setup-1.0.0.exe`
+   - Descargar la última versión `SAE-Setup-1.0.6.exe`
 
 2. **Ejecutar instalador:**
    - Doble click en el archivo descargado
@@ -106,11 +106,11 @@ npm run build:frontend
 
 ## 🤝 Contribución
 
-1.  Hacer Fork del repositorio
-2.  Crear una rama para tu feature (`git checkout -b feature/AmazingFeature`)
-3.  Commit de tus cambios (`git commit -m 'Add some AmazingFeature'`)
-4.  Push a la rama (`git push origin feature/AmazingFeature`)
-5.  Abrir un Pull Request
+1. Hacer Fork del repositorio
+2. Crear una rama para tu feature (`git checkout -b feature/AmazingFeature`)
+3. Commit de tus cambios (`git commit -m 'Add some AmazingFeature'`)
+4. Push a la rama (`git push origin feature/AmazingFeature`)
+5. Abrir un Pull Request
 
 ---
 
@@ -128,28 +128,14 @@ Guatemala 🇬🇹
 
 ---
 
-## 📝 Notas de la Versión 0.9.0-beta
+## 📝 Notas de la Versión 1.0.6
 
-### ⚠️ Estado Beta
-Esta es una versión beta en desarrollo activo. Se están corrigiendo errores y mejorando funcionalidades.
+### 🚀 Mejoras Implementadas
+- ✅ Módulo de Justificaciones reestructurado completamente a interfaz Kanban
+- ✅ Generación de Reportes PDF/Excel y estadísticas en tiempo real fijados
+- ✅ Bug en captura de Evidencias adjuntas resuelto (Multipart/form-data)
+- ✅ Reparado timezone y fechas en filtros rápidos
+- ✅ Componentes de Instalador listos con íconos fijos (`SAE-Setup-1.0.6.exe`)
+- ✅ Modulo Asistencias completamente desvinculado de dependencias Cloud
 
-### Características Implementadas
-- ✅ Sistema completo de asistencias con códigos QR
-- ✅ Gestión de expedientes académicos
-- ✅ Dashboard con métricas en tiempo real
-- ✅ Módulo de justificaciones y permisos
-- ✅ Backups cifrados con integridad verificada
-- ✅ Aplicación de escritorio con Electron
-- ✅ Optimizado para hardware básico (4GB RAM)
-- ✅ Funcionamiento 100% local (sin internet)
-
-### 🔧 Problemas Conocidos
-- Algunos errores menores en la interfaz de usuario
-- Validaciones pendientes de optimización
-- Documentación en proceso de mejora
-
-### 🚀 Próximas Mejoras (v1.0.0)
-- Corrección de bugs reportados
-- Optimización de rendimiento
-- Mejoras en la experiencia de usuario
-- Documentación completa
+Esta versión provee una experiencia sólida de escritorio con Electron, 100% libre de la red externa e integrada al servidor web local interno de Node/Prisma en arquitectura Offline-first.
