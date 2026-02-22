@@ -14,6 +14,12 @@ const UPLOADS_DIR = (isProduction && saeDataDir)
   ? path.join(saeDataDir, 'uploads')
   : path.join(__dirname, '../../uploads');
 
+// Temporal: en produccion van a AppData\SAE\temp (escribible)
+// En desarrollo usan la carpeta local
+const TEMP_DIR = (isProduction && saeDataDir)
+  ? path.join(saeDataDir, 'temp')
+  : path.join(__dirname, '../../temp');
+
 // Base de datos: en produccion la gestiona main.js (copia inicial a AppData y pasa DATABASE_URL)
 // DB_PATH solo se usa en desarrollo; en produccion se usa process.env.DATABASE_URL directamente
 const DB_PATH = (isProduction && saeDataDir)
@@ -27,11 +33,12 @@ const FRONTEND_DIR = isProduction
   : path.join(__dirname, '../../frontend/dist');
 
 if (!isProduction) {
-  console.log(`[PATHS] UPLOADS=${UPLOADS_DIR} | DB=${DB_PATH} | ENV=${process.env.NODE_ENV || 'development'}`);
+  console.log(`[PATHS] UPLOADS=${UPLOADS_DIR} | TEMP=${TEMP_DIR} | DB=${DB_PATH} | ENV=${process.env.NODE_ENV || 'development'}`);
 }
 
 module.exports = {
   UPLOADS_DIR,
+  TEMP_DIR,
   DB_PATH,
   FRONTEND_DIR
 };

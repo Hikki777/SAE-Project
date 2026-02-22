@@ -21,10 +21,18 @@ function getDatabaseUrl() {
 
   // Si es SQLite con ruta relativa, convertir a absoluta basada en __dirname
   if (url.startsWith('file:') && (url.includes('./') || url.includes('../'))) {
+    // Si estamos en producción (RESOURCES_PATH definido o app empacada), 
+    // pero la URL sigue siendo relativa, algo falló en la transferencia de env vars.
+    // IMPORTANTE: En producción NO debemos usar rutas relativas ya que apuntan a Program Files (Read-only)
+    if (process.env.NODE_ENV === 'production' || process.env.RESOURCES_PATH) {
+      console.error('[PrismaClient] ERROR: Detectada ruta relativa en PRODUCCIÓN. Forzando AppData.');
+      // Intentar recuperar de variable SAE_DATA_DIR pasada por Electron
+      const dataDir = process.env.SAE_DATA_DIR || path.join(process.env.APPDATA || '', 'SAE');
+      const absoluteDbPath = path.join(dataDir, 'prisma', 'dev.db').replace(/\\/g, '/');
+      return `file:${absoluteDbPath}`;
+    }
+
     const relativePath = url.replace('file:', '').trim();
-    // __dirname es backend/, db debería estar en backend/../prisma/dev.db
-    // Independientemente de lo que diga la ruta relativa (ej ./prisma/dev.db), 
-    // sabemos dónde DEBE estar la DB en relación a este archivo.
     const projectRoot = path.resolve(__dirname, '..');
     const absoluteDbPath = path.resolve(projectRoot, 'prisma', 'dev.db');
     

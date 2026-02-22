@@ -8,20 +8,19 @@ const CryptoJS = require('crypto-js');
 const crypto = require('crypto');
 const fs = require('fs-extra');
 const path = require('path');
-const { UPLOADS_DIR, DB_PATH } = require('../utils/paths');
+const { UPLOADS_DIR, TEMP_DIR, DB_PATH } = require('../utils/paths');
 const prisma = require('../prismaClient');
 const { logger } = require('../utils/logger');
 
 // Configurar multer para subir archivos de backup
 const upload = multer({ 
-  dest: path.join(__dirname, '../temp/'),
+  dest: TEMP_DIR,
   limits: { fileSize: 500 * 1024 * 1024 } // 500MB max
 });
 
 // Crear directorio temp si no existe
-const tempDir = path.join(__dirname, '../temp');
-if (!fs.existsSync(tempDir)) {
-  fs.mkdirSync(tempDir, { recursive: true });
+if (!fs.existsSync(TEMP_DIR)) {
+  fs.mkdirSync(TEMP_DIR, { recursive: true });
 }
 
 /**

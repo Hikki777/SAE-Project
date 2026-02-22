@@ -10,6 +10,52 @@ let backendProcess = null;
 const isDev = !app.isPackaged;
 
 // ─────────────────────────────────────────────
+//  Configuración Global de Electron
+// ─────────────────────────────────────────────
+// Forzar userData a %APPDATA%\SAE — nombre simple sin espacios ni acentos
+// Se hace fuera de whenReady para evitar que Electron cree la carpeta 'sae-project' por defecto
+app.setPath("userData", path.join(app.getPath("appData"), "SAE"));
+
+// Función auxiliar para validar y crear directorios con verificación de permisos
+function ensureDataDirectories() {
+  const userDataPath = app.getPath("userData");
+  const requiredDirs = [
+    userDataPath,
+    path.join(userDataPath, "prisma"),
+    path.join(userDataPath, "uploads"),
+    path.join(userDataPath, "uploads", "alumnos"),
+    path.join(userDataPath, "uploads", "docentes"),
+    path.join(userDataPath, "uploads", "directores"),
+    path.join(userDataPath, "uploads", "personal"),
+    path.join(userDataPath, "uploads", "qr"),
+    path.join(userDataPath, "backups"),
+    path.join(userDataPath, "logs"),
+    path.join(userDataPath, "temp"),
+  ];
+
+  let creationErrors = [];
+
+  for (const dir of requiredDirs) {
+    try {
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+        log(`✓ Directorio creado: ${dir}`);
+      }
+    } catch (err) {
+      const errMsg = `Error al crear ${dir}: ${err.message}`;
+      logError(errMsg);
+      creationErrors.push(errMsg);
+    }
+  }
+
+  return {
+    success: creationErrors.length === 0,
+    userDataPath,
+    errors: creationErrors,
+  };
+}
+
+// ─────────────────────────────────────────────
 //  Log a archivo persistente (AppData/SAE/logs)
 // ─────────────────────────────────────────────
 let logStream = null;
@@ -328,7 +374,7 @@ function createSplashWindow() {
       <div class="sub">Sistema de Administración Educativa</div>
       <div class="bar-bg"><div class="bar"></div></div>
       <div class="status" id="status">Iniciando servicios...</div>
-      <div class="version">v1.0.5</div>
+      <div class="version">v1.0.6</div>
       <script>
         const messages = [
           'Iniciando servicios...',
@@ -466,12 +512,32 @@ function stopBackend() {
 //  Arranque de la app
 // ─────────────────────────────────────────────
 app.whenReady().then(async () => {
-  // FIX: Forzar userData a %APPDATA%\SAE — nombre simple sin espacios ni acentos
-  // Evita que productName genere rutas problemáticas para Prisma en Windows
-  app.setPath("userData", path.join(app.getPath("appData"), "SAE"));
-
   initLogFile();
   log("App lista. Iniciando...");
+
+  // Validar directorios de datos antes de iniciar
+  const dirCheck = ensureDataDirectories();
+  if (!dirCheck.success) {
+    logError(
+      "Errores al crear directorios: " + dirCheck.errors.join("; "),
+    );
+    if (!isDev) {
+      dialog.showErrorBox(
+        "SAE — Error de configuración",
+        "No se pudieron crear los directorios necesarios en:\n\n" +
+          dirCheck.userDataPath +
+          "\n\n" +
+          "Posibles causas:\n" +
+          "• Permisos insuficientes (ejecute como Administrador)\n" +
+          "• Antivirus bloqueando la creación de carpetas\n" +
+          "• Espacio en disco insuficiente\n\n" +
+          "Errores:\n" +
+          dirCheck.errors.join("\n"),
+      );
+      app.quit();
+      return;
+    }
+  }
 
   let splash = null;
 
@@ -487,7 +553,7 @@ app.whenReady().then(async () => {
     if (!backendOk && !isDev) {
       logError("El backend no pudo iniciarse.");
       if (splash) splash.destroy();
-      const logDir = app.getPath("userData") + "\\logs";
+      const logDir = path.join(app.getPath("userData"), "logs");
       dialog.showErrorBox(
         "SAE — Error de inicio",
         "No se pudo iniciar el servidor interno de SAE.\n\n" +

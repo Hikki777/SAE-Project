@@ -1,6 +1,6 @@
 {
-  "name": "sae-project",
-  "version": "1.0.5",
+  "name": "sae",
+  "version": "1.0.6",
   "description": "SAE - Sistema de Administración Educativa | Gestión Educativa Libre para instituciones de Guatemala",
   "main": "electron/main.js",
   "type": "commonjs",
@@ -34,15 +34,16 @@
     "lint:fix": "eslint backend --ext .js --fix",
     "validate:emojis": "node scripts/validate-no-emojis.js",
     "validate:all": "npm run lint && npm run validate:emojis",
+    "icons": "node scripts/generate-icons.js",
     "electron": "wscript.exe start-sae.vbs",
     "electron:silent": "node scripts/start-electron-dev.js",
     "electron:debug": "node scripts/start-electron-dev.js",
     "electron:dev": "electron electron/main.js",
-    "dist": "npm run build:frontend && electron-builder",
-    "dist:win": "npm run build:frontend && electron-builder --win",
-    "dist:debug": "npm run build:frontend && electron-builder --dir",
-    "dist:linux": "npm run build:frontend && electron-builder --linux",
-    "dist:mac": "npm run build:frontend && electron-builder --mac"
+    "dist": "npm run icons && npm run build:frontend && electron-builder",
+    "dist:win": "npm run icons && npm run build:frontend && electron-builder --win --config.nsis.artifactName=SAE-${version}-Setup.exe",
+    "dist:debug": "npm run icons && npm run build:frontend && electron-builder --dir",
+    "dist:linux": "npm run icons && npm run build:frontend && electron-builder --linux",
+    "dist:mac": "npm run icons && npm run build:frontend && electron-builder --mac"
   },
   "keywords": [
     "asistencias",
@@ -114,18 +115,22 @@
             "x64"
           ]
         }
-      ],
-      "icon": "frontend/public/logo.ico",
-      "signAndEditExecutable": false,
-      "executableName": "SAE"
+      ]
     },
-    "extraFiles": [],
+    "extraFiles": [
+      {
+        "from": "frontend/public/logo.png",
+        "to": "logo.png"
+      }
+    ],
     "linux": {
       "target": "AppImage",
-      "category": "Education"
+      "category": "Education",
+      "icon": "build/icon.png"
     },
     "mac": {
-      "target": "dmg"
+      "target": "dmg",
+      "icon": "build/icon.png"
     },
     "nsis": {
       "oneClick": false,
@@ -135,9 +140,6 @@
       "shortcutName": "SAE",
       "deleteAppDataOnUninstall": false,
       "license": "LICENSE",
-      "installerIcon": "frontend/public/logo.ico",
-      "uninstallerIcon": "frontend/public/logo.ico",
-      "installerHeaderIcon": "frontend/public/logo.ico",
       "include": "build/installer.nsh",
       "displayLanguageSelector": false,
       "artifactName": "SAE-${version}-Setup.exe"
@@ -150,10 +152,6 @@
       "frontend/dist/**/*"
     ],
     "extraResources": [
-      {
-        "from": "frontend/public/logo.ico",
-        "to": "logo.ico"
-      },
       {
         "from": "frontend/public/logo.png",
         "to": "logo.png"
