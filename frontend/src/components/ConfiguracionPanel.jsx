@@ -2490,6 +2490,7 @@ export default function ConfiguracionPanel() {
         isOpen={showDirectorModal}
         onClose={() => setShowDirectorModal(false)}
         director={editingDirector}
+        onSave={handleSaveDirector}
         saving={saving}
       />
     </div>
