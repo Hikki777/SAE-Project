@@ -1,5 +1,34 @@
 # Changelog
 
+## [1.0.8] - 2026-02-23
+
+### 🔧 Documentación de Desarrollo y Consolidación Final
+- **Instrucciones de Clonación:** Se añadió una sección exhaustiva en `README.md` detallando la configuración e inicio del entorno local para desarrolladores.
+- **Integridad Visual:** Componentes (Splash, SetupWizard, ConfiguracionPanel, Dashboard) actualizados unánimemente a la versión 1.0.8.
+- **Consolidación de Releases:** Se reestructuró `docs/` creando la subcarpeta `docs/releases/` para historial limpio y actualizando los manuales base y el documento `ESTADO_DEL_PROYECTO.md` a v1.0.8.
+
+---
+
+## [1.0.7] - 2026-02-23
+
+### 🧹 Limpieza de Repositorio y Actualización de Documentación
+- **Limpieza Residual:** Eliminados changelogs sueltos, notas obsoletas, código muerto y scripts de prueba de `/scripts/`. Borrado seguro de la llave maestra temporal.
+- **Documentación Centralizada:** Migración del archivo `EJECUTAR.md` al `README.md` principal. Versiones en archivos manifest y JSON actualizadas a 1.0.7.
+- **Installer Build:** Verificación del empaquetado y correcta generación local del instalador .exe con Electron Builder.
+
+---
+
+## [1.0.6] - 2026-02-20
+
+### 🚀 Mejoras y Reparaciones Generales
+- **Sistema Secuencial Unificado:** Carnets de personal y alumnos comparten contador evitando conflictos.
+- **Kanban Board:** Interfaz renovada para paneles de ausencias, excusas y justificaciones.
+- **Reparaciones en Instalador/AppData:** Prevención de múltiples carpetas temporales, permisos arreglados en Program Files y asignación de icono oficial del sistema al build.
+- **Reparación de DB:** Manejo y migración mejorados en Factory Reset, comprobación automática de modelo de base de datos (`ciclo_escolar`) al arrancar el backend en modo desarrollo.
+- **Estabilidad de Sockets / Fallo de directores:** Impedidos bloqueos infinitos de conexiones en el modo cliente/múltiple terminal y resuelta vulnerabilidad que congelaba uploads de directores.
+
+---
+
 ## [1.0.4] - 2026-02-14
 
 ### 🔧 Correcciones Críticas de Base de Datos y Electron
