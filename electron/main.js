@@ -374,7 +374,7 @@ function createSplashWindow() {
       <div class="sub">Sistema de Administración Educativa</div>
       <div class="bar-bg"><div class="bar"></div></div>
       <div class="status" id="status">Iniciando servicios...</div>
-      <div class="version">v1.0.7</div>
+      <div class="version">v1.0.8</div>
       <script>
         const messages = [
           'Iniciando servicios...',

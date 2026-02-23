@@ -1,8 +1,8 @@
 # 📚 SAE - Sistema de Administración Educativa
-## Documentación General v1.0.6
+## Documentación General v1.0.8
 
 **Última actualización**: 22 de febrero de 2026  
-**Versión**: 1.0.6  
+**Versión**: 1.0.8  
 **Estado**: Producción  
 
 ---
@@ -246,7 +246,7 @@ Permite administrar de manera centralizada:
 └─────────────────────────────────────────────────────┘
 ```
 
-### Separación de Rutas (v1.0.6)
+### Separación de Rutas (v1.0.8)
 
 **Binarios** → `C:\Program Files\SAE\` (solo lectura)
 - Ejecutable Electron
@@ -337,7 +337,7 @@ Permite administrar de manera centralizada:
 ### 1. **Instalación en Windows**
 
 ```
-1. Descargar SAE-1.0.6-Setup.exe desde GitHub Releases
+1. Descargar SAE-1.0.8-Setup.exe desde GitHub Releases
 2. Ejecutar como Administrador (click derecho → "Ejecutar como administrador")
 3. Seguir el asistente NSIS:
    - Elige directorio de instalación (default: C:\Program Files\SAE)
@@ -768,7 +768,7 @@ GET    /api/health               - Estado del backend (usado por Electron para s
 ## 📈 Roadmap
 
 ```
-v1.0.6 (ACTUAL — feb 2026) ✅
+v1.0.8 (ACTUAL — feb 2026) ✅
 ├─ ✅ Control de asistencia (alumnos y personal)
 ├─ ✅ Gestión de alumnos y personal en tabla unificada
 ├─ ✅ Reportes PDF y Excel sincronizados
@@ -841,8 +841,7 @@ con atribución y bajo la misma licencia.
 - [Manual Técnico](./MANUAL_TECNICO.md)
 - [Guía de Instalación](../DOWNLOAD_INSTRUCTIONS.md)
 - [FAQ del Instalador](./FAQ_INSTALADOR.md)
-- [Notas de versión v1.0.6](../CHANGELOG_v1.0.6.md)
-- [Release v1.0.6](../RELEASE_v1.0.6.md)
+- [Notas de versión v1.0.8](../docs/releases/v1.0.8.md)
 
 ---
 
@@ -850,7 +849,7 @@ con atribución y bajo la misma licencia.
 
 | Aspecto | Información |
 |---------|------------|
-| Versión | 1.0.6 |
+| Versión | 1.0.8 |
 | Tamaño Setup | ~170 MB |
 | BD | SQLite (dev.db) |
 | ORM | Prisma 5.x |

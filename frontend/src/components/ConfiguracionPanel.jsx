@@ -1338,7 +1338,7 @@ const SistemaSettings = ({ currentUser }) => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4">
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Versión</p>
-            <p className="text-xl font-bold text-gray-900 dark:text-gray-100">SAE v1.0.7</p>
+            <p className="text-xl font-bold text-gray-900 dark:text-gray-100">SAE v1.0.8</p>
           </div>
 
           <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4">

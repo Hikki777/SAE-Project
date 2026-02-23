@@ -6,7 +6,7 @@ export const saveSetupProgress = (data) => {
     const progress = {
       data,
       timestamp: new Date().toISOString(),
-      version: '1.0.7'
+      version: '1.0.8'
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(progress));
     return true;

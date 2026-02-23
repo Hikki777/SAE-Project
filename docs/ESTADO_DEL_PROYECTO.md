@@ -1,7 +1,7 @@
 # SAE - Sistema de Administración Educativa - Estado del Proyecto
 
 **Fecha:** 20 de febrero de 2026  
-**Versión:** 1.0.6 (Release Stable)  
+**Versión:** 1.0.8 (Release Stable)  
 **Estado:** ✅ Listo para Release de Producción
 
 ---
@@ -14,7 +14,7 @@ Sistema integral de gestión educativa diseñado específicamente para instituci
 
 ---
 
-## ✅ Funcionalidades Implementadas (v1.0.6)
+## ✅ Funcionalidades Implementadas (v1.0.8)
 
 ### 🖥️ Plataforma y Core
 - **Aplicación de Escritorio:** Electron v39 para Windows (Linux y macOS en desarrollo)
@@ -183,7 +183,7 @@ electron/
 
 ## 📋 Roadmap v1.x
 
-### v1.0.6 (ACTUAL - Release Stable)
+### v1.0.8 (ACTUAL - Release Stable)
 - ✅ Sistema core completo y estable
 - ✅ Documentación actualizada
 - 🔄 Instalador Windows con auto-actualización

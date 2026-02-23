@@ -1,6 +1,6 @@
 # 📖 Manual de Usuario - Sistema de Registro Institucional
 
-**Versión:** 1.0.6  
+**Versión:** 1.0.8  
 **Fecha:** 20 de Febrero, 2026
 
 Bienvenido al Manual de Usuario. Este documento te guiará para sacar el máximo provecho al sistema de control de asistencia.
