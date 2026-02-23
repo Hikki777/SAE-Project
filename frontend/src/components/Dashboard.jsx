@@ -144,10 +144,25 @@ export default function Dashboard() {
     try {
       const response = await dashboardAPI.stats();
       console.log('Dashboard Stats Response:', response.data);
-      setDashboardStats(response.data);
+      const data = response.data;
+      // Guard: asegurar que los campos usados por Recharts sean objetos planos
+      // Un campo null o con prototype raro rompe Object.entries() en recharts
+      if (data && typeof data === 'object') {
+        const safe = {
+          ...data,
+          porGrado:           (data.porGrado && typeof data.porGrado === 'object' && !Array.isArray(data.porGrado)) ? data.porGrado : {},
+          porNivel:           (data.porNivel && typeof data.porNivel === 'object') ? data.porNivel : {},
+          porSexo:            (data.porSexo && typeof data.porSexo === 'object') ? data.porSexo : { masculino: 0, femenino: 0 },
+          personalPorSexo:    (data.personalPorSexo && typeof data.personalPorSexo === 'object') ? data.personalPorSexo : { masculino: 0, femenino: 0 },
+          personalPorCargo:   (data.personalPorCargo && typeof data.personalPorCargo === 'object' && !Array.isArray(data.personalPorCargo)) ? data.personalPorCargo : {},
+          alumnosPorJornada:  (data.alumnosPorJornada && typeof data.alumnosPorJornada === 'object' && !Array.isArray(data.alumnosPorJornada)) ? data.alumnosPorJornada : {},
+          personalPorJornada: (data.personalPorJornada && typeof data.personalPorJornada === 'object' && !Array.isArray(data.personalPorJornada)) ? data.personalPorJornada : {},
+          totales:            (data.totales && typeof data.totales === 'object') ? data.totales : { activos: 0, inactivos: 0 },
+        };
+        setDashboardStats(safe);
+      }
     } catch (error) {
       console.error("Error fetching dashboard stats:", error);
-      toast.error("Error al cargar estadísticas del sistema");
     }
   };
 
@@ -240,8 +255,7 @@ export default function Dashboard() {
                 )}
                 
                 <div className="flex items-center text-sm text-blue-100/90 mt-4">
-                  {/* The version stays the same */}
-                  <span className="mr-3">SAE v1.0.6</span>
+                  <span className="mr-3">SAE v1.0.7</span>
 
                   {/* --- PILL START --- */}
                   <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/20 backdrop-blur-md shadow-lg transition-all hover:bg-white/20">
