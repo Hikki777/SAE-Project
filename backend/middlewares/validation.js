@@ -148,7 +148,30 @@ exports.validarCrearDocente = [
   body('cargo')
     .optional()
     .trim()
-    .isIn(['Director', 'Directora', 'Director General', 'Directora General', 'Subdirector', 'Subdirectora', 'Docente', 'Secretaria', 'Secretario', 'Operativo', 'Auxiliar'])
+    .isIn([
+      'Director', 'Directora', 
+      'Director General', 'Directora General', 
+      'Director Técnico', 'Directora Técnica',
+      'Director Administrativo', 'Directora Administrativa',
+      'Subdirector', 'Subdirectora', 
+      'Subdirector Técnico', 'Subdirectora Técnica',
+      'Docente', 
+      'Docente de Aula',
+      'Docente de Especialidad',
+      'Orientador Vocacional',
+      'Orientadora Vocacional',
+      'Psicólogo', 'Psicóloga',
+      'Secretaria', 'Secretario', 
+      'Secretaria General', 'Secretario General',
+      'Operativo', 
+      'Auxiliar',
+      'Auxiliar de Limpieza',
+      'Personal de Seguridad',
+      'Conserje',
+      'Cocinero', 'Cocinera',
+      'Biblioteca',
+      'Laboratorio'
+    ])
     .withMessage('Cargo inválido'),
   
   body('jornada')
@@ -191,7 +214,30 @@ exports.validarActualizarDocente = [
   body('cargo')
     .optional()
     .trim()
-    .isIn(['Director', 'Directora', 'Director General', 'Directora General', 'Subdirector', 'Subdirectora', 'Docente', 'Secretaria', 'Secretario', 'Operativo', 'Auxiliar'])
+    .isIn([
+      'Director', 'Directora', 
+      'Director General', 'Directora General', 
+      'Director Técnico', 'Directora Técnica',
+      'Director Administrativo', 'Directora Administrativa',
+      'Subdirector', 'Subdirectora', 
+      'Subdirector Técnico', 'Subdirectora Técnica',
+      'Docente', 
+      'Docente de Aula',
+      'Docente de Especialidad',
+      'Orientador Vocacional',
+      'Orientadora Vocacional',
+      'Psicólogo', 'Psicóloga',
+      'Secretaria', 'Secretario', 
+      'Secretaria General', 'Secretario General',
+      'Operativo', 
+      'Auxiliar',
+      'Auxiliar de Limpieza',
+      'Personal de Seguridad',
+      'Conserje',
+      'Cocinero', 'Cocinera',
+      'Biblioteca',
+      'Laboratorio'
+    ])
     .withMessage('Cargo inválido'),
   
   body('jornada')

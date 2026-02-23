@@ -495,8 +495,14 @@ const DirectorModal = ({ isOpen, onClose, director, onSave, saving }) => {
                 <option value="Directora">Directora</option>
                 <option value="Director General">Director General</option>
                 <option value="Directora General">Directora General</option>
+                <option value="Director Técnico">Director Técnico</option>
+                <option value="Directora Técnica">Directora Técnica</option>
+                <option value="Director Administrativo">Director Administrativo</option>
+                <option value="Directora Administrativa">Directora Administrativa</option>
                 <option value="Subdirector">Subdirector</option>
                 <option value="Subdirectora">Subdirectora</option>
+                <option value="Subdirector Técnico">Subdirector Técnico</option>
+                <option value="Subdirectora Técnica">Subdirectora Técnica</option>
               </select>
             </div>
 

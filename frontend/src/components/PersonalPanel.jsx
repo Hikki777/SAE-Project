@@ -1042,19 +1042,38 @@ export default function PersonalPanel() {
                     className="w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-success focus:border-transparent text-gray-900 dark:text-gray-100"
                   >
                     <option value="">-</option>
-                    <option value="Docente">Docente</option>
                     <option value="Director">Director</option>
                     <option value="Directora">Directora</option>
                     <option value="Director General">Director General</option>
                     <option value="Directora General">Directora General</option>
                     <option value="Director Técnico">Director Técnico</option>
                     <option value="Directora Técnica">Directora Técnica</option>
+                    <option value="Director Administrativo">Director Administrativo</option>
+                    <option value="Directora Administrativa">Directora Administrativa</option>
                     <option value="Subdirector">Subdirector</option>
                     <option value="Subdirectora">Subdirectora</option>
+                    <option value="Subdirector Técnico">Subdirector Técnico</option>
+                    <option value="Subdirectora Técnica">Subdirectora Técnica</option>
+                    <option value="Docente">Docente</option>
+                    <option value="Docente de Aula">Docente de Aula</option>
+                    <option value="Docente de Especialidad">Docente de Especialidad</option>
+                    <option value="Orientador Vocacional">Orientador Vocacional</option>
+                    <option value="Orientadora Vocacional">Orientadora Vocacional</option>
+                    <option value="Psicólogo">Psicólogo</option>
+                    <option value="Psicóloga">Psicóloga</option>
                     <option value="Secretaria">Secretaria</option>
                     <option value="Secretario">Secretario</option>
+                    <option value="Secretaria General">Secretaria General</option>
+                    <option value="Secretario General">Secretario General</option>
                     <option value="Operativo">Operativo</option>
                     <option value="Auxiliar">Auxiliar</option>
+                    <option value="Auxiliar de Limpieza">Auxiliar de Limpieza</option>
+                    <option value="Personal de Seguridad">Personal de Seguridad</option>
+                    <option value="Conserje">Conserje</option>
+                    <option value="Cocinero">Cocinero</option>
+                    <option value="Cocinera">Cocinera</option>
+                    <option value="Biblioteca">Biblioteca</option>
+                    <option value="Laboratorio">Laboratorio</option>
                   </select>
                 </div>
               </div>

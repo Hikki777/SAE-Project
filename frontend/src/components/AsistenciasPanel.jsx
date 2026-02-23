@@ -166,19 +166,9 @@ export default function AsistenciasPanel() {
         .catch(() => setExcusas([]));
     });
 
-    // Obtener hora de internet
-    fetch('https://worldtimeapi.org/api/timezone/America/El_Salvador')
-      .then(res => res.json())
-      .then(data => {
-        if (data && data.datetime) {
-          const fecha = new Date(data.datetime);
-          setHoraInternet(fecha.toLocaleString('es-ES'));
-        }
-      })
-      .catch(err => {
-        console.warn('⚠️ No se pudo obtener hora de internet, usando local:', err.message);
-        // Fallback silencioso a hora local si es necesario, aunque setHoraInternet ya tiene valor inicial vacío
-      });
+    // Usar hora local del sistema (el sistema es local-only, no requiere tiempo externo)
+    const fechaLocal = new Date();
+    setHoraInternet(fechaLocal.toLocaleString('es-ES'));
     
     return () => {
       stopScanner();

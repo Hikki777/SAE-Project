@@ -1,5 +1,6 @@
 import client from '../api/client';
 import toast from 'react-hot-toast';
+import soundService from './soundService';
 
 class NotificationService {
   constructor() {
@@ -83,13 +84,7 @@ class NotificationService {
    * Reproducir sonido de notificación
    */
   playNotificationSound() {
-    try {
-      const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3');
-      audio.volume = 0.3;
-      audio.play().catch(err => console.log('Audio play failed:', err));
-    } catch (error) {
-      console.log('Audio error:', error);
-    }
+    soundService.notification();
   }
 
   /**

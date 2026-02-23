@@ -1,9 +1,97 @@
-# ⚡ QUICK START - Electron y API
+# ⚡ QUICK START - SAE v1.0.7
 
-## 1️⃣ Iniciar en 30 segundos
+---
+
+## 🆕 SETUP DESDE CERO (Nuevo PC / Clonar Repo)
+
+> Si ya tienes el repo clonado y solo quieres iniciar, ve a la sección **1️⃣**.
+
+### Prerrequisitos obligatorios
+
+Instala estos programas **antes** de clonar el repositorio:
+
+| Herramienta | Versión mínima | Enlace |
+|-------------|---------------|--------|
+| **Node.js** | 18.x o superior | https://nodejs.org/en/download |
+| **Git** | Cualquier versión reciente | https://git-scm.com/downloads |
+
+> ⚠️ Durante la instalación de Node.js, asegúrate de que la opción **"Add to PATH"** está marcada. Reinicia la terminal después de instalar.
+
+### Verificar prerrequisitos
 
 ```bash
-cd "c:\Users\Kevin\Documents\Proyectos\Sistema de Administración Educativa"
+node --version   # Debe mostrar v18.x.x o superior
+npm --version    # Debe mostrar 9.x o superior
+git --version    # Cualquier versión
+```
+
+---
+
+### Pasos para clonar y configurar
+
+```bash
+# 1. Clonar el repositorio
+git clone https://github.com/Hikki777/SAE-Project.git
+cd SAE-Project
+
+# 2. Instalar dependencias del proyecto raíz (Electron + Backend)
+npm install
+
+# 3. Instalar dependencias del frontend
+cd frontend
+npm install
+cd ..
+
+# 4. Generar el cliente de Prisma (base de datos)
+npm run prisma:generate
+
+# 5. Iniciar la aplicación
+npm run electron
+```
+
+> 💡 La primera vez que se inicia, aparecerá el **Asistente de Configuración** para ingresar datos de la institución.
+
+---
+
+### ❌ Errores comunes al clonar
+
+#### "Cannot find module 'prisma'"
+```bash
+npm run prisma:generate
+# Si sigue fallando:
+npx prisma generate
+```
+
+#### "Error: Cannot find module '../frontend/dist'"
+El frontend no está construido. En modo desarrollo esto es normal, usa `npm run electron` que compila automáticamente.
+
+#### "node_modules not found" o errores de import
+```bash
+# Desde la raíz del proyecto:
+npm install
+cd frontend && npm install && cd ..
+```
+
+#### "Port 5000 already in use"
+```bash
+# Windows PowerShell:
+netstat -ano | findstr :5000
+# Anotar el PID que aparece y matar ese proceso:
+taskkill /F /PID <PID_AQUI>
+# Luego reintenta:
+npm run electron
+```
+
+#### "Prisma Client is not generated"
+```bash
+npx prisma generate
+```
+
+---
+
+## 1️⃣ Iniciar (repo ya configurado)
+
+```bash
 npm run electron
 ```
 
@@ -38,7 +126,6 @@ curl http://localhost:5000/api/health
 # Matar todos los node processes
 taskkill /F /IM node.exe
 
-# Esperar 2 segundos
 # Reintentar
 npm run electron
 ```
@@ -46,21 +133,16 @@ npm run electron
 ### "Electron se abre vacío"
 ```bash
 # Presionar F12 para abrir DevTools
-# Ver pestañas: Console, Network
-# Buscar errores rojos
-
-# Solución más probable: Limpiar puertos
+# Ver pestaña Console, buscar errores rojos
 taskkill /F /IM node.exe
 npm run electron
 ```
 
 ### "Errores de CORS"
 ```
-En Console verás: "Access to XMLHttpRequest blocked by CORS..."
-
-Solución: El backend no se iniciò correctamente
-→ Revisar logs del backend (arriba en terminal)
-→ Verificar que los 3 procesos (Backend, Vite, Electron) se iniciaron
+En Console: "Access to XMLHttpRequest blocked by CORS..."
+Solución: El backend no se inició correctamente
+→ Revisar logs del backend en la terminal
 ```
 
 ---
@@ -70,7 +152,8 @@ Solución: El backend no se iniciò correctamente
 ```
 npm run electron
 ├─ Backend (puerto 5000)
-│  └─ Base de datos: ./prisma/dev.db
+│  └─ Base de datos: %APPDATA%\SAE\sae.db (producción)
+│  └─                ./prisma/dev.db     (desarrollo)
 │  └─ API: http://localhost:5000/api
 │
 ├─ Frontend Vite (puerto 5173)
@@ -85,19 +168,7 @@ npm run electron
 
 ---
 
-## 5️⃣ Archivos Clave
-
-| Archivo | Propósito | Cambio |
-| --------- | --------- | ------ |
-| `.env` | Variables base de datos | ✏️ dev.db |
-| `frontend/.env.development` | Variables frontend | ✨ NUEVO |
-| `frontend/src/api/client.js` | Cliente HTTP | ✏️ Centralizado |
-| `backend/server.js` | CORS | ✏️ Mejorado |
-| `scripts/start-electron-simple.js` | Script startup | ✨ NUEVO |
-
----
-
-## 6️⃣ Comandos Útiles
+## 5️⃣ Comandos Útiles
 
 ```bash
 # Iniciar Electron (con todo)
@@ -109,34 +180,34 @@ npm run dev:backend
 # Iniciar solo frontend
 cd frontend && npm run dev
 
-# Empaquetar (Windows)
+# Empaquetar (Windows Installer)
 npm run dist:win
 
-# Empaquetar (debug)
-npm run dist:debug
-
-# Prisma Studio (ver base de datos)
+# Prisma Studio (explorar base de datos)
 npm run prisma:studio
 
-# Reset base de datos
+# Reset base de datos de desarrollo
 npm run db:reset
+
+# Generar cliente Prisma (después de cambios en schema)
+npm run prisma:generate
 ```
 
 ---
 
-## 7️⃣ URLs Importantes
+## 6️⃣ URLs Importantes
 
 | Servicio | URL | Propósito |
 | -------- | --- | --------- |
-| Backend | <http://localhost:5000> | API REST |
-| API Health | <http://localhost:5000/api/health> | Verificar backend |
-| Frontend | <http://localhost:5173> | Interfaz Vite |
+| Backend | http://localhost:5000 | API REST |
+| API Health | http://localhost:5000/api/health | Verificar backend |
+| Frontend | http://localhost:5173 | Interfaz Vite (dev) |
 | Electron | `file://` | Aplicación de escritorio |
-| Uploads | <http://localhost:5000/uploads> | Archivos estáticos |
+| Uploads | http://localhost:5000/uploads | Archivos estáticos |
 
 ---
 
-## 8️⃣ Logs Importantes
+## 7️⃣ Logs Importantes
 
 ### Backend OK ✓
 ```
@@ -147,7 +218,7 @@ npm run db:reset
 
 ### Frontend OK ✓
 ```
-VITE v7.3.0  ready in xxxx ms
+VITE v6.x.x  ready in xxxx ms
 ➜  Local:   http://localhost:5173/
 ```
 
@@ -160,7 +231,7 @@ VITE v7.3.0  ready in xxxx ms
 
 ---
 
-## 9️⃣ Debugging en DevTools
+## 8️⃣ Debugging en DevTools
 
 **Abrir**: Presionar `F12` en ventana de Electron
 
@@ -168,54 +239,27 @@ VITE v7.3.0  ready in xxxx ms
 - **Console**: Errores y logs
 - **Network**: Requests a API
 - **Application**: localStorage, IndexedDB
-- **Sources**: Código del frontend
 
-**Common errors**:
+**Errores comunes**:
 - `"Cannot GET /api/..."` → Backend no está corriendo
 - `"CORS error"` → Backend rechazó la request
 - `"404 Not Found"` → Ruta no existe
-- `"Unexpected token <"` → HTML en lugar de JSON
-
----
-
-## 🔟 Si algo sigue fallando
-
-1. **Verificar que nada esté corriendo en puertos 5000 y 5173**
-   ```bash
-   netstat -ano | findstr :5000
-   netstat -ano | findstr :5173
-   ```
-
-2. **Limpiar caché**
-   ```bash
-   rm -r frontend/node_modules/.vite
-   rm -r frontend/dist
-   ```
-
-3. **Reinstalar dependencias**
-   ```bash
-   npm install
-   cd frontend && npm install
-   ```
-
-4. **Revisar documentación completa**
-   - ANALISIS_COMPLETO_COMPLETADO.md
-   - GUIA_VERIFICACION.md
-   - CORRECCIONES_ELECTRON_API.md
 
 ---
 
 ## ✅ Checklist Mínimo
 
-- [ ] `npm run electron` se ejecuta sin errores
+- [ ] `node --version` muestra v18+
+- [ ] `npm install` en raíz completó sin errores
+- [ ] `cd frontend && npm install` completó sin errores
+- [ ] `npm run prisma:generate` completó sin errores
+- [ ] `npm run electron` se ejecuta
 - [ ] Ventana de Electron se abre en 5-10 segundos
-- [ ] Se ve la interfaz de la aplicación
-- [ ] Presionar F12 no muestra errores rojos
 - [ ] `curl http://localhost:5000/api/health` retorna JSON
 
 Si todos están ✓: **Listo para usar**
 
 ---
 
-**Última actualización**: 20 de Febrero de 2026  
-**Versión**: 1.0.6
+**Última actualización**: 22 de Febrero de 2026  
+**Versión**: 1.0.7

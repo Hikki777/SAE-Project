@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Wifi, RefreshCw, CheckCircle, XCircle, Loader } from 'lucide-react';
+import soundService from '../services/soundService';
 
 /**
  * ConnectionModal - Modal profesional para mostrar estados de conexión
@@ -10,32 +11,12 @@ export default function ConnectionModal({ isOpen, status, onClose, onCancel, err
   useEffect(() => {
     if (!isOpen) return;
 
-    // Reproducir sonidos según el estado
-    const playSound = (url) => {
-      try {
-        const audio = new Audio(url);
-        audio.volume = 0.5;
-        audio.play().catch(err => console.log('Audio play failed:', err));
-      } catch (error) {
-        console.log('Audio error:', error);
-      }
-    };
-
     switch (status) {
-      case 'connecting':
-        playSound('https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3'); // Beep suave
-        break;
-      case 'synchronizing':
-        playSound('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3'); // Tono de espera
-        break;
-      case 'connected':
-        playSound('https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3'); // Éxito
-        break;
-      case 'error':
-        playSound('https://assets.mixkit.co/active_storage/sfx/2955/2955-preview.mp3'); // Error
-        break;
-      default:
-        break;
+      case 'connecting':     soundService.connecting();     break;
+      case 'synchronizing':  soundService.synchronizing();  break;
+      case 'connected':      soundService.connected();      break;
+      case 'error':          soundService.error();          break;
+      default: break;
     }
   }, [status, isOpen]);
 

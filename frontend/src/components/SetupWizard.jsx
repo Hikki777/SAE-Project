@@ -883,8 +883,12 @@ export default function SetupWizard({ onComplete }) {
                                 <option value="Directora">Directora</option>
                                 <option value="Director Técnico">Director Técnico</option>
                                 <option value="Directora Técnica">Directora Técnica</option>
+                                <option value="Director Administrativo">Director Administrativo</option>
+                                <option value="Directora Administrativa">Directora Administrativa</option>
                                 <option value="Subdirector">Subdirector</option>
                                 <option value="Subdirectora">Subdirectora</option>
+                                <option value="Subdirector Técnico">Subdirector Técnico</option>
+                                <option value="Subdirectora Técnica">Subdirectora Técnica</option>
                               </select>
                             </div>
                             <div>
@@ -1010,15 +1014,22 @@ export default function SetupWizard({ onComplete }) {
                           required
                         >
                           <option value="">Seleccione...</option>
-                          <option value="Director">Director(a)</option>
+                          <option value="Director">Director</option>
+                          <option value="Directora">Directora</option>
                           <option value="Director General">Director General</option>
                           <option value="Directora General">Directora General</option>
                           <option value="Director Técnico">Director Técnico</option>
                           <option value="Directora Técnica">Directora Técnica</option>
-                          <option value="Subdirector">Subdirector(a)</option>
-                          <option value="Secretaria">Secretaria(o)</option>
-                          <option value="Administrador">Administrador(a)</option>
-                          <option value="Coordinador">Coordinador(a)</option>
+                          <option value="Director Administrativo">Director Administrativo</option>
+                          <option value="Directora Administrativa">Directora Administrativa</option>
+                          <option value="Subdirector">Subdirector</option>
+                          <option value="Subdirectora">Subdirectora</option>
+                          <option value="Subdirector Técnico">Subdirector Técnico</option>
+                          <option value="Subdirectora Técnica">Subdirectora Técnica</option>
+                          <option value="Secretaria">Secretaria</option>
+                          <option value="Secretario">Secretario</option>
+                          <option value="Secretaria General">Secretaria General</option>
+                          <option value="Secretario General">Secretario General</option>
                         </select>
                       </div>
                     </div>

@@ -4,18 +4,15 @@ import { motion } from 'framer-motion';
 import { AlertCircle, LogIn, GraduationCap, Mail, Lock, CheckCircle2, XCircle, Eye, EyeOff, Info } from 'lucide-react';
 import { AnimatePresence } from 'framer-motion';
 import { authAPI } from '../api/endpoints';
+import soundService from '../services/soundService';
 
 const API_URL = localStorage.getItem('api_url') || import.meta.env.VITE_API_URL || '/api';
 const BASE_URL = API_URL.startsWith('http') ? API_URL.replace(/\/api$/, '').replace(/\/$/, '') : '';
 
 // Sound effects
 const playSound = (type) => {
-  const sounds = {
-    success: 'https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3',
-    error: 'https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3'
-  };
-  const audio = new Audio(sounds[type]);
-  audio.play().catch(e => console.error('Error playing sound:', e));
+  if (type === 'success') soundService.success();
+  else if (type === 'error') soundService.error();
 };
 
 export default function LoginPage() {
