@@ -11,7 +11,7 @@
 ## ✨ Características Principales
 
 - **📱 Control de Asistencia QR:** Registro rápido de entrada/salida para alumnos y personal con detección de retardos
-- **👥 Gestión Académica:** Expedientes digitales completos, generación de carnets y roles de usuario
+- **👥 Gestión Académica:** Expedientes digitales completos, generación de carnets y roles de usuario (Próximamente...)
 - **📊 Dashboard Interactivo:** Métricas en tiempo real sobre asistencia, puntualidad y ausentismo
 - **📝 Justificaciones:** Módulo nativo para gestionar excusas y permisos (médicos, familiares)
 - **🔒 Seguridad:** Roles de acceso (Admin/Operador), backups cifrados, rate limiting y validaciones
