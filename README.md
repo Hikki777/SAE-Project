@@ -20,11 +20,23 @@
 
 ---
 
-## 🛠️ Requisitos Previos
+## 🛠️ Requisitos para Desarrollo
 
 - **Node.js:** v18.0.0 o superior
 - **Git:** Para control de versiones
-- **Sistema Operativo:** Windows 10/11 (Recomendado), macOS o Linux
+- **Sistema Operativo:** Windows 10/11 24H2+ (Recomendado), macOS o Linux
+- **CPU:** Intel Core I5 2400+ / AMD Ryzen 5 2400G+
+- **RAM:** 4 GB+
+- **HDD/SSD:** 2 GB+
+
+---
+
+## 📋 Requisitos para Usuario Final
+
+- **Sistema Operativo:** Windows 10 24H2 (64-bit) o superior
+- **HDD/SSD:** 1 GB+ de espacio libre en disco
+- **RAM:** 4 GB+ de RAM
+- **CPU:** Intel Core I5 2400+ / AMD Ryzen 5 2400G+
 
 ---
 
