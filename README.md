@@ -1,10 +1,10 @@
 # SAE - Sistema de Administración Educativa
 
-![Version](https://img.shields.io/badge/version-1.0.6-brightgreen.svg) ![Electron](https://img.shields.io/badge/Electron-v39-9FEAF9.svg) ![React](https://img.shields.io/badge/React-18-61DAFB.svg) ![Node](https://img.shields.io/badge/Node-18%2B-339933.svg) ![Status](https://img.shields.io/badge/Status-Stable-brightgreen.svg) ![License](https://img.shields.io/badge/License-GPL--3.0-blue.svg)
+![Version](https://img.shields.io/badge/version-1.0.8-brightgreen.svg) ![Electron](https://img.shields.io/badge/Electron-v39-9FEAF9.svg) ![React](https://img.shields.io/badge/React-18-61DAFB.svg) ![Node](https://img.shields.io/badge/Node-18%2B-339933.svg) ![Status](https://img.shields.io/badge/Status-Stable-brightgreen.svg) ![License](https://img.shields.io/badge/License-GPL--3.0-blue.svg)
 
 **Gestión Educativa Libre** para instituciones de Guatemala
 
-> **✅ VERSIÓN 1.0.6 ESTABLE**: Versión de producción optimizada con mejoras de UI, fixes en PDF/Excel y arquitectura 100% local finalizada.
+> **✅ VERSIÓN 1.0.8 ESTABLE**: Versión de producción optimizada con mejoras de UI, fixes en PDF/Excel y arquitectura 100% local finalizada.
 
 ---
 
@@ -34,7 +34,7 @@
 
 1. **Descargar instalador:**
    - Ir a [Releases en GitHub](https://github.com/Hikki777/SAE-Project/releases)
-   - Descargar la última versión `SAE-Setup-1.0.6.exe`
+   - Descargar la última versión `SAE-Setup-1.0.8.exe`
 
 2. **Ejecutar instalador:**
    - Doble click en el archivo descargado
@@ -49,7 +49,41 @@
 
 ### Para Desarrolladores
 
-Solo si deseas contribuir al código:
+Si deseas contribuir al código o compilar el proyecto tú mismo, sigue estas instrucciones completas para clonar el repositorio:
+
+#### 1. Requisitos Previos
+Debes tener instalado:
+- **Git** ([Descargar](https://git-scm.com/downloads))
+- **Node.js 18.x o superior** ([Descargar](https://nodejs.org/en/download)). Asegúrate de marcar "Add to PATH" durante la instalación.
+
+#### 2. Clonar y Configurar Dependencias
+Abre tu terminal (PowerShell, CMD, Bash) y ejecuta los siguientes comandos en orden:
+
+```bash
+# 1. Clonar el repositorio
+git clone https://github.com/Hikki777/SAE-Project.git
+
+# 2. Entrar a la carpeta generada
+cd SAE-Project
+
+# 3. Instalar las dependencias del servidor e instalador (raíz)
+npm install
+
+# 4. Entrar a la carpeta del frontend, instalar sus dependencias y volver a la raíz
+cd frontend
+npm install
+cd ..
+
+# 5. Generar el cliente de Prisma (necesario para la base de datos local embebida)
+npx prisma generate
+```
+
+#### 3. Levantar Entorno de Desarrollo
+Para arrancar tanto el frontend interactivo con Vite como el backend con Socket y base de datos:
+```bash
+npm run dev
+```
+*(Si deseas iniciar la versión de escritorio basada en Electron, usa `npm run electron`).*
 
 ---
 
@@ -63,9 +97,22 @@ npm run dev
 
 ### Iniciar Aplicación de Escritorio
 Para abrir la versión Electron:
+
+**Windows**
+Opción 1 (Sin ventanas - Recomendado):
+1. Hacer doble clic en `start-sae.vbs`
+
+Opción 2 (Desde terminal):
 ```bash
 npm run electron
 ```
+
+**Linux / macOS**
+```bash
+npm run electron:silent
+```
+
+*Nota: Para detener la aplicación, simplemente cierra la ventana de Electron o presiona `Ctrl+C` en la terminal, si la dejaste abierta.*
 
 ### Build de Producción
 ```bash
@@ -128,14 +175,15 @@ Guatemala 🇬🇹
 
 ---
 
-## 📝 Notas de la Versión 1.0.6
+## 📝 Notas de la Versión 1.0.8
 
 ### 🚀 Mejoras Implementadas
-- ✅ Módulo de Justificaciones reestructurado completamente a interfaz Kanban
-- ✅ Generación de Reportes PDF/Excel y estadísticas en tiempo real fijados
-- ✅ Bug en captura de Evidencias adjuntas resuelto (Multipart/form-data)
-- ✅ Reparado timezone y fechas en filtros rápidos
-- ✅ Componentes de Instalador listos con íconos fijos (`SAE-Setup-1.0.6.exe`)
-- ✅ Modulo Asistencias completamente desvinculado de dependencias Cloud
+- ✅ Módulo de Justificaciones reestructurado completamente a interfaz Kanban.
+- ✅ Generación de Reportes PDF/Excel y estadísticas en tiempo real fijados (incluido).
+- ✅ Componentes de Instalador listos con íconos fijos (`SAE-Setup-1.0.8.exe`).
+- ✅ Módulo Asistencias completamente desvinculado de dependencias Cloud.
+- ✅ Limpieza completa de archivos residuales del repositorio, scripts sin uso eliminados y código optimizado.
+- ✅ Documentación robustecida para desarrolladores con instrucciones paso a paso para clonar repositorio.
+- ✅ Reducción de código basura (EJECUTAR.md unificado, logs viejos descartados).
 
-Esta versión provee una experiencia sólida de escritorio con Electron, 100% libre de la red externa e integrada al servidor web local interno de Node/Prisma en arquitectura Offline-first.
+Esta versión sigue proveyendo una experiencia sólida de escritorio con Electron, 100% libre de la red externa e integrada al servidor web local interno de Node/Prisma en arquitectura Offline-first.

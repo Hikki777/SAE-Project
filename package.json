@@ -1,6 +1,6 @@
 {
   "name": "sae",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "SAE - Sistema de Administración Educativa | Gestión Educativa Libre para instituciones de Guatemala",
   "main": "electron/main.js",
   "type": "commonjs",
