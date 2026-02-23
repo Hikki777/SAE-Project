@@ -148,31 +148,7 @@ exports.validarCrearDocente = [
   body('cargo')
     .optional()
     .trim()
-    .isIn([
-      'Director', 'Directora', 
-      'Director General', 'Directora General', 
-      'Director Técnico', 'Directora Técnica',
-      'Director Administrativo', 'Directora Administrativa',
-      'Subdirector', 'Subdirectora', 
-      'Subdirector Técnico', 'Subdirectora Técnica',
-      'Docente', 
-      'Docente de Aula',
-      'Docente de Especialidad',
-      'Orientador Vocacional',
-      'Orientadora Vocacional',
-      'Psicólogo', 'Psicóloga',
-      'Secretaria', 'Secretario', 
-      'Secretaria General', 'Secretario General',
-      'Operativo', 
-      'Auxiliar',
-      'Auxiliar de Limpieza',
-      'Personal de Seguridad',
-      'Conserje',
-      'Cocinero', 'Cocinera',
-      'Biblioteca',
-      'Laboratorio'
-    ])
-    .withMessage('Cargo inválido'),
+    .isLength({ min: 2, max: 100 }).withMessage('El cargo debe tener entre 2 y 100 caracteres'),
   
   body('jornada')
     .optional()
@@ -214,31 +190,7 @@ exports.validarActualizarDocente = [
   body('cargo')
     .optional()
     .trim()
-    .isIn([
-      'Director', 'Directora', 
-      'Director General', 'Directora General', 
-      'Director Técnico', 'Directora Técnica',
-      'Director Administrativo', 'Directora Administrativa',
-      'Subdirector', 'Subdirectora', 
-      'Subdirector Técnico', 'Subdirectora Técnica',
-      'Docente', 
-      'Docente de Aula',
-      'Docente de Especialidad',
-      'Orientador Vocacional',
-      'Orientadora Vocacional',
-      'Psicólogo', 'Psicóloga',
-      'Secretaria', 'Secretario', 
-      'Secretaria General', 'Secretario General',
-      'Operativo', 
-      'Auxiliar',
-      'Auxiliar de Limpieza',
-      'Personal de Seguridad',
-      'Conserje',
-      'Cocinero', 'Cocinera',
-      'Biblioteca',
-      'Laboratorio'
-    ])
-    .withMessage('Cargo inválido'),
+    .isLength({ min: 2, max: 100 }).withMessage('El cargo debe tener entre 2 y 100 caracteres'),
   
   body('jornada')
     .optional()

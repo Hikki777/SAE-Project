@@ -1338,7 +1338,7 @@ const SistemaSettings = ({ currentUser }) => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4">
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Versión</p>
-            <p className="text-xl font-bold text-gray-900 dark:text-gray-100">SAE v1.0.6</p>
+            <p className="text-xl font-bold text-gray-900 dark:text-gray-100">SAE v1.0.7</p>
           </div>
 
           <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4">
@@ -2416,11 +2416,22 @@ export default function ConfiguracionPanel() {
                     required
                   >
                     <option value="">Seleccione...</option>
-                    <option value="Director">Director(a)</option>
-                    <option value="Subdirector">Subdirector(a)</option>
-                    <option value="Secretaria">Secretaria(o)</option>
-                    <option value="Administrador">Administrador(a)</option>
-                    <option value="Coordinador">Coordinador(a)</option>
+                    <option value="Director">Director</option>
+                    <option value="Directora">Directora</option>
+                    <option value="Director General">Director General</option>
+                    <option value="Directora General">Directora General</option>
+                    <option value="Director Técnico">Director Técnico</option>
+                    <option value="Directora Técnica">Directora Técnica</option>
+                    <option value="Director Administrativo">Director Administrativo</option>
+                    <option value="Directora Administrativa">Directora Administrativa</option>
+                    <option value="Subdirector">Subdirector</option>
+                    <option value="Subdirectora">Subdirectora</option>
+                    <option value="Subdirector Técnico">Subdirector Técnico</option>
+                    <option value="Subdirectora Técnica">Subdirectora Técnica</option>
+                    <option value="Secretaria">Secretaria</option>
+                    <option value="Secretario">Secretario</option>
+                    <option value="Secretaria General">Secretaria General</option>
+                    <option value="Secretario General">Secretario General</option>
                   </select>
                 </div>
                 <div>
