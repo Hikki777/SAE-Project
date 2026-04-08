@@ -18,8 +18,10 @@
 
 #### Componentes — Modal Captura de Foto
 - **[CRÍTICO]** La captura de foto devolvía pantalla negra en producción.
-  - Causa: Electron 20+ introdujo una restricción de permisos que bloquea el uso de `getUserMedia` si no hay delegados correspondientes, e inestabilidades con React y `<video>`.
-  - Fix: Configurar permisos obligatorios `setPermissionRequestHandler` y `setPermissionCheckHandler` en `main.js`. Implementar mecanismo anti-race usando `requestAnimationFrame` y `.play()` explícito en el componente.
+  - Causas: 
+    1. Electron 20+ introdujo una restricción de permisos que bloquea silenciosamente el uso de `getUserMedia` si no hay delegados.
+    2. Condición de carrera en React donde el web stream intentaba renderizarse en un `<video>` que aún no estaba montado en el DOM debido al Spinner de carga.
+  - Fix: Configurar permisos obligatorios `setPermissionRequestHandler` en `main.js`. Implementar asignación de stream nativa vía *Callback Ref* (`handleVideoRef`) en React para anexar el video justo en el tick que el nodo aparece.
 
 ### ✨ Nuevas Funcionalidades
 
@@ -66,9 +68,9 @@ El `ConfiguracionPanel` implementa un **sistema de confirmación unificado** con
 - Versión en el splash ahora se lee dinámicamente de `app.getVersion()` en lugar de estar hardcodeada.
 
 #### Instalador NSIS — `build/installer.nsh`
-- **[BUG]** La barra de progreso durante la instalación no mostraba avance real.
-  - Causa: `SetDetailsPrint both` estaba configurado solo en `customUninstall`, no en `customInstall`. Y Nsis7z bloquea salida si no se asignan hooks apropiados.
-  - Fix: Agregado callback `InstFilesPage_OnShow` para forzar la inyección de progreso visual y reescrito por completo la directiva NSIS sin usar caracteres acentuados.
+- **[BUG]** `makensis` arrojaba advertencia fatal 6010 interrumpiendo el instalador final en `electron-builder`.
+  - Causa: Macro `InstFilesPage_OnShow` no referenciable internamente bloqueaba la compilación al estar activa opción `warningsAsErrors`.
+  - Fix: Macro removido para priorizar una compilación estable, devolviendo el instalador NSIS a comportamiento compatible.
 - Confirmada la limpieza perfecta y total al desinstalar (borrado integro de la bóveda de carpetas del sistema ubicada en `%APPDATA%\SAE` con previa confirmación del usuario para evitar accidentes).
 - Agregados directorios faltantes: `logos`, `usuarios`.
 - Versión actualizada a `1.1.0` en BrandingText y mensajes de confirmación.

@@ -58,22 +58,9 @@ export default function WebcamCaptureModal({ isOpen, onClose, onCapture, accentC
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
       streamRef.current = stream;
 
-      // Esperar al siguiente frame para garantizar que <video> esté montado
-      // antes de asignar srcObject (problema común en Electron con portales)
-      const attachStream = () => {
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          videoRef.current.play().catch((e) => {
-            console.warn('[Webcam] play() interrumpido:', e.message);
-          });
-        }
-      };
-
-      if (videoRef.current) {
-        attachStream();
-      } else {
-        requestAnimationFrame(attachStream);
-      }
+      // En lugar de intentar adjuntar el stream aquí de forma manual,
+      // usamos un callback ref (handleVideoRef) que se dispara
+      // en cuanto React monta el <video> (después del spinner de isLoading).
 
       // Enumerar dispositivos DESPUÉS de tener permiso (labels solo disponibles tras permiso)
       await loadDevices();
@@ -101,6 +88,16 @@ export default function WebcamCaptureModal({ isOpen, onClose, onCapture, accentC
     }
     if (videoRef.current) {
       videoRef.current.srcObject = null;
+    }
+  }, []);
+
+  // Callback ref para el <video>. Garantiza que el srcObject se asigne
+  // justo en el instante en que React monta el elemento en el DOM.
+  const handleVideoRef = useCallback((node) => {
+    videoRef.current = node;
+    if (node && streamRef.current) {
+      node.srcObject = streamRef.current;
+      node.play().catch(err => console.warn('[Webcam] auto-play prevent:', err));
     }
   }, []);
 
@@ -243,7 +240,7 @@ export default function WebcamCaptureModal({ isOpen, onClose, onCapture, accentC
               <>
                 {/* Mirror transform on the live video */}
                 <video
-                  ref={videoRef}
+                  ref={handleVideoRef}
                   autoPlay
                   playsInline
                   muted
