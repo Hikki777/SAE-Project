@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, SkipForward, CheckCircle2, AlertCircle, User } from 'lucide-react';
+import { ArrowLeft, SkipForward, CheckCircle2, AlertCircle, User, SkipBack } from 'lucide-react';
 import toast from 'react-hot-toast';
 import CardAusente from './CardAusente';
 import ModalJustificacionRapida from './ModalJustificacionRapida';
@@ -17,6 +18,7 @@ export default function RevisionRapidaView({ fecha, onVolver }) {
   const [mostrarConfetti, setMostrarConfetti] = useState(false);
   const [loading, setLoading] = useState(true);
   const [totalAusentes, setTotalAusentes] = useState(0);
+  const [showConfirmOmitir, setShowConfirmOmitir] = useState(false);
 
   useEffect(() => {
     const fetchAusentes = async () => {
@@ -99,9 +101,7 @@ export default function RevisionRapidaView({ fecha, onVolver }) {
   };
 
   const handleOmitirRevision = () => {
-    if (window.confirm('¿Seguro que deseas omitir la revisión? Podrás justificar las ausencias después desde el panel tradicional.')) {
-      onVolver();
-    }
+    setShowConfirmOmitir(true);
   };
 
   if (loading) {
@@ -346,6 +346,51 @@ export default function RevisionRapidaView({ fecha, onVolver }) {
           onGuardar={handleGuardarJustificacion}
           onCancelar={() => setPersonaActual(null)}
         />
+      )}
+
+      {/* Modal Confirmar Omitir Revisión */}
+      {showConfirmOmitir && createPortal(
+        <AnimatePresence>
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[10001] p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 max-w-md w-full overflow-hidden"
+            >
+              {/* Franja colorida superior */}
+              <div className="h-1.5 bg-gradient-to-r from-orange-400 via-amber-400 to-yellow-400" />
+              <div className="p-6">
+                <div className="flex items-start gap-4 mb-5">
+                  <div className="flex-shrink-0 w-12 h-12 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center">
+                    <SkipForward size={24} className="text-orange-500" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">¿Omitir revisión?</h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                      Podrás justificar las ausencias después desde el panel tradicional de justificaciones.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setShowConfirmOmitir(false)}
+                    className="flex-1 px-4 py-2.5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-xl font-semibold transition"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={() => { setShowConfirmOmitir(false); onVolver(); }}
+                    className="flex-1 px-4 py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-semibold transition"
+                  >
+                    Sí, omitir
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        </AnimatePresence>,
+        document.body
       )}
     </div>
   );

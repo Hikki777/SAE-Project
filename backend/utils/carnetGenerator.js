@@ -204,10 +204,13 @@ function validateCarnetFormat(carnet) {
  * @returns {Promise<boolean>}
  */
 async function isCarnetAvailable(carnet, tipo, excludeId = null) {
+  // Normalizar a mayúsculas para comparación consistente (SQLite no soporta mode: 'insensitive')
+  const carnetNormalizado = carnet.trim().toUpperCase();
+
   if (tipo === 'alumno') {
     const existing = await prisma.alumno.findFirst({
       where: {
-        carnet: { equals: carnet, mode: 'insensitive' },
+        carnet: carnetNormalizado,
         ...(excludeId ? { id: { not: excludeId } } : {})
       }
     });
@@ -215,7 +218,7 @@ async function isCarnetAvailable(carnet, tipo, excludeId = null) {
   } else {
     const existing = await prisma.personal.findFirst({
       where: {
-        carnet: { equals: carnet, mode: 'insensitive' },
+        carnet: carnetNormalizado,
         ...(excludeId ? { id: { not: excludeId } } : {})
       }
     });

@@ -1,4 +1,5 @@
 const { app, BrowserWindow, shell, ipcMain, dialog } = require("electron");
+const { autoUpdater } = require("electron-updater");
 const path = require("path");
 const { spawn } = require("child_process");
 const http = require("http");
@@ -28,6 +29,9 @@ function ensureDataDirectories() {
     path.join(userDataPath, "uploads", "directores"),
     path.join(userDataPath, "uploads", "personal"),
     path.join(userDataPath, "uploads", "qr"),
+    path.join(userDataPath, "uploads", "justificaciones"),
+    path.join(userDataPath, "uploads", "logos"),
+    path.join(userDataPath, "uploads", "usuarios"),
     path.join(userDataPath, "backups"),
     path.join(userDataPath, "logs"),
     path.join(userDataPath, "temp"),
@@ -128,6 +132,9 @@ async function startBackend() {
     path.join(dataUploadsDir, "directores"),
     path.join(dataUploadsDir, "personal"),
     path.join(dataUploadsDir, "qr"),
+    path.join(dataUploadsDir, "justificaciones"),
+    path.join(dataUploadsDir, "logos"),
+    path.join(dataUploadsDir, "usuarios"),
   ].forEach((dir) => {
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
   });
@@ -293,16 +300,16 @@ function createSplashWindow() {
   const splashIcon = iconCandidates.find((p) => fs.existsSync(p));
 
   // Leer logo como base64 para embeber en el HTML
+  // Solo usamos PNG para el data URI — ICO no es renderizable como <img> en Chromium
   let logoDataUri = null;
   const logoCandidates = [
     path.join(base, "logo.png"),
-    path.join(base, "logo.ico"),
+    // ICO omitido intencionalmente — Chromium no lo renderiza via data URI
   ];
   for (const p of logoCandidates) {
     if (fs.existsSync(p)) {
-      const ext = path.extname(p).slice(1).replace("ico", "x-icon");
       const b64 = fs.readFileSync(p).toString("base64");
-      logoDataUri = `data:image/${ext};base64,${b64}`;
+      logoDataUri = `data:image/png;base64,${b64}`;
       break;
     }
   }
@@ -374,7 +381,7 @@ function createSplashWindow() {
       <div class="sub">Sistema de Administración Educativa</div>
       <div class="bar-bg"><div class="bar"></div></div>
       <div class="status" id="status">Iniciando servicios...</div>
-      <div class="version">v1.0.8</div>
+      <div class="version">v${app.getVersion()}</div>
       <script>
         const messages = [
           'Iniciando servicios...',
@@ -462,6 +469,31 @@ function createWindow() {
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     shell.openExternal(url);
     return { action: "deny" };
+  });
+
+  // ─────────────────────────────────────────────
+  // PERMISOS DE MEDIOS (cámara, micrófono)
+  // Sin esto, Electron 20+ deniega getUserMedia silenciosamente
+  // causando pantalla negra en el modal de webcam
+  // ─────────────────────────────────────────────
+  const session = mainWindow.webContents.session;
+
+  // Handler asíncrono — para solicitudes de permiso del renderer
+  session.setPermissionRequestHandler((webContents, permission, callback) => {
+    const allowedPermissions = ['media', 'camera', 'microphone', 'mediaKeySystem'];
+    if (allowedPermissions.includes(permission)) {
+      log(`[PERMISOS] Concediendo: ${permission}`);
+      callback(true);
+    } else {
+      log(`[PERMISOS] Denegando: ${permission}`);
+      callback(false);
+    }
+  });
+
+  // Handler síncrono — para comprobaciones previas de permisos (Electron 15+)
+  session.setPermissionCheckHandler((webContents, permission) => {
+    const allowedPermissions = ['media', 'camera', 'microphone'];
+    return allowedPermissions.includes(permission);
   });
 
   // Errores de render
@@ -575,7 +607,12 @@ app.whenReady().then(async () => {
       mainWindow.once("ready-to-show", () => {
         splash.destroy();
         splash = null;
+        
+        // Iniciar configuración de actualización automática después de mostrar la app
+        initAutoUpdater();
       });
+    } else {
+      initAutoUpdater();
     }
   } catch (err) {
     logError(`Error en arranque: ${err.message}`);
@@ -615,3 +652,79 @@ process.on("unhandledRejection", (reason) => {
   if (reason && reason.code === "EPIPE") return;
   logError(`Unhandled rejection: ${reason}`);
 });
+
+// ─────────────────────────────────────────────
+//  Sistema de Auto-Actualización
+// ─────────────────────────────────────────────
+function initAutoUpdater() {
+  if (isDev) {
+    log("[Updater] Omitiendo búsqueda de actualizaciones en entorno de desarrollo.");
+    return;
+  }
+
+  // Redirigir logs del updater a nuestro sistema
+  autoUpdater.logger = {
+    info: (msg) => log(`[Updater] ${msg}`),
+    warn: (msg) => log(`[Updater/WARN] ${msg}`),
+    error: (msg) => logError(`[Updater/ERROR] ${msg}`),
+    debug: () => {}
+  };
+
+  // Desactivar descarga automática para pedir permiso al usuario primero
+  autoUpdater.autoDownload = false;
+  autoUpdater.autoInstallOnAppQuit = true;
+
+  autoUpdater.checkForUpdates().catch(err => {
+    logError(`[Updater] Error al buscar actualizaciones: ${err.message}`);
+  });
+
+  // Evento: Actualización encontrada en GitHub
+  autoUpdater.on('update-available', (info) => {
+    log(`[Updater] Actualización disponible: v${info.version}`);
+    
+    dialog.showMessageBox(mainWindow, {
+      type: 'info',
+      title: 'Actualización disponible',
+      message: `Una nueva versión de SAE (v${info.version}) está disponible.\n\n¿Desea descargarla ahora? (La descarga se realizará en segundo plano sin interrumpir su trabajo).`,
+      buttons: ['Descargar ahora', 'Más tarde'],
+      defaultId: 0,
+      cancelId: 1
+    }).then(result => {
+      if (result.response === 0) {
+        log("[Updater] Usuario aceptó la descarga.");
+        autoUpdater.downloadUpdate();
+      } else {
+        log("[Updater] Usuario pospuso la actualización.");
+      }
+    });
+  });
+
+  // Evento: Actualización descargada exitosamente (.exe en temp)
+  autoUpdater.on('update-downloaded', (info) => {
+    log(`[Updater] Actualización descargada: v${info.version}`);
+    
+    dialog.showMessageBox(mainWindow, {
+      type: 'info',
+      title: 'Actualización lista',
+      message: 'La actualización se ha descargado completamente.\n\n¿Desea reiniciar el sistema para instalarla ahora? (No se perderá ningún dato)',
+      buttons: ['Reiniciar y Actualizar', 'Más tarde'],
+      defaultId: 0,
+      cancelId: 1
+    }).then(result => {
+      if (result.response === 0) {
+        log("[Updater] Usuario aceptó instalar, reiniciando y aplicando actualización...");
+        // force quit=false (para que dispare before-quit y cierre backend), install=true
+        autoUpdater.quitAndInstall(false, true); 
+      }
+    });
+  });
+
+  // Otros eventos informativos
+  autoUpdater.on('update-not-available', () => {
+    log("[Updater] El sistema ya cuenta con la versión más reciente.");
+  });
+
+  autoUpdater.on('error', (err) => {
+    logError(`[Updater] Hubo un error en el proceso de actualización: ${err.message}`);
+  });
+}

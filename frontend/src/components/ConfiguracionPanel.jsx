@@ -1895,6 +1895,14 @@ export default function ConfiguracionPanel() {
     foto_preview: null
   });
 
+  // Modal de confirmación reutilizable (reemplaza window.confirm en toda la panel)
+  const [confirmDialog, setConfirmDialog] = useState(null);
+  // confirmDialog = { mensaje, onConfirm, tipo } | null
+  const openConfirm = (mensaje, onConfirm, tipo = 'danger') => {
+    setConfirmDialog({ mensaje, onConfirm, tipo });
+  };
+  const closeConfirm = () => setConfirmDialog(null);
+
   useEffect(() => {
     fetchConfig();
     fetchUsuarios();
@@ -1989,17 +1997,20 @@ export default function ConfiguracionPanel() {
   };
 
   const handleDeleteDirector = async (id) => {
-    if (!window.confirm('¿Está seguro de eliminar a este director? El registro se eliminará de la lista de personal.')) return;
-    
-    const toastId = toast.loading('Eliminando director...');
-    try {
-      await client.delete(`/docentes/${id}`);
-      toast.success('Director eliminado', { id: toastId });
-      fetchDirectores();
-    } catch (error) {
-      console.error('Error deleting director:', error);
-      toast.error('Error al eliminar director', { id: toastId });
-    }
+    openConfirm(
+      '¿Está seguro de eliminar a este director? El registro se eliminará de la lista de personal.',
+      async () => {
+        const toastId = toast.loading('Eliminando director...');
+        try {
+          await client.delete(`/docentes/${id}`);
+          toast.success('Director eliminado', { id: toastId });
+          fetchDirectores();
+        } catch (error) {
+          console.error('Error deleting director:', error);
+          toast.error('Error al eliminar director', { id: toastId });
+        }
+      }
+    );
   };
 
   const handleNewUserPhotoChange = (e) => {
@@ -2075,14 +2086,18 @@ export default function ConfiguracionPanel() {
   };
 
   const handleDeleteUser = async (id) => {
-    if (!window.confirm('¿Está seguro de eliminar este usuario?')) return;
-    try {
-      await client.delete(`/usuarios/${id}`);
-      toast.success('Usuario eliminado');
-      fetchUsuarios();
-    } catch (error) {
-      toast.error('Error al eliminar usuario: ' + (error.response?.data?.error || error.message));
-    }
+    openConfirm(
+      '¿Está seguro de eliminar este usuario? Esta acción no se puede deshacer.',
+      async () => {
+        try {
+          await client.delete(`/usuarios/${id}`);
+          toast.success('Usuario eliminado');
+          fetchUsuarios();
+        } catch (error) {
+          toast.error('Error al eliminar usuario: ' + (error.response?.data?.error || error.message));
+        }
+      }
+    );
   };
 
   const handlePhotoUpload = async (userId, file) => {
@@ -2140,14 +2155,19 @@ export default function ConfiguracionPanel() {
   };
 
   const handleDeleteEquipo = async (id) => {
-    if (!window.confirm('¿Eliminar este equipo? Deberá registrarse nuevamente si intenta conectar.')) return;
-    try {
-      await client.delete(`/equipos/${id}`);
-      toast.success('Equipo eliminado');
-      fetchEquipos();
-    } catch (error) {
-      toast.error('Error al eliminar equipo');
-    }
+    openConfirm(
+      '¿Eliminar este equipo? Deberá registrarse nuevamente si intenta conectar.',
+      async () => {
+        try {
+          await client.delete(`/equipos/${id}`);
+          toast.success('Equipo eliminado');
+          fetchEquipos();
+        } catch (error) {
+          toast.error('Error al eliminar equipo');
+        }
+      },
+      'warning'
+    );
   };
 
   const fetchConfig = async () => {
@@ -2325,6 +2345,51 @@ export default function ConfiguracionPanel() {
           </AnimatePresence>
         </div>
       </div>
+
+      {/* ═══ Modal de Confirmación Global (reemplaza window.confirm) ═══ */}
+      {confirmDialog && createPortal(
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[9999] p-4">
+          <motion.div
+            initial={{ scale: 0.92, opacity: 0, y: -10 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.92, opacity: 0 }}
+            className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-sm w-full p-6 border border-gray-200 dark:border-gray-700"
+          >
+            <div className="flex items-start gap-4 mb-5">
+              <div className={`flex-shrink-0 w-11 h-11 rounded-full flex items-center justify-center ${
+                confirmDialog.tipo === 'warning'
+                  ? 'bg-amber-100 dark:bg-amber-900/30'
+                  : 'bg-red-100 dark:bg-red-900/30'
+              }`}>
+                <AlertCircle size={24} className={confirmDialog.tipo === 'warning' ? 'text-amber-600' : 'text-red-600'} />
+              </div>
+              <div>
+                <h3 className="font-bold text-gray-900 dark:text-gray-100 text-base mb-1">Confirmar acción</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">{confirmDialog.mensaje}</p>
+              </div>
+            </div>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={closeConfirm}
+                className="px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-900 dark:text-gray-100 font-medium text-sm transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => { closeConfirm(); confirmDialog.onConfirm(); }}
+                className={`px-4 py-2 rounded-lg text-white font-semibold text-sm transition-colors shadow-sm ${
+                  confirmDialog.tipo === 'warning'
+                    ? 'bg-amber-500 hover:bg-amber-600'
+                    : 'bg-red-600 hover:bg-red-700'
+                }`}
+              >
+                Confirmar
+              </button>
+            </div>
+          </motion.div>
+        </div>,
+        document.body
+      )}
 
       {/* Modal Crear Usuario (Portal) */}
       {showUserModal && createPortal(

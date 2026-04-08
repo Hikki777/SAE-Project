@@ -1,5 +1,101 @@
 # Changelog
 
+## [1.1.0] - 2026-04-08
+
+### 🐛 Correcciones Críticas de Producción
+
+#### Backend — Compatibilidad SQLite/Prisma
+- **[CRÍTICO]** Corregido `TypeError` al cambiar carnet de `automático` a `manual` en `carnetGenerator.js`.
+  - Causa: Uso de `mode: 'insensitive'` en `prisma.findFirst()` — opción exclusiva de PostgreSQL, no compatible con SQLite.
+  - Fix: Normalización manual con `.toUpperCase()` antes de la consulta, eliminando la dependencia del modo del motor.
+
+#### Frontend — Panel de Justificaciones (modo tradicional)
+- **[CRÍTICO]** Las personas ausentes no aparecían en el panel tradicional de justificaciones.
+  - Síntoma: Las estadísticas (conteo de ausentes) eran correctas, pero la lista de personas para justificar estaba vacía.
+  - Causa: El panel solo cargaba excusas existentes en BD; ignoraba a los ausentes sin excusa registrada.
+  - Fix: Se agrega consulta paralela a `/api/asistencias/ausentes` y se cruza con las excusas del día. Los ausentes sin excusa aparecen en una sección "Ausentes sin justificar hoy" con un botón "Justificar" que abre el modal correspondiente.
+- **[BUG]** `cargarPersonas()` dentro de `useEffect` nunca era invocada (función definida pero no llamada).
+
+#### Componentes — Modal Captura de Foto
+- **[CRÍTICO]** La captura de foto devolvía pantalla negra en producción.
+  - Causa: Electron 20+ introdujo una restricción de permisos que bloquea el uso de `getUserMedia` si no hay delegados correspondientes, e inestabilidades con React y `<video>`.
+  - Fix: Configurar permisos obligatorios `setPermissionRequestHandler` y `setPermissionCheckHandler` en `main.js`. Implementar mecanismo anti-race usando `requestAnimationFrame` y `.play()` explícito en el componente.
+
+### ✨ Nuevas Funcionalidades
+
+#### Captura de Foto desde Webcam
+- Nuevo componente reutilizable `WebcamCaptureModal.jsx` usando la API nativa `navigator.mediaDevices.getUserMedia`.
+- Integrado en el modal de registro de **Alumnos** (`AlumnosPanel.jsx`) y **Personal** (`PersonalPanel.jsx`).
+- Botón "📷 Webcam" junto al selector de archivos existente.
+- La captura se convierte a objeto `File` compatible con el flujo de subida multipart existente.
+- Soporte para selección de cámara cuando el dispositivo tiene múltiples.
+
+#### Lector de Códigos de Barras / QR Físico
+- Confirmado soporte existente en `AsistenciasPanel.jsx` para lectores USB/HID (teclado emulado).
+- El sistema detecta automáticamente secuencias de teclas de alta velocidad (características de un lector físico) y las procesa como escaneo, sin necesidad de foco en ningún input.
+- Documentado el comportamiento para referencia del equipo.
+
+#### Sistema de Auto-Actualizaciones (OTA)
+- **[NUEVO]** Módulo inteligente de actualizaciones usando `electron-updater`.
+- Busca actualizaciones en GitHub silenciosamente.
+- Muestra una ventana de diálogo nativa al encontrar una versión proponiendo su descarga en segundo plano.
+- Conserva el 100% de los datos locales sin interrupción.
+
+### 🎨 Mejoras de UX — Eliminación de Diálogos Nativos
+
+Se eliminaron **todos** los `window.confirm()` y `window.alert()` del sistema. En Electron, estos producen ventanas nativas del sistema operativo que rompen la experiencia visual. Todos fueron reemplazados por modales personalizados con animación `framer-motion`:
+
+| Componente | Acción | Tipo de reemplazo |
+|---|---|---|
+| `RevisionRapidaView.jsx` | Omitir revisión de ausente | Modal con portal + animación + botones estilizados |
+| `MetricsPanel.jsx` | Resetear métricas | Doble clic con aviso tipo toast (anti-accidente) |
+| `ConfiguracionPanel.jsx` | Eliminar director | Modal de confirmación compartido (danger 🔴) |
+| `ConfiguracionPanel.jsx` | Eliminar usuario | Modal de confirmación compartido (danger 🔴) |
+| `ConfiguracionPanel.jsx` | Eliminar equipo | Modal de confirmación compartido (warning 🟡) |
+
+El `ConfiguracionPanel` implementa un **sistema de confirmación unificado** con estado `confirmDialog` y función `openConfirm(mensaje, callback, tipo)` reutilizable para futuras acciones destructivas.
+
+### 🔧 Correcciones del Sistema de Archivos e Instalador
+
+#### Electron — `main.js`
+- Agregados directorios **faltantes** que no se creaban al instalar:
+  - `uploads/justificaciones` — necesario para adjuntar evidencia en excusas.
+  - `uploads/logos` — necesario para el logo institucional del Setup Wizard.
+  - `uploads/usuarios` — necesario para fotos de perfil de usuarios del sistema.
+- Corregido error visual: logo en pantalla splash no se renderizaba (los navegadores Chromium no muestran archivos `.ico` en etiquetas `<img>` via `data URI`). Ahora solo se usa el `.png`.
+- Versión en el splash ahora se lee dinámicamente de `app.getVersion()` en lugar de estar hardcodeada.
+
+#### Instalador NSIS — `build/installer.nsh`
+- **[BUG]** La barra de progreso durante la instalación no mostraba avance real.
+  - Causa: `SetDetailsPrint both` estaba configurado solo en `customUninstall`, no en `customInstall`. Y Nsis7z bloquea salida si no se asignan hooks apropiados.
+  - Fix: Agregado callback `InstFilesPage_OnShow` para forzar la inyección de progreso visual y reescrito por completo la directiva NSIS sin usar caracteres acentuados.
+- Confirmada la limpieza perfecta y total al desinstalar (borrado integro de la bóveda de carpetas del sistema ubicada en `%APPDATA%\SAE` con previa confirmación del usuario para evitar accidentes).
+- Agregados directorios faltantes: `logos`, `usuarios`.
+- Versión actualizada a `1.1.0` en BrandingText y mensajes de confirmación.
+
+#### JustificacionesPanel — Refresco sin recarga de página
+- `window.location.reload()` en handlers `handleAprobar` y `handleRechazar` reemplazado por llamada a `cargarDatos()` vía el callback `onClose`.
+- Evita recarga completa de la ventana Electron al aprobar/rechazar una justificación.
+
+### 📁 Archivos Modificados
+
+| Archivo | Tipo de cambio |
+|---|---|
+| `backend/utils/carnetGenerator.js` | 🐛 Fix Prisma SQLite |
+| `frontend/src/components/WebcamCaptureModal.jsx` | ✨ Archivo nuevo |
+| `frontend/src/components/AlumnosPanel.jsx` | ✨ Integración webcam |
+| `frontend/src/components/PersonalPanel.jsx` | ✨ Integración webcam |
+| `frontend/src/components/RevisionRapidaView.jsx` | 🎨 Modal confirm custom |
+| `frontend/src/components/JustificacionesPanel.jsx` | 🐛 Ausentes + reload fix |
+| `frontend/src/components/MetricsPanel.jsx` | 🎨 Confirm sin window.confirm |
+| `frontend/src/components/ConfiguracionPanel.jsx` | 🎨 Modal confirm unificado |
+| `electron/main.js` | 🔧 Directorios + splash fixes |
+| `build/installer.nsh` | 🔧 Progreso real + dirs |
+| `package.json` | 📦 Versión 1.1.0 |
+| `frontend/package.json` | 📦 Versión 1.1.0 |
+
+---
+
 ## [1.0.8] - 2026-02-23
 
 ### 🔧 Documentación de Desarrollo y Consolidación Final

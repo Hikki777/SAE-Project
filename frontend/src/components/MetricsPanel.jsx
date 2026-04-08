@@ -50,11 +50,19 @@ export default function MetricsPanel() {
     }
   };
 
+  const [confirmReset, setConfirmReset] = useState(false);
+
   const handleReset = async () => {
-    if (!window.confirm('¿Estás seguro de resetear todas las métricas? Esta acción no se puede deshacer.')) {
+    if (!confirmReset) {
+      setConfirmReset(true);
+      toast('Haz clic en "Reset" nuevamente para confirmar. Esta acción no se puede deshacer.', {
+        icon: '⚠️',
+        duration: 4000,
+      });
+      setTimeout(() => setConfirmReset(false), 4500);
       return;
     }
-
+    setConfirmReset(false);
     try {
       await client.post('/metrics/reset');
       toast.success('Métricas reseteadas correctamente');

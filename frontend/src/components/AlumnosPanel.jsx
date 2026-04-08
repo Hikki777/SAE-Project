@@ -2,7 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { GraduationCap, Plus, Edit, Trash2, Download, Search, Filter, X, User, QrCode, BookOpen, Sun, CheckCircle, XCircle, Briefcase, RotateCcw, AlertCircle } from 'lucide-react';
+import { GraduationCap, Plus, Edit, Trash2, Download, Search, Filter, X, User, QrCode, BookOpen, Sun, CheckCircle, XCircle, Briefcase, RotateCcw, AlertCircle, Camera } from 'lucide-react';
+import WebcamCaptureModal from './WebcamCaptureModal';
 import toast, { Toaster } from 'react-hot-toast';
 import { alumnosAPI, qrAPI, institucionAPI } from '../api/endpoints';
 import { TableSkeleton } from './LoadingSpinner';
@@ -58,6 +59,9 @@ export default function AlumnosPanel() {
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [previewAlumno, setPreviewAlumno] = useState(null);
   const [previewQR, setPreviewQR] = useState(null);
+
+  // Webcam modal
+  const [showWebcam, setShowWebcam] = useState(false);
 
   // Load QR when preview modal opens
   useEffect(() => {
@@ -867,30 +871,50 @@ export default function AlumnosPanel() {
               </div>
               <form onSubmit={handleSubmit} className="space-y-3">
                <div className="flex flex-col items-center mb-4">
-                  <div className="relative w-24 h-24 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center overflow-hidden border-2 border-dashed border-gray-400 dark:border-gray-500 mb-2 hover:border-primary-500 dark:hover:border-primary-400 transition-colors">
+                  {/* Avatar preview */}
+                  <div className="relative w-24 h-24 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center overflow-hidden border-2 border-dashed border-gray-400 dark:border-gray-500 mb-3 hover:border-primary-500 dark:hover:border-primary-400 transition-colors">
                     {formData.preview ? (
                       <img src={formData.preview} alt="Preview" className="w-full h-full object-cover" />
                     ) : (
                       <User size={40} className="text-gray-400 dark:text-gray-500" />
                     )}
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => {
-                        const file = e.target.files[0];
-                        if (file) {
-                          setFormData({
-                            ...formData,
-                            foto: file,
-                            preview: URL.createObjectURL(file)
-                          });
-                        }
-                      }}
-                      className="absolute inset-0 opacity-0 cursor-pointer"
-                    />
                   </div>
-                  <span className="text-sm text-gray-500 dark:text-gray-400">Toca para subir foto</span>
+                  {/* Photo action buttons */}
+                  <div className="flex gap-2">
+                    {/* Upload from file */}
+                    <label className="flex items-center gap-1.5 cursor-pointer bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 text-xs font-medium px-3 py-1.5 rounded-lg transition">
+                      <User size={14} />
+                      Subir foto
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files[0];
+                          if (file) {
+                            setFormData({ ...formData, foto: file, preview: URL.createObjectURL(file) });
+                          }
+                        }}
+                        className="hidden"
+                      />
+                    </label>
+                    {/* Webcam capture */}
+                    <button
+                      type="button"
+                      onClick={() => setShowWebcam(true)}
+                      className="flex items-center gap-1.5 bg-primary-600 hover:bg-primary-700 dark:bg-primary-500 dark:hover:bg-primary-600 text-white text-xs font-medium px-3 py-1.5 rounded-lg transition"
+                    >
+                      <Camera size={14} />
+                      Webcam
+                    </button>
+                  </div>
               </div>
+
+              {/* Webcam Modal */}
+              <WebcamCaptureModal
+                isOpen={showWebcam}
+                onClose={() => setShowWebcam(false)}
+                onCapture={(file, preview) => setFormData({ ...formData, foto: file, preview })}
+              />
 
               {/* Modo de Carnet - Solo visible al crear */}
               {!editingAlumno && (

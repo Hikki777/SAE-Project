@@ -3,12 +3,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   FileText, AlertCircle, Check, X, Eye, Calendar, User, Filter,
   UserX, Clock, ChevronDown, ChevronUp, FileDown, FileSpreadsheet,
-  Search, ChevronLeft, ChevronRight, Users, Upload
+  Search, ChevronLeft, ChevronRight, Users, Upload, ClipboardList
 } from 'lucide-react';
 import client from '../api/client';
 import toast, { Toaster } from 'react-hot-toast';
 import { generateJustificacionesPDF, generateJustificacionesExcel } from '../utils/reportGenerator';
 import RevisionRapidaView from './RevisionRapidaView';
+import ModalJustificacionRapida from './ModalJustificacionRapida';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
@@ -59,6 +60,15 @@ export default function JustificacionesPanel() {
   const [personaJustificar, setPersonaJustificar] = useState(null);
   const [inicializado, setInicializado] = useState(false);
 
+  // Ausentes sin justificar hoy
+  const [ausentesHoySinJustificar, setAusentesHoySinJustificar] = useState([]);
+  const [personaAJustificar, setPersonaAJustificar] = useState(null);
+  const [showModalJustificarAusente, setShowModalJustificarAusente] = useState(false);
+
+  // Estado para personas (no se usan en carga pero se declaran para evitar error)
+  const [alumnos, setAlumnos] = useState([]);
+  const [personal, setPersonal] = useState([]);
+
   // Cargar datos iniciales
   useEffect(() => {
     if (!inicializado) {
@@ -107,47 +117,61 @@ export default function JustificacionesPanel() {
         console.error('Error cargando personas:', error);
       }
     };
+    cargarPersonas();
   }, []);
 
   const cargarDatos = async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams();
-      // NO incluir estado en la búsqueda para estadísticas - las estadísticas deben ser globales
       if (filtros.busqueda) params.append('busqueda', filtros.busqueda);
       if (filtros.fechaInicio) params.append('fechaInicio', filtros.fechaInicio);
       if (filtros.fechaFin) params.append('fechaFin', filtros.fechaFin);
-      
-      // Filtros opcionales de rol
       if (filtros.rol === 'alumno') params.append('personaTipo', 'alumno');
       if (filtros.rol === 'personal') params.append('personaTipo', 'personal');
 
       const urlFinal = `/excusas?${params.toString()}`;
       console.log('📡 Llamando API:', urlFinal);
 
-      // Obtener datos filtrados para la tabla, Y datos sin filtrar para estadísticas globales
       const [response, statsRes, ausentesRes] = await Promise.all([
         client.get(urlFinal),
-        client.get('/excusas'), // Todas para stats globales
-        client.get('/asistencias/ausentes').catch(() => ({ data: { total: 0 } }))
+        client.get('/excusas'),
+        client.get('/asistencias/ausentes').catch(() => ({ data: { ausentes: [], total: 0 } }))
       ]);
       const tableData = response.data.excusas || [];
       const globalData = statsRes.data.excusas || [];
       const verdaderosAusentesHoy = ausentesRes.data.total || 0;
+      const ausentesRaw = ausentesRes.data.ausentes || [];
 
       console.log(`✓ Datos recibidos: Tabla(${tableData.length}) Global(${globalData.length})`);
       
-      // Calcular estadísticas globales sobre todos los datos
       calcularEstadisticas(globalData, verdaderosAusentesHoy);
       
-      // Si hay filtro de estado, filtrar localmente para la tabla
       let excusasParaMostrar = tableData;
       if (filtros.estado) {
-        console.log(`🔽 Filtrando por estado: ${filtros.estado}`);
         excusasParaMostrar = tableData.filter(e => e.estado === filtros.estado);
       }
-      
       setExcusas(excusasParaMostrar);
+
+      // ── Calcular ausentes sin justificar hoy ──────────────────────────────
+      const hoy = new Date();
+      const hoyStr = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}-${String(hoy.getDate()).padStart(2,'0')}`;
+      const excusasDeHoy = globalData.filter(e => {
+        if (!e.fecha_ausencia) return false;
+        const d = new Date(e.fecha_ausencia);
+        const s = `${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}`;
+        return s === hoyStr;
+      });
+      const ausentesSinJustificar = ausentesRaw.filter(persona => {
+        return !excusasDeHoy.some(e => {
+          if (persona.tipo === 'alumno' && e.alumno_id === persona.id) return true;
+          if (persona.tipo === 'personal' && e.personal_id === persona.id) return true;
+          return false;
+        });
+      });
+      setAusentesHoySinJustificar(ausentesSinJustificar);
+      // ─────────────────────────────────────────────────────────────────────
+
     } catch (error) {
       console.error('❌ Error cargando datos:', error);
       toast.error('Error al cargar justificaciones');
@@ -444,6 +468,60 @@ export default function JustificacionesPanel() {
         </button>
       </div>
 
+      {/* ═══ Sección: Ausentes sin justificar HOY ═══ */}
+      {ausentesHoySinJustificar.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-300 dark:border-amber-700 rounded-xl p-4"
+        >
+          <div className="flex items-center gap-2 mb-3">
+            <ClipboardList size={20} className="text-amber-600 dark:text-amber-400" />
+            <h2 className="text-base font-bold text-amber-900 dark:text-amber-200">
+              Ausentes sin justificar hoy ({ausentesHoySinJustificar.length})
+            </h2>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {ausentesHoySinJustificar.map(persona => (
+              <div
+                key={`${persona.tipo}-${persona.id}`}
+                className="flex items-center gap-3 bg-white dark:bg-gray-800 rounded-lg border border-amber-200 dark:border-amber-700 p-3 shadow-sm"
+              >
+                <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden flex items-center justify-center flex-shrink-0">
+                  {persona.foto_path ? (
+                    <img
+                      src={persona.foto_path.startsWith('http') ? persona.foto_path : `${BASE_URL}/uploads/${persona.foto_path}`}
+                      alt={persona.nombres}
+                      className="w-full h-full object-cover"
+                      onError={e => { e.target.style.display='none'; }}
+                    />
+                  ) : (
+                    <span className="text-lg">{persona.tipo === 'alumno' ? '👨‍🎓' : '👨‍🏫'}</span>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-sm text-gray-900 dark:text-gray-100 truncate">
+                    {persona.nombres} {persona.apellidos}
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                    {persona.tipo === 'alumno'
+                      ? `${persona.grado || ''} ${persona.seccion || ''}`.trim()
+                      : persona.cargo || 'Personal'}
+                  </p>
+                  <span className="text-xs font-mono text-blue-600 dark:text-blue-400">{persona.carnet}</span>
+                </div>
+                <button
+                  onClick={() => { setPersonaAJustificar(persona); setShowModalJustificarAusente(true); }}
+                  className="flex-shrink-0 px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold rounded-lg transition"
+                >
+                  Justificar
+                </button>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+      )}
+
       {/* Tarjetas de Estadísticas */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         <StatCard icon="📋" label="Ausentes Hoy" value={stats.ausentesHoy} color="red" />
@@ -688,7 +766,7 @@ export default function JustificacionesPanel() {
           <ModalDetalles 
             persona={personaJustificar} 
             excusa={excusaSeleccionada}
-            onClose={() => setMostrarModalJustificar(false)}
+            onClose={() => { setMostrarModalJustificar(false); cargarDatos(); }}
             formatFecha={formatFechaDisplay}
             baseUrl={BASE_URL}
           />
@@ -712,6 +790,23 @@ export default function JustificacionesPanel() {
            </div>
         )}
       </AnimatePresence>
+
+      {/* Modal justificar ausente desde panel tradicional */}
+      {showModalJustificarAusente && personaAJustificar && (
+        <ModalJustificacionRapida
+          persona={personaAJustificar}
+          fecha={getFechaLocalString()}
+          onGuardar={() => {
+            setShowModalJustificarAusente(false);
+            setPersonaAJustificar(null);
+            cargarDatos();
+          }}
+          onCancelar={() => {
+            setShowModalJustificarAusente(false);
+            setPersonaAJustificar(null);
+          }}
+        />
+      )}
 
       <Toaster position="top-right" />
     </div>
@@ -874,8 +969,7 @@ function ModalDetalles({ persona, excusa, onClose, formatFecha, baseUrl }) {
       toast.success('✓ Justificación aprobada');
       setTimeout(() => {
         onClose();
-        // Recargar datos
-        window.location.reload();
+        // El parent recarga datos cuando cierra el modal
       }, 1000);
     } catch (error) {
       console.error('Error:', error);
@@ -899,7 +993,7 @@ function ModalDetalles({ persona, excusa, onClose, formatFecha, baseUrl }) {
       toast.success('✗ Justificación rechazada');
       setTimeout(() => {
         onClose();
-        window.location.reload();
+        // El parent recarga datos cuando cierra el modal
       }, 1000);
     } catch (error) {
       console.error('Error:', error);
