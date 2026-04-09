@@ -58,6 +58,7 @@ uploads/personal/
 # ============================================
 dist/
 build/
+!build/installer.nsh
 frontend/dist/
 frontend/build/
 .next/

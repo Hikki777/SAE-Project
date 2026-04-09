@@ -1256,9 +1256,7 @@ const SistemaSettings = ({ currentUser }) => {
     formData.append('password', restorePassword);
     
     try {
-      const response = await client.post('/backup/restore', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
+      const response = await client.post('/backup/restore', formData);
       
       toast.success('✅ Sistema restaurado correctamente');
       toast('🔄 Reiniciando servidor...', { duration: 3000 });
