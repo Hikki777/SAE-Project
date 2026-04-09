@@ -51,7 +51,7 @@ router.post('/create', verifyJWT, async (req, res) => {
     }
 
     const timestamp = new Date().toISOString().replace(/:/g, '-').split('.')[0];
-    const tempZipPath = path.join(tempDir, `backup-${timestamp}.zip`);
+    const tempZipPath = path.join(TEMP_DIR, `backup-${timestamp}.zip`);
     
     logger.info({ user: req.user.email }, 'Iniciando creación de backup');
     
@@ -263,11 +263,11 @@ router.post('/restore', verifyJWT, upload.single('backup'), async (req, res) => 
     logger.info('Hash y HMAC validados correctamente');
     
     // 7. Guardar ZIP temporal
-    tempZipPath = path.join(tempDir, `restore-${Date.now()}.zip`);
+    tempZipPath = path.join(TEMP_DIR, `restore-${Date.now()}.zip`);
     fs.writeFileSync(tempZipPath, zipBuffer);
     
     // 8. Extraer ZIP
-    extractPath = path.join(tempDir, `restore-data-${Date.now()}`);
+    extractPath = path.join(TEMP_DIR, `restore-data-${Date.now()}`);
     
     await extract(tempZipPath, { dir: path.resolve(extractPath) });
     

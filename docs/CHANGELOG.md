@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.1.1] - 2026-04-08 (Hotfix)
+### Corregido
+- **[CRITICAL BUG]** El sistema de creación y restauración de Backups desde el panel de control fallaba devolviendo Error 500 (`tempDir is not defined`).
+  - Causa: Error tipográfico de mayúsculas/minúsculas en el código backend de respaldos (`tempDir` en lugar de la constante requerida `TEMP_DIR`).
+  - Fix: Estandarizada la variable a `TEMP_DIR` en todo el flujo de empaquetamiento ZIP y extracción, reanudando la compatibilidad de respaldos en el servidor empaquetado.
+
 ## [1.1.0] - 2026-04-08
 
 ### 🐛 Correcciones Críticas de Producción
