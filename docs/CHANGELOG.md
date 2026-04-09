@@ -67,12 +67,18 @@ El `ConfiguracionPanel` implementa un **sistema de confirmación unificado** con
 - Corregido error visual: logo en pantalla splash no se renderizaba (los navegadores Chromium no muestran archivos `.ico` en etiquetas `<img>` via `data URI`). Ahora solo se usa el `.png`.
 - Versión en el splash ahora se lee dinámicamente de `app.getVersion()` en lugar de estar hardcodeada.
 
-#### Instalador NSIS — `build/installer.nsh`
+#### Instalador NSIS
+- **[MEJORA] Instalador Moderno (One-Click):**
+  - Cambiado `oneClick: true`. El proceso de instalación ahora es instantáneo y sin pantallas de "Siguiente > Siguiente".
+  - Instalación segura sin permisos elevados (`perUser` -> `LocalAppData\Programs`), mejorando dramáticamente la compatibilidad en escuelas usando redes con Active Directory.
 - **[BUG]** `makensis` arrojaba advertencia fatal 6010 interrumpiendo el instalador final en `electron-builder`.
   - Causa: Macro `InstFilesPage_OnShow` no referenciable internamente bloqueaba la compilación al estar activa opción `warningsAsErrors`.
   - Fix: Macro removido para priorizar una compilación estable, devolviendo el instalador NSIS a comportamiento compatible.
-- Confirmada la limpieza perfecta y total al desinstalar (borrado integro de la bóveda de carpetas del sistema ubicada en `%APPDATA%\SAE` con previa confirmación del usuario para evitar accidentes).
-- Agregados directorios faltantes: `logos`, `usuarios`.
+- **[BUG] Posible congelamiento de NSIS durante migración OTA:**
+  - Causa: Si existía una versión anterior, la migración desatendida ejecutaba internamente el `customUninstall`, el cual poseía un `MessageBox` sin cláusula de resolución predeterminada; esto trababa el `autoUpdater` de Windows indefinidamente solicitando input del usuario.
+  - Fix: Añadido bandera `/SD IDNO` a la llamada para obligar conservativamente el borrado como denegado en escenarios automáticos.
+- Confirmada la limpieza perfecta y total al desinstalar invocando expresamente la limpieza `%APPDATA%\SAE`.
+- Agregados directorios faltantes: `logos`, `usuarios` asegurados desde main.js.
 - Versión actualizada a `1.1.0` en BrandingText y mensajes de confirmación.
 
 #### JustificacionesPanel — Refresco sin recarga de página
