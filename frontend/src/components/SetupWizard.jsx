@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { School, User, Lock, Clock, CheckCircle, MapPin, Mail, Phone, LogOut, Upload, Edit2, Server, Wifi, Globe, Eye, EyeOff, Copy, Download, Users } from 'lucide-react';
 import ConnectionModal from './ConnectionModal';
 import PasswordStrengthIndicator from './PasswordStrengthIndicator';
+import GenderAvatar from './GenderAvatar';
 
 export default function SetupWizard({ onComplete }) {
   const navigate = useNavigate();
@@ -40,6 +41,7 @@ export default function SetupWizard({ onComplete }) {
     admin_password: '',
     admin_password_confirm: '',
     admin_cargo: '',
+    admin_sexo: '', // Agregado para GenderAvatar
     admin_jornada: '',
     // Logo y Foto (Files)
     logo_base64: null, // Legacy check for preview
@@ -431,7 +433,7 @@ export default function SetupWizard({ onComplete }) {
                 </div>
               </div>
               <p className="text-blue-100 mb-6 text-center text-sm leading-relaxed">
-                Gestión Educativa Libre
+                Sotfware Open-Source para los Centros Educativos de Guatemala
               </p>
               
               <div className="space-y-4">
@@ -458,7 +460,7 @@ export default function SetupWizard({ onComplete }) {
               </div>
             </div>
             <div className="text-xs text-blue-300 mt-8">
-              SAE - Sistema de Administración Educativa v1.0.8
+              SAE - Sistema de Administración Educativa v1.1.0
             </div>
           </div>
 
@@ -899,8 +901,8 @@ export default function SetupWizard({ onComplete }) {
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white text-gray-900 text-sm"
                               >
                                 <option value="">Seleccione...</option>
-                                <option value="Masculino">Masculino</option>
-                                <option value="Femenino">Femenino</option>
+                                <option value="M">Masculino</option>
+                                <option value="F">Femenino</option>
                               </select>
                             </div>
                             <div>
@@ -928,7 +930,7 @@ export default function SetupWizard({ onComplete }) {
                                   {director.foto_preview ? (
                                     <img src={director.foto_preview} alt="Preview" className="w-full h-full object-cover" />
                                   ) : (
-                                    <User size={20} className="text-gray-400" />
+                                    <GenderAvatar sexo={director.sexo} size={30} />
                                   )}
                                 </div>
                                 <input
@@ -1034,6 +1036,23 @@ export default function SetupWizard({ onComplete }) {
                       </div>
                     </div>
                     <div>
+                      <label className="block text-sm font-medium text-gray-900 mb-1">Sexo</label>
+                      <div className="relative">
+                        <Users className="absolute left-3 top-3 text-gray-400" size={18} />
+                        <select
+                          name="admin_sexo"
+                          value={formData.admin_sexo}
+                          onChange={handleChange}
+                          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 appearance-none bg-white text-gray-900"
+                          required
+                        >
+                          <option value="">Seleccione...</option>
+                          <option value="M">Masculino</option>
+                          <option value="F">Femenino</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div>
                       <label className="block text-sm font-medium text-gray-900 mb-1">Jornada</label>
                       <div className="relative">
                         <Clock className="absolute left-3 top-3 text-gray-400" size={18} />
@@ -1065,7 +1084,7 @@ export default function SetupWizard({ onComplete }) {
                           {formData.admin_foto_preview ? (
                             <img src={formData.admin_foto_preview} alt="Preview" className="w-full h-full object-cover" />
                           ) : (
-                            <User size={24} className="text-gray-400" />
+                            <GenderAvatar sexo={formData.admin_sexo} size={35} />
                           )}
                         </div>
                         <input
@@ -1270,7 +1289,7 @@ export default function SetupWizard({ onComplete }) {
                                 />
                               ) : (
                                 <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center border-2 border-purple-300">
-                                  <User size={24} className="text-purple-600" />
+                                  <GenderAvatar sexo={director.sexo} size={30} />
                                 </div>
                               )}
                               <div className="flex-1">
@@ -1319,7 +1338,7 @@ export default function SetupWizard({ onComplete }) {
                           />
                         ) : (
                           <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center border-2 border-green-300">
-                            <User size={24} className="text-green-600" />
+                            <GenderAvatar sexo={formData.admin_sexo} size={30} />
                           </div>
                         )}
                         <div className="flex-1">

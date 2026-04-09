@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, SkipForward, CheckCircle2, AlertCircle, User, SkipBack } from 'lucide-react';
+import GenderAvatar from './GenderAvatar';
 import toast from 'react-hot-toast';
 import CardAusente from './CardAusente';
 import ModalJustificacionRapida from './ModalJustificacionRapida';
@@ -238,7 +239,7 @@ export default function RevisionRapidaView({ fecha, onVolver }) {
                   animate={{ opacity: 1 }}
                   className="empty-state-small"
                 >
-                  <User size={48} className="text-gray-300" />
+                  <GenderAvatar size={48} className="text-gray-300" />
                   <p className="text-gray-400 dark:text-gray-500">
                     Se llenarán conforme se procesen
                   </p>
@@ -299,17 +300,14 @@ export default function RevisionRapidaView({ fecha, onVolver }) {
                                   e.target.nextElementSibling.style.display = 'flex';
                                 }}
                               />
-                              <div 
-                                className="w-full h-full flex items-center justify-center text-xl"
-                                style={{ display: 'none' }}
-                              >
-                                {persona.tipo === 'alumno' ? '👨‍🎓' : '👨‍🏫'}
-                              </div>
+                                {persona.sexo ? (
+                                  <GenderAvatar sexo={persona.sexo} size={40} />
+                                ) : (
+                                  persona.tipo === 'alumno' ? '👨‍🎓' : '👨‍🏫'
+                                )}
                             </>
                           ) : (
-                            <div className="w-full h-full flex items-center justify-center text-xl">
-                              {persona.tipo === 'alumno' ? '👨‍🎓' : '👨‍🏫'}
-                            </div>
+                            <GenderAvatar sexo={persona.sexo} size={40} />
                           )}
                         </div>
                         <div className="badge-estado">

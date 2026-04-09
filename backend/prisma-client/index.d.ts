@@ -7477,6 +7477,7 @@ export namespace Prisma {
     email: string | null
     nombres: string | null
     apellidos: string | null
+    sexo: string | null
     foto_path: string | null
     cargo: string | null
     jornada: string | null
@@ -7492,6 +7493,7 @@ export namespace Prisma {
     email: string | null
     nombres: string | null
     apellidos: string | null
+    sexo: string | null
     foto_path: string | null
     cargo: string | null
     jornada: string | null
@@ -7507,6 +7509,7 @@ export namespace Prisma {
     email: number
     nombres: number
     apellidos: number
+    sexo: number
     foto_path: number
     cargo: number
     jornada: number
@@ -7532,6 +7535,7 @@ export namespace Prisma {
     email?: true
     nombres?: true
     apellidos?: true
+    sexo?: true
     foto_path?: true
     cargo?: true
     jornada?: true
@@ -7547,6 +7551,7 @@ export namespace Prisma {
     email?: true
     nombres?: true
     apellidos?: true
+    sexo?: true
     foto_path?: true
     cargo?: true
     jornada?: true
@@ -7562,6 +7567,7 @@ export namespace Prisma {
     email?: true
     nombres?: true
     apellidos?: true
+    sexo?: true
     foto_path?: true
     cargo?: true
     jornada?: true
@@ -7664,6 +7670,7 @@ export namespace Prisma {
     email: string
     nombres: string | null
     apellidos: string | null
+    sexo: string | null
     foto_path: string | null
     cargo: string | null
     jornada: string | null
@@ -7698,6 +7705,7 @@ export namespace Prisma {
     email?: boolean
     nombres?: boolean
     apellidos?: boolean
+    sexo?: boolean
     foto_path?: boolean
     cargo?: boolean
     jornada?: boolean
@@ -7715,6 +7723,7 @@ export namespace Prisma {
     email?: boolean
     nombres?: boolean
     apellidos?: boolean
+    sexo?: boolean
     foto_path?: boolean
     cargo?: boolean
     jornada?: boolean
@@ -7730,6 +7739,7 @@ export namespace Prisma {
     email?: boolean
     nombres?: boolean
     apellidos?: boolean
+    sexo?: boolean
     foto_path?: boolean
     cargo?: boolean
     jornada?: boolean
@@ -7756,6 +7766,7 @@ export namespace Prisma {
       email: string
       nombres: string | null
       apellidos: string | null
+      sexo: string | null
       foto_path: string | null
       cargo: string | null
       jornada: string | null
@@ -8162,6 +8173,7 @@ export namespace Prisma {
     readonly email: FieldRef<"Usuario", 'String'>
     readonly nombres: FieldRef<"Usuario", 'String'>
     readonly apellidos: FieldRef<"Usuario", 'String'>
+    readonly sexo: FieldRef<"Usuario", 'String'>
     readonly foto_path: FieldRef<"Usuario", 'String'>
     readonly cargo: FieldRef<"Usuario", 'String'>
     readonly jornada: FieldRef<"Usuario", 'String'>
@@ -13681,6 +13693,7 @@ export namespace Prisma {
     email: 'email',
     nombres: 'nombres',
     apellidos: 'apellidos',
+    sexo: 'sexo',
     foto_path: 'foto_path',
     cargo: 'cargo',
     jornada: 'jornada',
@@ -14382,6 +14395,7 @@ export namespace Prisma {
     email?: StringFilter<"Usuario"> | string
     nombres?: StringNullableFilter<"Usuario"> | string | null
     apellidos?: StringNullableFilter<"Usuario"> | string | null
+    sexo?: StringNullableFilter<"Usuario"> | string | null
     foto_path?: StringNullableFilter<"Usuario"> | string | null
     cargo?: StringNullableFilter<"Usuario"> | string | null
     jornada?: StringNullableFilter<"Usuario"> | string | null
@@ -14398,6 +14412,7 @@ export namespace Prisma {
     email?: SortOrder
     nombres?: SortOrderInput | SortOrder
     apellidos?: SortOrderInput | SortOrder
+    sexo?: SortOrderInput | SortOrder
     foto_path?: SortOrderInput | SortOrder
     cargo?: SortOrderInput | SortOrder
     jornada?: SortOrderInput | SortOrder
@@ -14417,6 +14432,7 @@ export namespace Prisma {
     NOT?: UsuarioWhereInput | UsuarioWhereInput[]
     nombres?: StringNullableFilter<"Usuario"> | string | null
     apellidos?: StringNullableFilter<"Usuario"> | string | null
+    sexo?: StringNullableFilter<"Usuario"> | string | null
     foto_path?: StringNullableFilter<"Usuario"> | string | null
     cargo?: StringNullableFilter<"Usuario"> | string | null
     jornada?: StringNullableFilter<"Usuario"> | string | null
@@ -14433,6 +14449,7 @@ export namespace Prisma {
     email?: SortOrder
     nombres?: SortOrderInput | SortOrder
     apellidos?: SortOrderInput | SortOrder
+    sexo?: SortOrderInput | SortOrder
     foto_path?: SortOrderInput | SortOrder
     cargo?: SortOrderInput | SortOrder
     jornada?: SortOrderInput | SortOrder
@@ -14456,6 +14473,7 @@ export namespace Prisma {
     email?: StringWithAggregatesFilter<"Usuario"> | string
     nombres?: StringNullableWithAggregatesFilter<"Usuario"> | string | null
     apellidos?: StringNullableWithAggregatesFilter<"Usuario"> | string | null
+    sexo?: StringNullableWithAggregatesFilter<"Usuario"> | string | null
     foto_path?: StringNullableWithAggregatesFilter<"Usuario"> | string | null
     cargo?: StringNullableWithAggregatesFilter<"Usuario"> | string | null
     jornada?: StringNullableWithAggregatesFilter<"Usuario"> | string | null
@@ -15482,6 +15500,7 @@ export namespace Prisma {
     email: string
     nombres?: string | null
     apellidos?: string | null
+    sexo?: string | null
     foto_path?: string | null
     cargo?: string | null
     jornada?: string | null
@@ -15498,6 +15517,7 @@ export namespace Prisma {
     email: string
     nombres?: string | null
     apellidos?: string | null
+    sexo?: string | null
     foto_path?: string | null
     cargo?: string | null
     jornada?: string | null
@@ -15513,6 +15533,7 @@ export namespace Prisma {
     email?: StringFieldUpdateOperationsInput | string
     nombres?: NullableStringFieldUpdateOperationsInput | string | null
     apellidos?: NullableStringFieldUpdateOperationsInput | string | null
+    sexo?: NullableStringFieldUpdateOperationsInput | string | null
     foto_path?: NullableStringFieldUpdateOperationsInput | string | null
     cargo?: NullableStringFieldUpdateOperationsInput | string | null
     jornada?: NullableStringFieldUpdateOperationsInput | string | null
@@ -15529,6 +15550,7 @@ export namespace Prisma {
     email?: StringFieldUpdateOperationsInput | string
     nombres?: NullableStringFieldUpdateOperationsInput | string | null
     apellidos?: NullableStringFieldUpdateOperationsInput | string | null
+    sexo?: NullableStringFieldUpdateOperationsInput | string | null
     foto_path?: NullableStringFieldUpdateOperationsInput | string | null
     cargo?: NullableStringFieldUpdateOperationsInput | string | null
     jornada?: NullableStringFieldUpdateOperationsInput | string | null
@@ -15545,6 +15567,7 @@ export namespace Prisma {
     email: string
     nombres?: string | null
     apellidos?: string | null
+    sexo?: string | null
     foto_path?: string | null
     cargo?: string | null
     jornada?: string | null
@@ -15559,6 +15582,7 @@ export namespace Prisma {
     email?: StringFieldUpdateOperationsInput | string
     nombres?: NullableStringFieldUpdateOperationsInput | string | null
     apellidos?: NullableStringFieldUpdateOperationsInput | string | null
+    sexo?: NullableStringFieldUpdateOperationsInput | string | null
     foto_path?: NullableStringFieldUpdateOperationsInput | string | null
     cargo?: NullableStringFieldUpdateOperationsInput | string | null
     jornada?: NullableStringFieldUpdateOperationsInput | string | null
@@ -15574,6 +15598,7 @@ export namespace Prisma {
     email?: StringFieldUpdateOperationsInput | string
     nombres?: NullableStringFieldUpdateOperationsInput | string | null
     apellidos?: NullableStringFieldUpdateOperationsInput | string | null
+    sexo?: NullableStringFieldUpdateOperationsInput | string | null
     foto_path?: NullableStringFieldUpdateOperationsInput | string | null
     cargo?: NullableStringFieldUpdateOperationsInput | string | null
     jornada?: NullableStringFieldUpdateOperationsInput | string | null
@@ -16577,6 +16602,7 @@ export namespace Prisma {
     email?: SortOrder
     nombres?: SortOrder
     apellidos?: SortOrder
+    sexo?: SortOrder
     foto_path?: SortOrder
     cargo?: SortOrder
     jornada?: SortOrder
@@ -16596,6 +16622,7 @@ export namespace Prisma {
     email?: SortOrder
     nombres?: SortOrder
     apellidos?: SortOrder
+    sexo?: SortOrder
     foto_path?: SortOrder
     cargo?: SortOrder
     jornada?: SortOrder
@@ -16611,6 +16638,7 @@ export namespace Prisma {
     email?: SortOrder
     nombres?: SortOrder
     apellidos?: SortOrder
+    sexo?: SortOrder
     foto_path?: SortOrder
     cargo?: SortOrder
     jornada?: SortOrder
@@ -18437,6 +18465,7 @@ export namespace Prisma {
     email: string
     nombres?: string | null
     apellidos?: string | null
+    sexo?: string | null
     foto_path?: string | null
     cargo?: string | null
     jornada?: string | null
@@ -18452,6 +18481,7 @@ export namespace Prisma {
     email: string
     nombres?: string | null
     apellidos?: string | null
+    sexo?: string | null
     foto_path?: string | null
     cargo?: string | null
     jornada?: string | null
@@ -18482,6 +18512,7 @@ export namespace Prisma {
     email?: StringFieldUpdateOperationsInput | string
     nombres?: NullableStringFieldUpdateOperationsInput | string | null
     apellidos?: NullableStringFieldUpdateOperationsInput | string | null
+    sexo?: NullableStringFieldUpdateOperationsInput | string | null
     foto_path?: NullableStringFieldUpdateOperationsInput | string | null
     cargo?: NullableStringFieldUpdateOperationsInput | string | null
     jornada?: NullableStringFieldUpdateOperationsInput | string | null
@@ -18497,6 +18528,7 @@ export namespace Prisma {
     email?: StringFieldUpdateOperationsInput | string
     nombres?: NullableStringFieldUpdateOperationsInput | string | null
     apellidos?: NullableStringFieldUpdateOperationsInput | string | null
+    sexo?: NullableStringFieldUpdateOperationsInput | string | null
     foto_path?: NullableStringFieldUpdateOperationsInput | string | null
     cargo?: NullableStringFieldUpdateOperationsInput | string | null
     jornada?: NullableStringFieldUpdateOperationsInput | string | null

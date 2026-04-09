@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X, LogOut, Home, Settings, BarChart3, Wrench, User, Clock, Users, FileText, Activity, ClipboardList, LogIn, Camera, Plus, Trash2, Save, XCircle, CheckCircle, Upload, Download, FileArchive, AlertOctagon, AlertCircle, RefreshCcw, Server, Lock, RotateCcw, Edit, FolderOpen, Building2, Timer } from 'lucide-react';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
+import GenderAvatar from './GenderAvatar';
 
 const API_URL = localStorage.getItem('api_url') || import.meta.env.VITE_API_URL || '/api';
 const BASE_URL = API_URL.startsWith('http') ? API_URL.replace(/\/api$/, '').replace(/\/$/, '') : '';
@@ -309,8 +310,8 @@ const DirectoresList = ({ directores, loading, onAdd, onEdit, onDelete }) => (
                   className="w-14 h-14 rounded-full object-cover border-2 border-blue-100 dark:border-blue-900"
                 />
               ) : (
-                <div className="w-14 h-14 rounded-full bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center border-2 border-blue-100 dark:border-blue-900">
-                  <User size={24} className="text-blue-600 dark:text-blue-400" />
+                <div className="w-14 h-14 rounded-full bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center border-2 border-blue-100 dark:border-blue-900 overflow-hidden">
+                  <GenderAvatar sexo={director.sexo} size={35} />
                 </div>
               )}
             </div>
@@ -514,8 +515,8 @@ const DirectorModal = ({ isOpen, onClose, director, onSave, saving }) => {
                 onChange={(e) => setLocalData({ ...localData, sexo: e.target.value })}
                 className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 transition-all outline-none"
               >
-                <option value="Masculino">Masculino</option>
-                <option value="Femenino">Femenino</option>
+                <option value="M">Masculino</option>
+                <option value="F">Femenino</option>
               </select>
             </div>
 
@@ -640,7 +641,7 @@ const UsuarioSettings = ({ usuarios, loadingUsers, showUserModal, setShowUserMod
                             className="w-full h-full object-cover"
                           />
                         ) : (
-                          <span className="text-gray-500 font-bold text-xs">{user.nombres?.[0]}{user.apellidos?.[0]}</span>
+                          <GenderAvatar sexo={user.sexo} size={24} />
                         )}
                       </div>
                       <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover/avatar:opacity-100 transition-opacity">

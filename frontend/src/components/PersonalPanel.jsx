@@ -8,7 +8,7 @@ import toast, { Toaster } from 'react-hot-toast';
 import axios from 'axios';
 import { TableSkeleton } from './LoadingSpinner';
 import { qrAPI } from '../api/endpoints';
-
+import GenderAvatar from './GenderAvatar';
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 const BASE_URL = API_URL.replace('/api', ''); // http://localhost:5000
 
@@ -174,7 +174,7 @@ export default function PersonalPanel() {
     const grados = [
       '1ro. Primaria', '2do. Primaria', '3ro. Primaria', '4to. Primaria', '5to. Primaria', '6to. Primaria',
       '1ro. Básico', '2do. Básico', '3ro. Básico',
-      '4to. Diversificado', '5to. Diversificado', '6to. Diversificado'
+      '4to. Diversificado', '5to. Diversificado', 'Graduandos'
     ];
     setPosiblesGrados(grados);
   };
@@ -716,9 +716,7 @@ export default function PersonalPanel() {
                                 className="w-full h-full object-cover"
                               />
                             ) : (
-                              <div className="w-full h-full flex items-center justify-center text-gray-400 dark:text-gray-500">
-                                <User size={20} />
-                              </div>
+                              <GenderAvatar sexo={miembro.sexo} size={20} />
                             )}
                           </div>
                           <div className="font-medium text-gray-900 dark:text-gray-100">

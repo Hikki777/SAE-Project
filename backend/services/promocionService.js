@@ -45,7 +45,7 @@ const migracionService = {
          }
          // Perito General (3 años) -> Continúa
          if (lower.includes('perito')) {
-             return '6to. Diversificado';
+             return 'Graduandos';
          }
       }
 
@@ -265,7 +265,7 @@ const migracionService = {
   getNivelDeGrado(grado) {
     if (grado.includes('Primaria')) return 'Primaria';
     if (grado.includes('Básico')) return 'Básicos';
-    if (grado.includes('Diversificado')) return 'Diversificado';
+    if (grado.includes('Diversificado') || grado.includes('Graduandos')) return 'Diversificado';
     if (grado.includes('Secundaria')) return 'Secundaria';
     if (grado.includes('Preparatoria')) return 'Preparatoria';
     return 'Otro';

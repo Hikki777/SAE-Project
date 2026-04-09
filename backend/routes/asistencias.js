@@ -159,7 +159,8 @@ router.post('/', invalidateCacheMiddleware('/api/asistencias'), async (req, res)
             apellidos: true,
             grado: true,
             seccion: true,
-            jornada: true
+            jornada: true,
+            sexo: true
           }
         } : false,
         personal: hasPersonalId ? {
@@ -169,7 +170,8 @@ router.post('/', invalidateCacheMiddleware('/api/asistencias'), async (req, res)
             nombres: true,
             apellidos: true,
             cargo: true,
-            jornada: true
+            jornada: true,
+            sexo: true
           }
         } : false
       }
@@ -244,7 +246,8 @@ router.get('/', cacheMiddleware('list'), async (req, res) => {
             apellidos: true,
             grado: true,
             seccion: true,
-            jornada: true
+            jornada: true,
+            sexo: true
           }
         },
         personal: {
@@ -254,7 +257,8 @@ router.get('/', cacheMiddleware('list'), async (req, res) => {
             nombres: true,
             apellidos: true,
             cargo: true,
-            jornada: true
+            jornada: true,
+            sexo: true
           }
         }
       }
@@ -310,7 +314,8 @@ router.get('/hoy', async (req, res) => {
             apellidos: true,
             grado: true,
             seccion: true, // SECCION ASEGURADA
-            jornada: true
+            jornada: true,
+            sexo: true
           }
         },
         personal: {
@@ -320,7 +325,8 @@ router.get('/hoy', async (req, res) => {
             nombres: true,
             apellidos: true,
             cargo: true,
-            jornada: true
+            jornada: true,
+            sexo: true
           }
         }
       }
@@ -444,6 +450,7 @@ router.get('/ausentes', async (req, res) => {
           grado: true,
           seccion: true,
           jornada: true,
+          sexo: true,
           foto_path: true // Added for photo display
         }
       });
@@ -473,6 +480,7 @@ router.get('/ausentes', async (req, res) => {
           cargo: true,
           // departamento: true, // ERROR: Campo no existe en schema
           jornada: true,
+          sexo: true,
           foto_path: true // Added for photo display
         }
       });
@@ -586,7 +594,7 @@ router.get('/sin-salida', async (req, res) => {
                 where: { id },
                 select: {
                     id: true, carnet: true, nombres: true, apellidos: true,
-                    grado: true, seccion: true, jornada: true, foto_path: true
+                    grado: true, seccion: true, jornada: true, sexo: true, foto_path: true
                 }
              });
              if (alumno) sinSalida.push({ ...alumno, tipo: 'alumno' });
@@ -609,7 +617,7 @@ router.get('/sin-salida', async (req, res) => {
                 where: { id },
                 select: {
                     id: true, carnet: true, nombres: true, apellidos: true,
-                    cargo: true, jornada: true, foto_path: true
+                    cargo: true, jornada: true, sexo: true, foto_path: true
                 }
              });
              if (persona) sinSalida.push({ ...persona, tipo: 'personal' });

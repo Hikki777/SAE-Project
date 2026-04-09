@@ -8,7 +8,7 @@
 const fs = require("fs");
 const path = require("path");
 const { spawn } = require("child_process");
-const { Jimp } = require("jimp");
+const sharp = require("sharp");
 
 const projectRoot = path.join(__dirname, "..");
 const publicDir = path.join(projectRoot, "frontend", "public");
@@ -32,30 +32,29 @@ console.log(`📦 Directorio de salida: ${publicDir}\n`);
 
 (async () => {
   try {
-    // Paso 1: Generar PNGs optimizados con Jimp
-    const image = await Jimp.read(sourceImage);
-    console.log(`✅ Imagen cargada: ${image.bitmap.width}x${image.bitmap.height}px\n`);
+    // Paso 1: Generar PNGs optimizados con sharp
+    const image = sharp(sourceImage);
+    const metadata = await image.metadata();
+    console.log(`✅ Imagen cargada: ${metadata.width}x${metadata.height}px\n`);
 
     const sizes = [32, 64, 128, 256, 512];
     console.log("Generando PNGs optimizados:");
 
     for (const size of sizes) {
-      const resized = image.clone().resize({ w: size, h: size });
       const pngPath = path.join(publicDir, `logo-${size}.png`);
-      await resized.write(pngPath);
+      await image.clone().resize(size, size).toFile(pngPath);
       const fileSize = fs.statSync(pngPath).size;
       console.log(`  ✓ logo-${size}.png (${fileSize} bytes)`);
     }
 
     console.log("\n✅ PNGs generados correctamente\n");
 
-    // Paso 2: Crear ICO de 256x256 con Jimp como fallback
+    // Paso 2: Crear ICO de 256x256 con sharp como fallback
     console.log("Generando ICO para el ejecutable...");
     try {
-      const icoImage = image.clone().resize({ w: 256, h: 256 });
       // Usar la resolución más alta disponible de logo.png
       const ico256Path = path.join(publicDir, "logo-256-temp.png");
-      await icoImage.write(ico256Path);
+      await image.clone().resize(256, 256).toFile(ico256Path);
 
       // Convertir PNG a ICO usando un script PowerShell si está disponible
       // O simplemente copiar el PNG de 256x256 como ICO (aunque no es ideal)
@@ -80,8 +79,7 @@ console.log(`📦 Directorio de salida: ${publicDir}\n`);
 
     // Paso 3: Generar icon.png para macOS y Linux
     const macIcon = path.join(buildDir, "icon.png");
-    const macIconImage = image.clone().resize({ w: 512, h: 512 });
-    await macIconImage.write(macIcon);
+    await image.clone().resize(512, 512).toFile(macIcon);
     console.log(`✓ icon.png para macOS/Linux generado\n`);
 
     // Paso 4: Información final

@@ -34,6 +34,8 @@ router.post('/create', verifyJWT, async (req, res) => {
     return res.status(403).json({ error: 'Solo administradores pueden crear backups' });
   }
 
+  let tempZipPath;
+
   try {
     const { password, confirmPassword } = req.body;
     
@@ -51,7 +53,7 @@ router.post('/create', verifyJWT, async (req, res) => {
     }
 
     const timestamp = new Date().toISOString().replace(/:/g, '-').split('.')[0];
-    const tempZipPath = path.join(TEMP_DIR, `backup-${timestamp}.zip`);
+    tempZipPath = path.join(TEMP_DIR, `backup-${timestamp}.zip`);
     
     logger.info({ user: req.user.email }, 'Iniciando creación de backup');
     
@@ -159,6 +161,11 @@ router.post('/create', verifyJWT, async (req, res) => {
     }, 'Backup creado exitosamente');
     
   } catch (error) {
+    if (tempZipPath && fs.existsSync(tempZipPath)) {
+      try { fs.unlinkSync(tempZipPath); } catch (e) {
+        logger.error({ error: e.message }, 'Error limpiando archivo temporal de backup fallido');
+      }
+    }
     logger.error({ error: error.message, stack: error.stack }, 'Error creando backup');
     console.error('FULL BACKUP ERROR:', error);
     res.status(500).json({ error: 'Error al crear backup: ' + error.message });

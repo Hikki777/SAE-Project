@@ -44,7 +44,7 @@ const sistemaEducativoGuatemala = {
       grados: [
         '4to. Diversificado',
         '5to. Diversificado',
-        '6to. Diversificado',
+        'Graduandos',
         'Bachillerato por Madurez'
       ],
       carreras: [
@@ -64,13 +64,13 @@ const sistemaEducativoGuatemala = {
           nombre: 'Perito Contador',
           duracion: 3,
           gradoInicio: '4to. Diversificado',
-          gradoGraduacion: '6to. Diversificado'
+          gradoGraduacion: 'Graduandos'
         },
         {
           nombre: 'Secretariado Bilingüe',
           duracion: 3,
           gradoInicio: '4to Diversificado',
-          gradoGraduacion: '6to Diversificado'
+          gradoGraduacion: 'Graduandos'
         },
         {
           nombre: 'Bachillerato en Diseño Gráfico',
@@ -82,7 +82,7 @@ const sistemaEducativoGuatemala = {
           nombre: 'Perito en Mercadotecnia',
           duracion: 3,
           gradoInicio: '4to. Diversificado',
-          gradoGraduacion: '6to. Diversificado'
+          gradoGraduacion: 'Graduandos'
         },
         {
           nombre: 'Bachillerato por Madurez',
@@ -122,9 +122,9 @@ const sistemaEducativoGuatemala = {
     '4to. Diversificado': '5to. Diversificado',
     '5to. Diversificado': {
        // Logic handled dynamically in service for general rules
-       'default': '6to. Diversificado' 
+       'default': 'Graduandos' 
     },
-    '6to. Diversificado': 'GRADUADO'
+    'Graduandos': 'GRADUADO'
   }
 };
 

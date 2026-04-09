@@ -132,6 +132,7 @@ model Usuario {
   email          String      @unique
   nombres        String?
   apellidos      String?
+  sexo           String?
   foto_path      String?
   cargo          String?
   jornada        String?

@@ -10,6 +10,7 @@ import QrScanner from 'qr-scanner';
 import { TableSkeleton } from './LoadingSpinner';
 import ModalSinSalida from './ModalSinSalida';
 import ModalJustificacionRapida from './ModalJustificacionRapida';
+import GenderAvatar from './GenderAvatar';
 
 // Usamos el cliente API compartido (con baseURL '/api' e interceptor JWT)
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
@@ -166,9 +167,41 @@ export default function AsistenciasPanel() {
         .catch(() => setExcusas([]));
     });
 
-    // Usar hora local del sistema (el sistema es local-only, no requiere tiempo externo)
-    const fechaLocal = new Date();
-    setHoraInternet(fechaLocal.toLocaleString('es-ES'));
+    // Verificar la hora con internet y prevenir fraudes o desincronización
+    // Maneja errores silenciosamente para evitar que la aplicación se congele si cae la API
+    const verificarHoraSistema = async () => {
+      const fechaLocal = new Date();
+      setHoraInternet(fechaLocal.toLocaleString('es-ES'));
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 4000);
+
+      try {
+        // Se usa una API de hora pública
+        const response = await fetch('https://worldtimeapi.org/api/ip', { signal: controller.signal });
+        clearTimeout(timeoutId);
+
+        if (response.ok) {
+          const data = await response.json();
+          const fechaInternet = new Date(data.datetime);
+          
+          setHoraInternet(fechaInternet.toLocaleString('es-ES'));
+
+          // Comparar si la diferencia de hora es mayor a 5 minutos
+          const diffMinutos = Math.abs((fechaInternet.getTime() - fechaLocal.getTime()) / 60000);
+          if (diffMinutos > 5) {
+            toast.error(
+              '⚠️ La hora o fecha de esta computadora es incorrecta. Por favor ajusta el reloj del sistema.', 
+              { duration: 8000 }
+            );
+          }
+        }
+      } catch (error) {
+        console.warn('⚠️ No se pudo verificar la hora con internet. Usando hora local como respaldo.', error);
+      }
+    };
+
+    verificarHoraSistema();
     
     return () => {
       stopScanner();
@@ -385,7 +418,8 @@ export default function AsistenciasPanel() {
           jornada: alumno?.jornada || 'Matutina',
           carrera: alumno?.carrera || 'N/A',
           especialidad: alumno?.especialidad || 'N/A',
-          foto_url: getUserPhotoUrl('alumno', alumno?.carnet, alumno)
+          foto_url: getUserPhotoUrl('alumno', alumno?.carnet, alumno),
+          sexo: alumno?.sexo
         };
       } else {
         const docente = docentes.find(d => d.id === parseInt(selectedDocente));
@@ -409,7 +443,8 @@ export default function AsistenciasPanel() {
           cargo: docente?.cargo || 'N/A',
           departamento: docente?.departamento || 'N/A',
           jornada: docente?.jornada || 'Matutina',
-          foto_url: getUserPhotoUrl('personal', docente?.carnet, docente)
+          foto_url: getUserPhotoUrl('personal', docente?.carnet, docente),
+          sexo: docente?.sexo
         };
       }
 
@@ -689,216 +724,11 @@ export default function AsistenciasPanel() {
       setScannerActive(prev => !prev);
   };
 
-  /* FUNCIÓN COMENTADA TEMPORALMENTE
-  const startScannerOLD = async () => {
-    console.log('🎥 Iniciando escáner QR con jsQR...');
-    
-    try {
-      setScannerActive(true);
-      scannerActiveRef.current = true;
-      setScanMessage('Solicitando acceso a la cámara...');
-      
-      // Configuración de cámara
-      const constraints = {
-        video: {
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
-          facingMode: 'environment'
-        }
-      };
-      
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
-      console.log('✅ Stream de cámara obtenido');
-      
-      streamRef.current = stream;
-      
-      if (!videoRef.current) {
-        throw new Error('Video element no disponible');
-      }
-      
-      videoRef.current.srcObject = stream;
-      videoRef.current.setAttribute('playsinline', 'true');
-      videoRef.current.setAttribute('autoplay', 'true');
-      
-      // Esperar a que el video esté listo
-      await new Promise((resolve, reject) => {
-        const timeout = setTimeout(() => reject(new Error('Timeout')), 5000);
-        
-        videoRef.current.onloadedmetadata = () => {
-          clearTimeout(timeout);
-          console.log('✅ Video listo:', videoRef.current.videoWidth, 'x', videoRef.current.videoHeight);
-          videoRef.current.play().then(resolve).catch(reject);
-        };
-      });
-      
-      setScanMessage('✅ Cámara activa. Coloca el QR frente a la cámara...');
-      
-      // Inicializar escaneo con jsQR
-      let scanAttempts = 0;
-      let lastScanTime = 0;
-      
-      // Función de escaneo con jsQR
-      const scanFrame = async () => {
-        if (!videoRef.current || !canvasRef.current || !scannerActiveRef.current) {
-          return;
-        }
-        
-        const video = videoRef.current;
-        const canvas = canvasRef.current;
-        
-        if (video.readyState !== video.HAVE_ENOUGH_DATA) {
-          return;
-        }
-        
-        try {
-          scanAttempts++;
-          
-          // Configurar canvas con dimensiones exactas del video
-          const width = video.videoWidth;
-          const height = video.videoHeight;
-          
-          if (width === 0 || height === 0) return;
-          
-          canvas.width = width;
-          canvas.height = height;
-          
-          const ctx = canvas.getContext('2d', { willReadFrequently: true });
-          
-          // Dibujar frame actual
-          ctx.drawImage(video, 0, 0, width, height);
-          
-          // Log cada 30 intentos
-          if (scanAttempts % 30 === 0) {
-            console.log(`🔍 Intento ${scanAttempts} - ${width}x${height}`);
-          }
-          
-          // Intentar decodificar desde el canvas
-          try {
-            const result = await codeReader.decodeFromCanvas(canvas);
-            
-            if (result && result.getText()) {
-              isProcessing = true;
-              const now = Date.now();
-              
-              // Debounce: evitar lecturas duplicadas
-              if (now - lastScanTime < 3000) {
-                isProcessing = false;
-                return;
-              }
-              
-              lastScanTime = now;
-              const qrData = result.getText();
-              
-              console.log('🎉🎉🎉 ¡QR DETECTADO! 🎉🎉🎉');
-              console.log('📱 Intento #:', scanAttempts);
-              console.log('📱 Contenido:', qrData);
-              console.log('� Formato:', result.getBarcodeFormat());
-              
-              setScanMessage('✅ ¡QR DETECTADO! Procesando...');
-              
-              // Vibrar si está disponible
-              if (navigator.vibrate) {
-                navigator.vibrate([200, 100, 200]);
-              }
-              
-              // Procesar el QR
-              try {
-                await handleQRScan(qrData);
-                setScanMessage('✅ ¡Registro exitoso! Listo para escanear otro...');
-              } catch (err) {
-                console.error('❌ Error procesando:', err);
-                setScanMessage(`❌ Error: ${err.message}`);
-              }
-              
-              // Pausa de 2 segundos antes de continuar
-              await new Promise(resolve => setTimeout(resolve, 2000));
-              setScanMessage('✅ Cámara activa. Coloca el QR frente a la cámara...');
-              isProcessing = false;
-            }
-          } catch (decodeError) {
-            // Ignorar NotFoundException (es normal cuando no hay QR)
-            if (decodeError.name !== 'NotFoundException') {
-              if (scanAttempts % 100 === 0) {
-                console.warn('⚠️ Decode warning:', decodeError.name);
-              }
-            }
-          }
-        } catch (error) {
-          console.error('❌ Error en scanFrame:', error);
-        }
-      };
-      
-      // Iniciar escaneo cada 150ms (más agresivo)
-      console.log('🚀 Iniciando escaneo cada 150ms');
-      scanIntervalRef.current = setInterval(scanFrame, 150);
-      
-      console.log('✅ Escáner QR iniciado correctamente');
-      
-    } catch (error) {
-      console.error('❌ Error iniciando escáner:', error);
-      setScanMessage(`❌ Error: ${error.message}`);
-      stopScanner();
-      
-      if (error.name === 'NotAllowedError') {
-        alert('⚠️ Permisos de cámara denegados. Permite el acceso a la cámara.');
-      } else if (error.name === 'NotFoundError') {
-        alert('⚠️ No se encontró cámara. Verifica tu webcam.');
-      }
-    }
-  };
-  */ // FIN DEL COMENTARIO
-
   // stopScanner eliminado - el useEffect maneja la limpieza automáticamente al cambiar scannerActive
   const stopScanner = () => {
     console.log('🛑 Detener escaneo solicitado');
     setScannerActive(false);
   };
-  
-  /* FUNCIÓN STOP COMENTADA
-  const stopScannerOLD = () => {
-    console.log('🛑 Deteniendo escáner...');
-    
-    // Detener el intervalo de escaneo
-    if (scanIntervalRef.current) {
-      clearInterval(scanIntervalRef.current);
-      scanIntervalRef.current = null;
-      console.log('✅ Intervalo de escaneo detenido');
-    }
-    
-    // Limpiar el lector
-    if (codeReaderRef.current) {
-      codeReaderRef.current = null;
-      console.log('✅ CodeReader limpiado');
-    }
-    
-    // Detener todos los tracks del stream
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => {
-        track.stop();
-        console.log('✅ Track detenido:', track.kind, track.label);
-      });
-      streamRef.current = null;
-    }
-    
-    // Limpiar el video element
-    if (videoRef.current) {
-      if (videoRef.current.srcObject) {
-        const tracks = videoRef.current.srcObject.getTracks();
-        tracks.forEach(track => {
-          track.stop();
-          console.log('✅ Track del video detenido:', track.kind);
-        });
-      }
-      videoRef.current.srcObject = null;
-      videoRef.current.pause();
-    }
-    
-    setScannerActive(false);
-    scannerActiveRef.current = false; // Actualizar la ref también
-    setScanMessage('');
-    console.log('✅ Escáner detenido completamente');
-  };
-  */ // FIN DEL COMENTARIO stopScannerOLD
 
   const handleQRScan = async (qrData) => {
     let parsedData = null;
@@ -957,7 +787,8 @@ export default function AsistenciasPanel() {
           jornada: alumno?.jornada || 'Matutina',
           carrera: alumno?.carrera || 'N/A',
           especialidad: alumno?.especialidad || 'N/A',
-          foto_url: getUserPhotoUrl('alumno', alumno?.carnet, alumno)
+          foto_url: getUserPhotoUrl('alumno', alumno?.carnet, alumno),
+          sexo: alumno?.sexo
         };
       } else {
         const docente = docentes.find(d => d.id === parseInt(parsedData.id));
@@ -979,7 +810,8 @@ export default function AsistenciasPanel() {
           cargo: docente?.cargo || 'N/A',
           departamento: docente?.departamento || 'N/A',
           jornada: docente?.jornada || 'Matutina',
-          foto_url: getUserPhotoUrl('personal', docente?.carnet, docente)
+          foto_url: getUserPhotoUrl('personal', docente?.carnet, docente),
+          sexo: docente?.sexo
         };
       }
 
@@ -1685,10 +1517,10 @@ export default function AsistenciasPanel() {
                     />
                   ) : null}
                   <div 
-                    className="w-full h-full flex items-center justify-center text-6xl"
+                    className="w-full h-full flex items-center justify-center"
                     style={{ display: modalData.foto_url ? 'none' : 'flex' }}
                   >
-                    {modalData.tipo === 'Alumno' ? '👨‍🎓' : '👨‍🏫'}
+                    <GenderAvatar sexo={modalData.sexo} size={70} />
                   </div>
                 </div>
                 {/* Indicador de éxito/error */}
