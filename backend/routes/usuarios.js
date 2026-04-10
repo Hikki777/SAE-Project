@@ -56,6 +56,7 @@ router.get('/', async (req, res) => {
         cargo: true,
         jornada: true,
         foto_path: true,
+        sexo: true,
         rol: true,
         activo: true,
         creado_en: true
@@ -81,7 +82,7 @@ router.post('/', upload.single('foto'), async (req, res) => {
       return res.status(403).json({ error: 'No autorizado. Solo administradores pueden crear usuarios.' });
     }
 
-    const { email, password, nombres, apellidos, cargo, jornada, rol } = req.body;
+    const { email, password, nombres, apellidos, cargo, jornada, sexo, rol } = req.body;
 
     if (!email || !password) {
       return res.status(400).json({ error: 'Email y contraseña son obligatorios' });
@@ -110,6 +111,7 @@ router.post('/', upload.single('foto'), async (req, res) => {
         apellidos,
         cargo,
         jornada,
+        sexo: sexo || null,
         foto_path,
         rol: rol || 'operador',
         activo: true
@@ -119,6 +121,7 @@ router.post('/', upload.single('foto'), async (req, res) => {
         email: true,
         nombres: true,
         apellidos: true,
+        sexo: true,
         rol: true,
         activo: true,
         foto_path: true
@@ -175,7 +178,7 @@ router.put('/:id', async (req, res) => {
     }
 
     const id = parseInt(req.params.id);
-    const { email, password, nombres, apellidos, cargo, jornada, rol, activo } = req.body;
+    const { email, password, nombres, apellidos, cargo, jornada, sexo, rol, activo } = req.body;
 
     const existingUser = await prisma.usuario.findUnique({ where: { id } });
     if (!existingUser) {
@@ -189,6 +192,7 @@ router.put('/:id', async (req, res) => {
       apellidos,
       cargo,
       jornada,
+      ...(sexo !== undefined && { sexo }),
       rol,
       activo: activo !== undefined ? activo : undefined
     };
@@ -204,7 +208,7 @@ router.put('/:id', async (req, res) => {
       data: updateData,
       select: {
         id: true, email: true, nombres: true, apellidos: true,
-        rol: true, activo: true, foto_path: true, cargo: true
+        sexo: true, rol: true, activo: true, foto_path: true, cargo: true
       }
     });
 

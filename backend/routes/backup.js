@@ -12,16 +12,34 @@ const { UPLOADS_DIR, TEMP_DIR, DB_PATH } = require('../utils/paths');
 const prisma = require('../prismaClient');
 const { logger } = require('../utils/logger');
 
-// Configurar multer para subir archivos de backup
-const upload = multer({ 
-  dest: TEMP_DIR,
-  limits: { fileSize: 500 * 1024 * 1024 } // 500MB max
-});
-
 // Crear directorio temp si no existe
 if (!fs.existsSync(TEMP_DIR)) {
   fs.mkdirSync(TEMP_DIR, { recursive: true });
 }
+
+// Configurar multer para subir archivos de backup
+const upload = multer({ 
+  dest: TEMP_DIR,
+  limits: { fileSize: 500 * 1024 * 1024 }, // 500MB max
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => {
+      cb(null, TEMP_DIR);
+    },
+    filename: (req, file, cb) => {
+      const timestamp = Date.now();
+      const originalName = Buffer.from(file.originalname, 'latin1').toString('utf8');
+      cb(null, `backup-${timestamp}-${originalName}`);
+    }
+  }),
+  fileFilter: (req, file, cb) => {
+    // Validar que sea un archivo .bak
+    if (file.originalname.endsWith('.bak') || file.mimetype === 'application/octet-stream') {
+      cb(null, true);
+    } else {
+      cb(new Error('Solo se permiten archivos .bak'), false);
+    }
+  }
+});
 
 /**
  * POST /api/backup/create
@@ -189,11 +207,27 @@ router.post('/restore', verifyJWT, upload.single('backup'), async (req, res) => 
   try {
     const { password } = req.body;
     
+    // DEBUG: Log the request details
+    logger.info({
+      hasFile: !!req.file,
+      fileName: req.file?.filename,
+      fileSize: req.file?.size,
+      fieldName: req.file?.fieldname,
+      hasPassword: !!password,
+      contentType: req.headers['content-type']
+    }, '[BACKUP] Detalles de solicitud de restauración');
+    
     if (!password) {
+      logger.error('Falta contraseña en solicitud de restauración');
       return res.status(400).json({ error: 'Se requiere contraseña' });
     }
     
     if (!backupFile) {
+      logger.error({
+        reqFile: req.file,
+        hasFile: !!req.file,
+        files: req.files
+      }, 'No se recibió archivo de backup');
       return res.status(400).json({ error: 'No se recibió archivo de backup' });
     }
     
@@ -374,6 +408,30 @@ router.post('/restore', verifyJWT, upload.single('backup'), async (req, res) => 
       error: error.message || 'Error al restaurar backup' 
     });
   }
+});
+
+// Middleware para manejar errores de multer
+router.use((err, req, res, next) => {
+  if (err instanceof multer.MulterError) {
+    if (err.code === 'LIMIT_FILE_SIZE') {
+      logger.error({ error: err.message }, 'Archivo de backup demasiado grande');
+      return res.status(400).json({ 
+        error: 'Archivo demasiado grande (máximo 500MB)' 
+      });
+    }
+    logger.error({ error: err.message, code: err.code }, 'Error de Multer');
+    return res.status(400).json({ 
+      error: 'Error al procesar archivo: ' + err.message 
+    });
+  } else if (err && err.message && err.message.includes('backup')) {
+    logger.error({ error: err.message }, 'Error de validación de archivo');
+    return res.status(400).json({ 
+      error: 'Error al validar archivo: ' + err.message
+    });
+  }
+  
+  // Si no es un error de multer, pasar al siguiente middleware
+  next(err);
 });
 
 module.exports = router;

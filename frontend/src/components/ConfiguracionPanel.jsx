@@ -1245,10 +1245,17 @@ const SistemaSettings = ({ currentUser }) => {
       return;
     }
 
+    if (!selectedBackupFile) {
+      toast.error('❌ No se ha seleccionado archivo de backup. Por favor seleccione uno e intente nuevamente.');
+      setShowRestoreModal(false);
+      return;
+    }
+
     if (!clickedConfirmRestore) {
         setClickedConfirmRestore(true);
         // Pequeño timeout para evitar doble click accidental
         setTimeout(() => setClickedConfirmRestore(false), 2000);
+        return; // Return to prevent double submission
     }
     
     setRestoringBackup(true);
@@ -1256,12 +1263,23 @@ const SistemaSettings = ({ currentUser }) => {
     formData.append('backup', selectedBackupFile);
     formData.append('password', restorePassword);
     
+    // DEBUG: Log FormData contents
+    console.log('[RESTORE] FormData info:', {
+      fileName: selectedBackupFile?.name,
+      fileSize: selectedBackupFile?.size,
+      fileType: selectedBackupFile?.type,
+      password: '****',
+      hasPassword: !!restorePassword
+    });
+    
     try {
       const response = await client.post('/backup/restore', formData);
       
       toast.success('✅ Sistema restaurado correctamente');
       toast('🔄 Reiniciando servidor...', { duration: 3000 });
       setShowRestoreModal(false);
+      setSelectedBackupFile(null);
+      setRestorePassword('');
       
       setTimeout(() => {
         window.location.hash = '/login';
@@ -1272,6 +1290,8 @@ const SistemaSettings = ({ currentUser }) => {
       
       if (error.response?.status === 401) {
         errorMsg = '❌ Contraseña incorrecta';
+      } else if (error.response?.status === 400) {
+        errorMsg = error.response.data?.error || 'Error en validación de archivo';
       } else if (error.response?.data?.error) {
         errorMsg = error.response.data.error;
       } else {
@@ -1281,6 +1301,7 @@ const SistemaSettings = ({ currentUser }) => {
       toast.error(errorMsg);
     } finally {
       setRestoringBackup(false);
+      setClickedConfirmRestore(false);
     }
   };
 
