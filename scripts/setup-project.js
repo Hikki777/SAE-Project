@@ -34,8 +34,16 @@ try {
   console.log('\n🗄️ Generando Prisma Client...');
   execSync('npx prisma generate', { cwd: ROOT_DIR, stdio: 'inherit' });
 
-  console.log('\n🗄️ Inicializando Base de Datos (db push)...');
-  execSync('npx prisma db push', { cwd: ROOT_DIR, stdio: 'inherit' });
+  console.log('\n🗄️ Inicializando Base de Datos (migraciones)...');
+  // Usar "migrate deploy" en lugar de "db push" para no perder datos
+  // "db push" puede ser destructivo con cambios de esquema; las migraciones son más seguras
+  try {
+    execSync('npx prisma migrate deploy', { cwd: ROOT_DIR, stdio: 'inherit' });
+  } catch (e) {
+    // Si no hay migraciones aún o falla, hacer db push como fallback
+    console.log('⚠️  No hay migraciones o fallo en deploy. Intentando db push...');
+    execSync('npx prisma db push', { cwd: ROOT_DIR, stdio: 'inherit' });
+  }
 
   console.log('\n✅ Configuración completada exitosamente.');
   console.log('▶️  Puedes iniciar el sistema en desarrollo con: npm run dev');

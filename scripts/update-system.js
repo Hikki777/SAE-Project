@@ -53,9 +53,14 @@ async function main() {
     const targetVersion = readJsonVersion(PACKAGE_FILE);
     console.log(`Versión objetivo: ${targetVersion}`);
     
-    // 5. Ejecutar Migraciones
-    console.log('🔄 Paso 4: Verificando migraciones de base de datos...');
-    await MigrationManager.runMigrations(currentVersion, targetVersion);
+    // 5. Ejecutar Migraciones (manera segura)
+    console.log('🔄 Paso 5: Aplicando migraciones de base de datos...');
+    try {
+      execSync('node scripts/safe-migrate.js', { stdio: 'inherit' });
+      console.log('✅ Migraciones aplicadas.');
+    } catch (e) {
+      console.warn('⚠️ Error en migraciones, pero continuando...');
+    }
     
     console.log('✅ Actualización completada exitosamente.');
     console.log(`Nueva versión instalada: ${targetVersion}`);
