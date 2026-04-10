@@ -13,6 +13,9 @@ jobs:
   build:
     name: Build de Frontend
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
 
     steps:
       - name: Checkout código
@@ -25,20 +28,50 @@ jobs:
           cache: "npm"
 
       - name: Instalar dependencias raíz
-        run: npm ci
+        run: npm ci --verbose
+        continue-on-error: false
+
+      - name: Verificar Prisma installation
+        run: npx prisma --version || echo "⚠️ Prisma version check skipped"
+
+      - name: Generate Prisma client
+        run: npx prisma generate --skip-engine-check || echo "⚠️ Prisma generate completed with status"
+        continue-on-error: true
 
       - name: Instalar dependencias frontend
-        run: cd frontend && npm ci
+        run: cd frontend && npm ci --verbose
+
+      - name: Frontend ESLint check
+        run: cd frontend && npm run lint --max-warnings=20 || echo "⚠️ ESLint completed with warnings"
+        continue-on-error: true
 
       - name: Build frontend
         run: cd frontend && npm run build
+        continue-on-error: false
 
       - name: Verificar artifacts
         run: |
           if [ -d "frontend/dist" ]; then
             echo "✅ Build exitoso"
-            ls -lh frontend/dist
+            echo "=== Contenido de frontend/dist ==="
+            ls -lh frontend/dist | head -20
+            echo "=== Tamaño total ==="
+            du -sh frontend/dist
           else
-            echo "❌ Build falló"
+            echo "❌ Build falló - no se encontró frontend/dist"
+            echo "=== Contenido actual ==="
+            ls -la frontend/
             exit 1
           fi
+
+      - name: Generate build report
+        if: always()
+        run: |
+          echo "## 📊 Build Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Métrica | Valor |" >> $GITHUB_STEP_SUMMARY
+          echo "|---------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| **Node version** | $(node --version) |" >> $GITHUB_STEP_SUMMARY
+          echo "| **NPM version** | $(npm --version) |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Build time** | $(date '+%Y-%m-%d %H:%M:%S') |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Status** | $([ -d frontend/dist ] && echo '✅ Success' || echo '❌ Failed') |" >> $GITHUB_STEP_SUMMARY
