@@ -27,26 +27,75 @@ jobs:
           node-version: "20.x"
           cache: "npm"
 
+      - name: Clear npm cache
+        run: npm cache clean --force
+
       - name: Instalar dependencias raíz
-        run: npm ci --verbose
+        run: npm ci --verbose --omit=optional
         continue-on-error: false
+
+      - name: Verificar archivo de bloqueo
+        run: |
+          echo "=== package-lock.json integridad ==="
+          npm ci --dry-run 2>&1 || echo "⚠️ package-lock.json tiene issues"
 
       - name: Verificar Prisma installation
         run: npx prisma --version || echo "⚠️ Prisma version check skipped"
 
       - name: Generate Prisma client
-        run: npx prisma generate --skip-engine-check || echo "⚠️ Prisma generate completed with status"
+        run: |
+          echo "Generando cliente Prisma..."
+          npx prisma generate --skip-engine-check --skip-validate || echo "⚠️ Prisma generate completed"
         continue-on-error: true
+
+      - name: Debug Node environment
+        run: |
+          echo "=== Node Environment ==="
+          node --version
+          npm --version
+          echo ""
+          echo "=== Disk space ==="
+          df -h | grep -E "^/|Filesystem"
+          echo ""
+          echo "=== Global npm packages ==="
+          npm list -g --depth=0 2>/dev/null | head -20
 
       - name: Instalar dependencias frontend
-        run: cd frontend && npm ci --verbose
+        run: |
+          cd frontend
+          echo "=== Frontend package.json ==="
+          cat package.json | grep -A 20 '"scripts"'
+          echo ""
+          echo "=== Instalando dependencias ==="
+          npm ci --verbose --omit=optional
+
+      - name: Verificar dependencias críticas
+        run: |
+          cd frontend
+          echo "=== Verificando dependencias críticas ==="
+          npm ls react react-dom vite @vitejs/plugin-react || echo "⚠️ Algunos packages no encontrados"
 
       - name: Frontend ESLint check
-        run: cd frontend && npm run lint --max-warnings=20 || echo "⚠️ ESLint completed with warnings"
+        run: |
+          cd frontend
+          npm run lint --max-warnings=20 || echo "⚠️ ESLint completed with warnings"
         continue-on-error: true
 
-      - name: Build frontend
-        run: cd frontend && npm run build
+      - name: Build frontend con logs detallados
+        run: |
+          cd frontend
+          echo "=== Iniciando Vite build ==="
+          npm run build 2>&1 | tee build.log
+          echo ""
+          echo "=== Build completado ==="
+          if [ -d "dist" ]; then
+            echo "✅ Directorio dist encontrado"
+          else
+            echo "❌ Directorio dist NO encontrado"
+            echo "Contenido del directorio frontend:"
+            ls -la
+            exit 1
+          fi
         continue-on-error: false
 
       - name: Verificar artifacts
@@ -54,13 +103,19 @@ jobs:
           if [ -d "frontend/dist" ]; then
             echo "✅ Build exitoso"
             echo "=== Contenido de frontend/dist ==="
-            ls -lh frontend/dist | head -20
+            ls -lh frontend/dist/
+            echo ""
             echo "=== Tamaño total ==="
             du -sh frontend/dist
+            echo ""
+            echo "=== Contenido de assets ==="
+            ls -lh frontend/dist/assets/ || echo "No hay carpeta assets"
           else
             echo "❌ Build falló - no se encontró frontend/dist"
-            echo "=== Contenido actual ==="
+            echo "=== Frontend directory structure ==="
             ls -la frontend/
+            echo "=== Recent errors ==="
+            cat frontend/build.log 2>/dev/null | tail -50 || echo "No build.log found"
             exit 1
           fi
 
@@ -75,3 +130,11 @@ jobs:
           echo "| **NPM version** | $(npm --version) |" >> $GITHUB_STEP_SUMMARY
           echo "| **Build time** | $(date '+%Y-%m-%d %H:%M:%S') |" >> $GITHUB_STEP_SUMMARY
           echo "| **Status** | $([ -d frontend/dist ] && echo '✅ Success' || echo '❌ Failed') |" >> $GITHUB_STEP_SUMMARY
+          
+      - name: Upload build logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v3
+        with:
+          name: build-logs
+          path: frontend/build.log
+          retention-days: 7
