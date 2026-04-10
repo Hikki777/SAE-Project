@@ -258,7 +258,7 @@ Si aún falla, agrega este step temporal al workflow para ver los logs:
 
 ---
 
-## ✅ Recomendación Final
+## 🔧 Recomendación Final
 
 **Implementar Opción A** (mejorar workflow) porque:
 1. ✅ Es la más segura y reversible
@@ -269,8 +269,39 @@ Si aún falla, agrega este step temporal al workflow para ver los logs:
 
 ---
 
+## ⚠️ Error Encontrado y Resuelto (9 Abril 2026)
+
+### Problema
+```
+CI/CD Pipeline failed with:
+"This request has been automatically failed because it uses 
+a deprecated version of `actions/upload-artifact` v3"
+```
+
+### Causa
+- `actions/upload-artifact@v3` fue deprecated el 16 de Abril 2024
+- GitHub Actions automáticamente rechaza workflows con acciones obsoletas
+- Necesitaba actualizar a `actions/upload-artifact@v4`
+
+### Solución Aplicada ✅
+```yaml
+# Antes:
+uses: actions/upload-artifact@v3
+
+# Después:
+uses: actions/upload-artifact@v4
+```
+
+**Commit**: `712a67c fix(ci): update actions/upload-artifact to v4 (v3 is deprecated)`
+
+### Estado Actual
+✅ Workflow ahora usa la versión correcta de todas las acciones
+✅ CI/CD Pipeline debería pasar en el próximo push
+✅ Build logs se subirán correctamente si hay fallo
+
+---
+
 **Próximos pasos:**
-1. Acceder a GitHub Actions para ver logs exactos
-2. Implementar mejoría en workflow
-3. Hacer push y verificar que CI/CD pase
-4. Si aún falla, ejecutar pasos de Debug Adicional
+1. Acceder a GitHub Actions para ver el siguiente run
+2. El workflow debería pasar ahora o mostrar el error real de build
+3. Si aún hay error en build, revisar build.log en artifacts
