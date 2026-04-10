@@ -67,7 +67,7 @@ jobs:
           cat package.json | grep -A 20 '"scripts"'
           echo ""
           echo "=== Instalando dependencias ==="
-          npm ci --verbose --omit=optional
+          npm ci --verbose --omit=optional --legacy-peer-deps
 
       - name: Verificar dependencias críticas
         run: |
