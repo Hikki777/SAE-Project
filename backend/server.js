@@ -58,6 +58,9 @@ const { logger, logSystemStart, setupGlobalErrorHandlers } = require('./utils/lo
 const { requestLogger, attachRequestId } = require('./middlewares/requestLogger');
 const { UPLOADS_DIR, FRONTEND_DIR } = require('./utils/paths');
 
+// Bootstrap automático de migraciones (se ejecuta en startup)
+const { initializeDatabase } = require('./db/bootstrap');
+
 const prisma = require('./prismaClient');
 const qrService = require('./services/qrService');
 
@@ -294,6 +297,11 @@ app.use((err, req, res, next) => {
 
 async function iniciar() {
   try {
+    // 0. BOOTSTRAP: Ejecutar migraciones automáticamente (antes de conectar a BD)
+    // - En desarrollo: silenciosamente si hay pendientes
+    // - En Electron: SIEMPRE (puede haber actualizaciones de versión)
+    await initializeDatabase();
+
     // Conectar BD
     logger.info('[DB] Probando conexión a base de datos...');
 
