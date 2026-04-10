@@ -98,22 +98,74 @@
 ; ──────────────────────────────────────────────────────────────
 !macro customUninstall
   SetDetailsPrint both
-  DetailPrint "Desinstalando SAE..."
 
-  MessageBox MB_ICONQUESTION|MB_YESNO|MB_DEFBUTTON2 \
-    "Desea eliminar tambien los datos guardados?$\n$\nEsto incluye la base de datos, fotos de alumnos y personal, reportes y backups almacenados en:$\n$\n$APPDATA\SAE$\n$\nSeleccione NO para conservar los datos (recomendado)." \
-    /SD IDNO IDNO customUninstall_skip
+  DetailPrint ""
+  DetailPrint "  ================================================"
+  DetailPrint "   Iniciando desinstalacion de SAE"
+  DetailPrint "  ================================================"
+  DetailPrint ""
 
-  DetailPrint "Eliminando datos de la aplicacion..."
+  DetailPrint "  Detectando archivos y directorios a eliminar..."
+  DetailPrint ""
+
+  MessageBox MB_ICONQUESTION|MB_YESNO|MB_DEFBUTTON1 \
+    "Desea eliminar tambien los datos guardados?$\n$\nEsto incluye la base de datos, fotos de alumnos y personal, reportes y backups almacenados en:$\n$\n$APPDATA\SAE$\n$\nSeleccione SI para eliminar completamente todos los datos (recomendado)." \
+    /SD IDYES IDNO customUninstall_skip
+
+  DetailPrint ""
+  DetailPrint "  Eliminando datos de la aplicacion..."
+  DetailPrint "  - Removiendo base de datos y archivos de datos..."
   RMDir /r "$APPDATA\SAE"
-  DetailPrint "Datos de la aplicacion eliminados."
+  DetailPrint "    ✓ Directorio $APPDATA\SAE eliminado"
+
+  DetailPrint ""
+  DetailPrint "  - Limpiando archivos temporales..."
+  RMDir /r "$LOCALAPPDATA\SAE"
+  DetailPrint "    ✓ Directorio $LOCALAPPDATA\SAE eliminado"
+
+  DetailPrint ""
+  DetailPrint "  - Eliminando cache de aplicacion..."
+  ${If} ${FileExists} "$LOCALAPPDATA\electron-cache"
+    RMDir /r "$LOCALAPPDATA\electron-cache"
+    DetailPrint "    ✓ Cache de Electron eliminado"
+  ${EndIf}
+
+  DetailPrint ""
+  DetailPrint "  - Removiendo accesos directos..."
+  RMDir /r "$SMPROGRAMS\SAE"
+  DetailPrint "    ✓ Accesos directos removidos"
+
+  DetailPrint ""
+  DetailPrint "  Datos de la aplicacion eliminados completamente."
+  DetailPrint ""
+  Goto customUninstall_finish
 
   customUninstall_skip:
-  DetailPrint "Desinstalacion completada."
+  DetailPrint ""
+  DetailPrint "  Conservando datos de la aplicacion."
+  DetailPrint "  Los datos permaneceren en: $APPDATA\SAE"
+  DetailPrint ""
+
+  customUninstall_finish:
+  DetailPrint "  Removiendo archivos de la aplicacion..."
+  DetailPrint "  - Eliminando componentes instalados..."
 !macroend
 
 !macro customUninstallSuccess
   DetailPrint ""
-  DetailPrint "SAE ha sido desinstalado correctamente."
+  DetailPrint "  ================================================"
+  DetailPrint "   Desinstalacion completada exitosamente"
+  DetailPrint "  ================================================"
+  DetailPrint ""
+  DetailPrint "   SAE ha sido removido correctamente del sistema."
+  DetailPrint ""
+  ${If} ${FileExists} "$APPDATA\SAE"
+    DetailPrint "   NOTA: Algunos datos residuales aun existen en:"
+    DetailPrint "   $APPDATA\SAE"
+    DetailPrint ""
+    DetailPrint "   Puede eliminarlos manualmente si lo desea."
+  ${EndIf}
+  DetailPrint ""
+  DetailPrint "  ================================================"
   DetailPrint ""
 !macroend
