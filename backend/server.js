@@ -7,49 +7,37 @@ const path = require('path');
 const fs = require('fs-extra');
 const crypto = require('crypto');
 
-// Buscar .env en múltiples ubicaciones (para desarrollo y Electron)
+// ─────────────────────────────────────────────
+// CONFIGURACIÓN DE VARIABLES DE ENTORNO
+// ─────────────────────────────────────────────
 const projectRoot = path.join(__dirname, '..');
 const saeDataDir = process.env.SAE_DATA_DIR; // En Electron, = %APPDATA%\SAE
 const isProduction = process.env.NODE_ENV === 'production';
 const isElectron = !!process.env.RESOURCES_PATH || !!process.env.ELECTRON_RUN_AS_NODE;
-const electronResourcesPath = process.env.RESOURCES_PATH || path.join(__dirname, '..', '..');
 
-// ORDEN DE BÚSQUEDA: Electron production (AppData) → desarrollo local → legacy
-const envPaths = [
-  // 1. En Electron: buscar en AppData\SAE primero (en producción)
-  ...(isElectron && saeDataDir ? [path.join(saeDataDir, '.env')] : []),
-  // 2. Fallback a resources/.env (si existe en producción)
-  ...(isProduction ? [path.join(electronResourcesPath, '.env')] : []),
-  // 3. Backend local
-  path.join(__dirname, '.env'),
-  // 4. Raíz del proyecto (desarrollo)
-  path.join(projectRoot, '.env'),
-  // 5. Legacy
-  path.join(projectRoot, 'resources', 'app', '.env'),
-];
+console.log(`[INIT] Entorno detectado: ${isElectron ? 'Electron (Production)' : 'Development'}`);
+console.log(`[INIT] SAE_DATA_DIR: ${saeDataDir || 'N/A'}`);
 
-let envLoaded = false;
-for (const envPath of envPaths) {
-  if (fs.existsSync(envPath)) {
-    require('dotenv').config({ path: envPath });
-    console.log(`[ENV] Variables de entorno cargadas desde: ${envPath}`);
-    envLoaded = true;
-    break;
-  }
-}
-
-// Si no se encontró .env en Electron, crear uno automáticamente en AppData\SAE
-if (!envLoaded && isElectron && saeDataDir) {
+// EN ELECTRON: SOLO usar SAE_DATA_DIR\.env (ignorar todos los demás)
+// EN DESARROLLO: buscar en múltiples ubicaciones
+if (isElectron && saeDataDir) {
+  // MODO ELECTRON: FORZAR uso de AppData\SAE\.env
   const saeEnvPath = path.join(saeDataDir, '.env');
-  console.log(`[ENV] No se encontró .env. Creando archivo en: ${saeEnvPath}`);
   
-  try {
-    // Crear un .env con secretos generados aleatoriamente
-    const jwtSecret = crypto.randomBytes(32).toString('hex');
-    const hmacSecret = crypto.randomBytes(32).toString('hex');
-    const updateSecret = crypto.randomBytes(32).toString('hex');
+  // 1. Si existe el archivo, cargarlo
+  if (fs.existsSync(saeEnvPath)) {
+    console.log(`[ENV] Cargando variables desde: ${saeEnvPath}`);
+    require('dotenv').config({ path: saeEnvPath, override: true }); // override=true para forzar
+  } else {
+    // 2. Si NO existe, crear uno con secretos aleatorios
+    console.log(`[ENV] .env no encontrado. Creando automáticamente en: ${saeEnvPath}`);
     
-    const envContent = `# SAE - Sistema de Administración Educativa
+    try {
+      const jwtSecret = crypto.randomBytes(32).toString('hex');
+      const hmacSecret = crypto.randomBytes(32).toString('hex');
+      const updateSecret = crypto.randomBytes(32).toString('hex');
+      
+      const envContent = `# SAE - Sistema de Administración Educativa
 # Variables de Entorno Generadas Automáticamente
 # Fecha: ${new Date().toISOString()}
 
@@ -68,20 +56,39 @@ ALLOWED_ORIGINS=
 # Nota: DATABASE_URL se configura automáticamente
 # Ubicación de datos: ${saeDataDir}
 `;
-    
-    fs.writeFileSync(saeEnvPath, envContent, 'utf8');
-    console.log('[ENV] Archivo .env creado automáticamente con secretos seguros');
-    
-    // Ahora cargar el archivo que acaba de crear
-    require('dotenv').config({ path: saeEnvPath });
-    envLoaded = true;
-  } catch (err) {
-    console.error(`[ENV] Error creando archivo .env: ${err.message}`);
+      
+      fs.writeFileSync(saeEnvPath, envContent, 'utf8');
+      console.log('[ENV] Archivo .env creado automáticamente');
+      
+      // Cargar el archivo que acaba de crear
+      require('dotenv').config({ path: saeEnvPath, override: true });
+    } catch (err) {
+      console.error(`[ENV] Error creando .env: ${err.message}`);
+      console.error('[ENV] Continuando con variables del sistema (puede fallar)');
+    }
   }
-}
-
-if (!envLoaded) {
-  console.log('[ENV] Advertencia: No se encontró archivo .env en ubicaciones esperadas');
+} else {
+  // MODO DESARROLLO: buscar en múltiples ubicaciones
+  const projectRoot = path.join(__dirname, '..');
+  const envPaths = [
+    path.join(__dirname, '.env'),              // backend/.env
+    path.join(projectRoot, '.env'),            // raíz del proyecto
+    path.join(projectRoot, 'resources', 'app', '.env'), // legacy
+  ];
+  
+  let envLoaded = false;
+  for (const envPath of envPaths) {
+    if (fs.existsSync(envPath)) {
+      require('dotenv').config({ path: envPath });
+      console.log(`[ENV] Variables cargadas desde: ${envPath}`);
+      envLoaded = true;
+      break;
+    }
+  }
+  
+  if (!envLoaded) {
+    console.log('[ENV] Advertencia: No se encontró .env en ubicaciones esperadas');
+  }
 }
 
 // ─────────────────────────────────────────────
