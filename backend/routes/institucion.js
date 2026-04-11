@@ -80,6 +80,20 @@ router.get('/', async (req, res) => {
       logger.info('Institución creada con valores por defecto');
     }
 
+    // Validar que logo_path corresponde a un archivo que existe
+    // Si no existe, usar logo_base64 como fallback
+    if (institucion.logo_path) {
+      const logoFullPath = path.join(UPLOADS_DIR, institucion.logo_path);
+      if (!fs.existsSync(logoFullPath)) {
+        logger.warn(`Logo no encontrado en: ${logoFullPath}. Usando logo_base64 como fallback.`);
+        institucion = {
+          ...institucion,
+          logo_path: null  // No enviar referencia a archivo que no existe
+          // logo_base64 ya está incluído en el objeto
+        };
+      }
+    }
+
     res.json(institucion);
   } catch (error) {
     // AUTO-HEALING: Si falta la columna ciclo_escolar, intentar agregarla

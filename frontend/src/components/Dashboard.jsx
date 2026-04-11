@@ -38,45 +38,78 @@ import offlineQueueService from "../services/offlineQueue";
 import { CardSkeleton } from "./LoadingSpinner";
 
 // Componente para cargar logos con fetch API (solución CORS para Electron)
-function LogoImage({ logoPath }) {
+// Recibe logoPath (ruta relativa) y logoBase64 (fallback si no existe archivo)
+function LogoImage({ logoPath, logoBase64 }) {
   const [imageSrc, setImageSrc] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (!logoPath) {
-      setIsLoading(false);
-      return;
-    }
-
     const loadLogo = async () => {
       try {
-        // Si es una URL completa, usarla directamente
-        if (logoPath.startsWith("http")) {
-          setImageSrc(logoPath);
+        // Tentar cargar logoPath primero
+        if (logoPath) {
+          // Si es una URL completa, usarla directamente
+          if (logoPath.startsWith("http")) {
+            setImageSrc(logoPath);
+            setIsLoading(false);
+            return;
+          }
+
+          // Obtener URL base de la API
+          const api =
+            localStorage.getItem("api_url") ||
+            import.meta.env.VITE_API_URL ||
+            "";
+          const base = api.startsWith("http")
+            ? api.replace(/\/api$/, "").replace(/\/$/, "")
+            : "";
+
+          if (base) {
+            // Intentar cargar desde servidor
+            const response = await fetch(`${base}/uploads/${logoPath}?t=${Date.now()}`, {
+              method: "GET",
+              credentials: "include",
+            });
+
+            if (response.ok) {
+              const blob = await response.blob();
+              const objectUrl = URL.createObjectURL(blob);
+              setImageSrc(objectUrl);
+              setIsLoading(false);
+              return;
+            }
+            // Si falla, caer a logoBase64
+          }
+        }
+
+        // Fallback: usar logoBase64 si existe
+        if (logoBase64) {
+          setImageSrc(logoBase64);
           setIsLoading(false);
           return;
         }
 
-        // Obtener URL base de la API
-        const api =
-          localStorage.getItem("api_url") ||
-          import.meta.env.VITE_API_URL ||
-          "";
-        const base = api.startsWith("http")
-          ? api.replace(/\/api$/, "").replace(/\/$/, "")
-          : "";
-
-        if (!base) {
-          console.warn("No API URL available for logo");
-          setIsLoading(false);
-          return;
+        // Sin imagen disponible
+        setIsLoading(false);
+      } catch (error) {
+        console.warn("Error loading logo, using fallback:", error);
+        // Fallback final: logoBase64
+        if (logoBase64) {
+          setImageSrc(logoBase64);
         }
+        setIsLoading(false);
+      }
+    };
 
-        // Usar fetch con CORS para descargar la imagen
-        const response = await fetch(`${base}/uploads/${logoPath}?t=${Date.now()}`, {
-          method: "GET",
-          credentials: "include",
-        });
+    loadLogo();
+
+    // Cleanup
+    return () => {
+      if (imageSrc && imageSrc.startsWith("blob:")) {
+        URL.revokeObjectURL(imageSrc);
+      }
+    };
+  }, [logoPath, logoBase64]);
 
         if (!response.ok) {
           console.error("Error fetching logo:", response.statusText);
@@ -326,8 +359,8 @@ export default function Dashboard() {
           <div className="flex flex-col md:flex-row items-center justify-between relative z-10 gap-6">
             <div className="flex items-center gap-6">
               {/* Logo con efecto glass */}
-              {institucion.logo_path ? (
-                <LogoImage logoPath={institucion.logo_path} />
+              {institucion.logo_path || institucion.logo_base64 ? (
+                <LogoImage logoPath={institucion.logo_path} logoBase64={institucion.logo_base64} />
               ) : (
                 <div className="bg-white/10 p-4 rounded-2xl backdrop-blur-md ring-1 ring-white/20">
                   <Activity className="text-blue-200 w-16 h-16" />
