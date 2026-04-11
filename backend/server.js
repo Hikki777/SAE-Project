@@ -27,7 +27,7 @@ if (isElectron && saeDataDir) {
   // 1. Si existe el archivo, cargarlo
   if (fs.existsSync(saeEnvPath)) {
     console.log(`[ENV] Cargando variables desde: ${saeEnvPath}`);
-    require('dotenv').config({ path: saeEnvPath, override: true }); // override=true para forzar
+    require('dotenv').config({ path: saeEnvPath, override: false }); // override=false: .env rellena vacíos pero no pisa Electron vars
   } else {
     // 2. Si NO existe, crear uno con secretos aleatorios
     console.log(`[ENV] .env no encontrado. Creando automáticamente en: ${saeEnvPath}`);
@@ -53,7 +53,7 @@ NODE_ENV=production
 # Socket.IO (Web Production - Dejar vacío para Electron)
 ALLOWED_ORIGINS=
 
-# Nota: DATABASE_URL se configura automáticamente
+# Nota: DATABASE_URL se configura automáticamente por Electron
 # Ubicación de datos: ${saeDataDir}
 `;
       
@@ -61,7 +61,8 @@ ALLOWED_ORIGINS=
       console.log('[ENV] Archivo .env creado automáticamente');
       
       // Cargar el archivo que acaba de crear
-      require('dotenv').config({ path: saeEnvPath, override: true });
+      // override=false: el .env rellena los vacíos pero NO pisa lo que Electron pasó
+      require('dotenv').config({ path: saeEnvPath, override: false });
     } catch (err) {
       console.error(`[ENV] Error creando .env: ${err.message}`);
       console.error('[ENV] Continuando con variables del sistema (puede fallar)');
