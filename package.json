@@ -25,6 +25,7 @@
     "prisma:push": "npx prisma db push",
     "prisma:reset": "npx prisma migrate reset --force",
     "migrate:safe": "node scripts/safe-migrate.js",
+    "test:backups": "node scripts/test-backups.js",
     "utils": "node scripts/utils.js",
     "admin": "node scripts/crear-admin.js",
     "reset-admin": "node scripts/crear-admin.js",
