@@ -111,32 +111,6 @@ function LogoImage({ logoPath, logoBase64 }) {
     };
   }, [logoPath, logoBase64]);
 
-        if (!response.ok) {
-          console.error("Error fetching logo:", response.statusText);
-          setIsLoading(false);
-          return;
-        }
-
-        const blob = await response.blob();
-        const objectUrl = URL.createObjectURL(blob);
-        setImageSrc(objectUrl);
-      } catch (error) {
-        console.error("Error loading logo:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadLogo();
-
-    // Cleanup
-    return () => {
-      if (imageSrc && imageSrc.startsWith("blob:")) {
-        URL.revokeObjectURL(imageSrc);
-      }
-    };
-  }, [logoPath]);
-
   if (isLoading) {
     return (
       <div className="bg-white/10 p-4 rounded-2xl backdrop-blur-md ring-1 ring-white/20 w-24 h-24 animate-pulse" />
