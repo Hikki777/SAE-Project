@@ -144,11 +144,20 @@ const { UPLOADS_DIR, FRONTEND_DIR } = require('./utils/paths');
 // ─────────────────────────────────────────────
 if (isElectron && saeDataDir) {
   const requiredDirs = [
-    saeDataDir,                        // AppData\SAE
-    path.join(saeDataDir, 'prisma'),   // AppData\SAE\prisma
-    path.join(saeDataDir, 'logs'),     // AppData\SAE\logs
-    path.join(saeDataDir, 'uploads'),  // AppData\SAE\uploads
-    path.join(saeDataDir, 'backups'),  // AppData\SAE\backups
+    saeDataDir,                                    // AppData\SAE
+    path.join(saeDataDir, 'prisma'),              // AppData\SAE\prisma
+    path.join(saeDataDir, 'logs'),                // AppData\SAE\logs
+    path.join(saeDataDir, 'uploads'),             // AppData\SAE\uploads
+    path.join(saeDataDir, 'uploads', 'alumnos'),
+    path.join(saeDataDir, 'uploads', 'docentes'),
+    path.join(saeDataDir, 'uploads', 'directores'),
+    path.join(saeDataDir, 'uploads', 'personal'),
+    path.join(saeDataDir, 'uploads', 'qr'),
+    path.join(saeDataDir, 'uploads', 'justificaciones'),
+    path.join(saeDataDir, 'uploads', 'logos'),    // ← Importante para subir logos
+    path.join(saeDataDir, 'uploads', 'usuarios'),
+    path.join(saeDataDir, 'backups'),             // AppData\SAE\backups
+    path.join(saeDataDir, 'temp'),                // AppData\SAE\temp
   ];
   
   for (const dir of requiredDirs) {
@@ -269,6 +278,14 @@ app.use(
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   })
 );
+
+// Middleware adicional para asegurar CORS en todas las respuestas (incluyendo static files en Electron)
+app.use((req, res, next) => {
+  // Estos headers ya fueron aplicados por cors() arriba, pero nos aseguramos para archivos estáticos
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Cross-Origin-Resource-Policy', 'cross-origin');
+  next();
+});
 
 // Rate limiting general para toda la API
 app.use('/api', apiLimiter);
