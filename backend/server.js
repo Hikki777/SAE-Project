@@ -5,16 +5,27 @@ const compression = require('compression');
 const NodeCache = require('node-cache');
 const path = require('path');
 const fs = require('fs-extra');
+const crypto = require('crypto');
 
 // Buscar .env en múltiples ubicaciones (para desarrollo y Electron)
 const projectRoot = path.join(__dirname, '..');
-// En producción Electron, resourcesPath = release/win-unpacked/resources (un nivel sobre app.asar.unpacked)
+const saeDataDir = process.env.SAE_DATA_DIR; // En Electron, = %APPDATA%\SAE
+const isProduction = process.env.NODE_ENV === 'production';
+const isElectron = !!process.env.RESOURCES_PATH || !!process.env.ELECTRON_RUN_AS_NODE;
 const electronResourcesPath = process.env.RESOURCES_PATH || path.join(__dirname, '..', '..');
+
+// ORDEN DE BÚSQUEDA: Electron production (AppData) → desarrollo local → legacy
 const envPaths = [
-  path.join(electronResourcesPath, '.env'), // resources/.env (producción Electron) ← PRIMERO
-  path.join(__dirname, '.env'),              // backend/.env
-  path.join(projectRoot, '.env'),            // raíz del proyecto (desarrollo)
-  path.join(projectRoot, 'resources', 'app', '.env'), // legacy
+  // 1. En Electron: buscar en AppData\SAE primero (en producción)
+  ...(isElectron && saeDataDir ? [path.join(saeDataDir, '.env')] : []),
+  // 2. Fallback a resources/.env (si existe en producción)
+  ...(isProduction ? [path.join(electronResourcesPath, '.env')] : []),
+  // 3. Backend local
+  path.join(__dirname, '.env'),
+  // 4. Raíz del proyecto (desarrollo)
+  path.join(projectRoot, '.env'),
+  // 5. Legacy
+  path.join(projectRoot, 'resources', 'app', '.env'),
 ];
 
 let envLoaded = false;
@@ -26,6 +37,49 @@ for (const envPath of envPaths) {
     break;
   }
 }
+
+// Si no se encontró .env en Electron, crear uno automáticamente en AppData\SAE
+if (!envLoaded && isElectron && saeDataDir) {
+  const saeEnvPath = path.join(saeDataDir, '.env');
+  console.log(`[ENV] No se encontró .env. Creando archivo en: ${saeEnvPath}`);
+  
+  try {
+    // Crear un .env con secretos generados aleatoriamente
+    const jwtSecret = crypto.randomBytes(32).toString('hex');
+    const hmacSecret = crypto.randomBytes(32).toString('hex');
+    const updateSecret = crypto.randomBytes(32).toString('hex');
+    
+    const envContent = `# SAE - Sistema de Administración Educativa
+# Variables de Entorno Generadas Automáticamente
+# Fecha: ${new Date().toISOString()}
+
+# Secretos para Autenticación (Generados aleatoriamente)
+JWT_SECRET=${jwtSecret}
+HMAC_SECRET=${hmacSecret}
+UPDATE_SECRET=${updateSecret}
+
+# Configuración del Servidor
+PORT=5000
+NODE_ENV=production
+
+# Socket.IO (Web Production - Dejar vacío para Electron)
+ALLOWED_ORIGINS=
+
+# Nota: DATABASE_URL se configura automáticamente
+# Ubicación de datos: ${saeDataDir}
+`;
+    
+    fs.writeFileSync(saeEnvPath, envContent, 'utf8');
+    console.log('[ENV] Archivo .env creado automáticamente con secretos seguros');
+    
+    // Ahora cargar el archivo que acaba de crear
+    require('dotenv').config({ path: saeEnvPath });
+    envLoaded = true;
+  } catch (err) {
+    console.error(`[ENV] Error creando archivo .env: ${err.message}`);
+  }
+}
+
 if (!envLoaded) {
   console.log('[ENV] Advertencia: No se encontró archivo .env en ubicaciones esperadas');
 }
