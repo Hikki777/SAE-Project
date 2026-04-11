@@ -57,6 +57,12 @@ ALLOWED_ORIGINS=
 # Ubicación de datos: ${saeDataDir}
 `;
       
+      // Garantizar que el directorio padre existe antes de escribir
+      if (!fs.existsSync(saeDataDir)) {
+        fs.mkdirSync(saeDataDir, { recursive: true });
+        console.log(`[ENV] Directorio SAE creado: ${saeDataDir}`);
+      }
+      
       fs.writeFileSync(saeEnvPath, envContent, 'utf8');
       console.log('[ENV] Archivo .env creado automáticamente');
       
@@ -132,6 +138,30 @@ if (process.env.DATABASE_URL && process.env.DATABASE_URL.includes('file:')) {
 const { logger, logSystemStart, setupGlobalErrorHandlers } = require('./utils/logger');
 const { requestLogger, attachRequestId } = require('./middlewares/requestLogger');
 const { UPLOADS_DIR, FRONTEND_DIR } = require('./utils/paths');
+
+// ─────────────────────────────────────────────
+// CREAR DIRECTORIOS NECESARIOS EN APPDATA\SAE
+// ─────────────────────────────────────────────
+if (isElectron && saeDataDir) {
+  const requiredDirs = [
+    saeDataDir,                        // AppData\SAE
+    path.join(saeDataDir, 'prisma'),   // AppData\SAE\prisma
+    path.join(saeDataDir, 'logs'),     // AppData\SAE\logs
+    path.join(saeDataDir, 'uploads'),  // AppData\SAE\uploads
+    path.join(saeDataDir, 'backups'),  // AppData\SAE\backups
+  ];
+  
+  for (const dir of requiredDirs) {
+    try {
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+        console.log(`[DIRS] Directorio creado: ${dir}`);
+      }
+    } catch (err) {
+      console.error(`[DIRS] Error creando directorio ${dir}: ${err.message}`);
+    }
+  }
+}
 
 // Bootstrap automático de migraciones (se ejecuta en startup)
 const { initializeDatabase } = require('./db/bootstrap');
