@@ -30,6 +30,19 @@ if (!envLoaded) {
   console.log('[ENV] Advertencia: No se encontró archivo .env en ubicaciones esperadas');
 }
 
+// ─────────────────────────────────────────────
+// VALIDAR VARIABLES DE ENTORNO CRÍTICAS
+// ─────────────────────────────────────────────
+const requiredEnvVars = ['JWT_SECRET', 'HMAC_SECRET'];
+const missingVars = requiredEnvVars.filter(v => !process.env[v]);
+if (missingVars.length > 0) {
+  console.error(`\n❌ ERROR CRÍTICO: Faltan variables de entorno requeridas:`);
+  missingVars.forEach(v => console.error(`   - ${v}`));
+  console.error(`\n   Por favor, configura estas variables en tu archivo .env`);
+  console.error(`   Ver .env.example para referencia.\n`);
+  process.exit(1);
+}
+
 // Inicializar caché en memoria (TTL: 10 minutos)
 const cache = new NodeCache({ stdTTL: 600, checkperiod: 120 });
 

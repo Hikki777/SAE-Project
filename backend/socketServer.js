@@ -45,14 +45,33 @@ async function verifySocketAuth(socket, next) {
  * Inicializar servidor de Socket.IO
  */
 function initializeSocketServer(httpServer) {
+  const isDev = process.env.NODE_ENV === 'development';
+  const isElectron = !!process.env.RESOURCES_PATH || !!process.env.ELECTRON_RUN_AS_NODE;
+  
+  let corsOrigin = '*';
+  if (isDev) {
+    corsOrigin = ['http://localhost:5173', 'http://localhost:5000'];
+  } else if (isElectron) {
+    corsOrigin = true;
+  } else if (process.env.ALLOWED_ORIGINS) {
+    corsOrigin = process.env.ALLOWED_ORIGINS.split(',');
+  } else {
+    console.warn('⚠️  CORS no configurado. En producción, define ALLOWED_ORIGINS=domain.com en .env');
+  }
+  
   const io = socketIO(httpServer, {
     cors: {
-      origin: "*", // En producción, especificar orígenes permitidos
-      methods: ["GET", "POST"]
+      origin: corsOrigin,
+      methods: ["GET", "POST"],
+      credentials: true
     },
-    transports: ['websocket', 'polling'], // WebSocket primero, polling como fallback
+    transports: ['websocket', 'polling'],
     pingTimeout: 60000,
-    pingInterval: 25000
+    pingInterval: 25000,
+    reconnection: true,
+    reconnectionDelay: 1000,
+    reconnectionDelayMax: 5000,
+    reconnectionAttempts: 10
   });
 
   // ============================================
@@ -84,15 +103,41 @@ function initializeSocketServer(httpServer) {
     });
     
     // Evento: Heartbeat (cliente sigue vivo)
+    // Con timeout y validación para evitar sincronización perdida
     socket.on('heartbeat', async () => {
-      try {
-        await prisma.equipo.update({
-          where: { id: parseInt(socket.equipoId) },
-          data: { ultima_conexion: new Date() }
-        });
-      } catch (error) {
-        console.error('Error actualizando heartbeat:', error);
+      const equipoId = parseInt(socket.equipoId);
+      if (!equipoId) {
+        console.warn('Heartbeat sin equipoId válido');
+        return;
       }
+
+      const updateWithRetry = async (retries = 3) => {
+        for (let attempt = 1; attempt <= retries; attempt++) {
+          try {
+            // Timeout de 5 segundos para la actualización
+            const updatePromise = prisma.equipo.update({
+              where: { id: equipoId },
+              data: { ultima_conexion: new Date() }
+            });
+
+            const timeoutPromise = new Promise((_, reject) =>
+              setTimeout(() => reject(new Error('Timeout')), 5000)
+            );
+
+            await Promise.race([updatePromise, timeoutPromise]);
+            return true; // Éxito
+          } catch (error) {
+            if (attempt === retries) {
+              console.error(`Error final en heartbeat para equipo ${equipoId}:`, error.message);
+              return false;
+            }
+            // Esperar antes de reintentar (exponential backoff: 100ms, 200ms, 400ms)
+            await new Promise(resolve => setTimeout(resolve, 100 * Math.pow(2, attempt - 1)));
+          }
+        }
+      };
+
+      await updateWithRetry();
     });
     
     socket.on('disconnect', (reason) => {

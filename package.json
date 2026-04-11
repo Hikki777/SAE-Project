@@ -99,7 +99,6 @@
       "electron/**/*",
       "frontend/dist/**/*",
       "backend/**/*",
-      ".env",
       "package.json",
       "node_modules/**/*"
     ],

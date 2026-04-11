@@ -6,12 +6,31 @@ const extract = require('extract-zip');
 const CryptoJS = require('crypto-js');
 const crypto = require('crypto');
 
-const TEMP_DIR = path.join(__dirname, '../backend/temp');
-const BACKUP_DIR = path.join(__dirname, '../backups');
+// Detectar entorno y configurar rutas base
+const isProduction = process.env.NODE_ENV === 'production';
+const isElectron = !!process.env.RESOURCES_PATH || !!process.env.ELECTRON_RUN_AS_NODE;
+const saeDataDir = process.env.SAE_DATA_DIR; // De Electron main.js
+
+// Rutas base dependen del entorno
+let projectRoot = path.resolve(__dirname, '..');
+let dataDir = projectRoot;
+
+if (isProduction && isElectron && saeDataDir) {
+  dataDir = saeDataDir; // %APPDATA%\SAE en Windows
+} else if (isProduction && !isElectron) {
+  dataDir = process.env.DATA_DIR || projectRoot;
+}
+
+const TEMP_DIR = path.join(dataDir, 'temp');
+const BACKUP_DIR = path.join(dataDir, 'backups');
 
 // Asegurar directorios
 if (!fs.existsSync(TEMP_DIR)) fs.mkdirSync(TEMP_DIR, { recursive: true });
 if (!fs.existsSync(BACKUP_DIR)) fs.mkdirSync(BACKUP_DIR, { recursive: true });
+
+if (process.env.NODE_ENV === 'development') {
+  console.log(`[BACKUP] TEMP_DIR=${TEMP_DIR} | BACKUP_DIR=${BACKUP_DIR}`);
+}
 
 /**
  * Copiar directorio recursivamente (alternativa a fs.cpSync para compatibilidad)
