@@ -298,11 +298,18 @@ app.get('/uploads/*', (req, res) => {
     return res.status(404).json({ error: 'Archivo no encontrado' });
   }
   
-  // Configurar headers CORS explícitamente
+  // Configurar headers CORS explícitamente para Electron + navegador
   res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type');
+  res.header('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Range, Origin');
+  res.header('Access-Control-Expose-Headers', 'Content-Length, Content-Type, Content-Range');
+  
+  // Headers para no requerir permisos CORS en Electron
   res.header('Cross-Origin-Resource-Policy', 'cross-origin');
+  res.header('Cross-Origin-Embedder-Policy', 'require-corp');
+  
+  // Cache control (las imágenes no cambian frecuentemente)
+  res.header('Cache-Control', 'public, max-age=86400');
   
   // Enviar el archivo
   res.sendFile(filePath);

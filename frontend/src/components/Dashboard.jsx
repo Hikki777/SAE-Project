@@ -37,6 +37,97 @@ import toast, { Toaster } from "react-hot-toast";
 import offlineQueueService from "../services/offlineQueue";
 import { CardSkeleton } from "./LoadingSpinner";
 
+// Componente para cargar logos con fetch API (solución CORS para Electron)
+function LogoImage({ logoPath }) {
+  const [imageSrc, setImageSrc] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    if (!logoPath) {
+      setIsLoading(false);
+      return;
+    }
+
+    const loadLogo = async () => {
+      try {
+        // Si es una URL completa, usarla directamente
+        if (logoPath.startsWith("http")) {
+          setImageSrc(logoPath);
+          setIsLoading(false);
+          return;
+        }
+
+        // Obtener URL base de la API
+        const api =
+          localStorage.getItem("api_url") ||
+          import.meta.env.VITE_API_URL ||
+          "";
+        const base = api.startsWith("http")
+          ? api.replace(/\/api$/, "").replace(/\/$/, "")
+          : "";
+
+        if (!base) {
+          console.warn("No API URL available for logo");
+          setIsLoading(false);
+          return;
+        }
+
+        // Usar fetch con CORS para descargar la imagen
+        const response = await fetch(`${base}/uploads/${logoPath}?t=${Date.now()}`, {
+          method: "GET",
+          credentials: "include",
+        });
+
+        if (!response.ok) {
+          console.error("Error fetching logo:", response.statusText);
+          setIsLoading(false);
+          return;
+        }
+
+        const blob = await response.blob();
+        const objectUrl = URL.createObjectURL(blob);
+        setImageSrc(objectUrl);
+      } catch (error) {
+        console.error("Error loading logo:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadLogo();
+
+    // Cleanup
+    return () => {
+      if (imageSrc && imageSrc.startsWith("blob:")) {
+        URL.revokeObjectURL(imageSrc);
+      }
+    };
+  }, [logoPath]);
+
+  if (isLoading) {
+    return (
+      <div className="bg-white/10 p-4 rounded-2xl backdrop-blur-md ring-1 ring-white/20 w-24 h-24 animate-pulse" />
+    );
+  }
+
+  if (!imageSrc) {
+    return null;
+  }
+
+  return (
+    <div className="bg-white p-2 rounded-2xl shadow-xl transform hover:scale-105 transition-transform duration-300 ring-4 ring-white/10 backdrop-blur-md">
+      <img
+        src={imageSrc}
+        alt="Logo institucional"
+        className="w-24 h-24 object-contain"
+        onError={() => {
+          console.error("Error displaying logo");
+        }}
+      />
+    </div>
+  );
+}
+
 export default function Dashboard() {
   const [stats, setStats] = useState({
     status: "unknown",
@@ -236,30 +327,7 @@ export default function Dashboard() {
             <div className="flex items-center gap-6">
               {/* Logo con efecto glass */}
               {institucion.logo_path ? (
-                <div className="bg-white p-2 rounded-2xl shadow-xl transform hover:scale-105 transition-transform duration-300 ring-4 ring-white/10 backdrop-blur-md">
-                  <img
-                    src={
-                      institucion.logo_path.startsWith("http")
-                        ? institucion.logo_path
-                        : (() => {
-                            const api =
-                              localStorage.getItem("api_url") ||
-                              import.meta.env.VITE_API_URL ||
-                              "";
-                            const base = api.startsWith("http")
-                              ? api.replace(/\/api$/, "").replace(/\/$/, "")
-                              : "";
-                            return `${base}/uploads/${institucion.logo_path}?t=${Date.now()}`;
-                          })()
-                    }
-                    alt="Logo institucional"
-                    className="w-24 h-24 object-contain"
-                    onError={(e) => {
-                      e.target.style.display = "none";
-                      console.error("Error cargando logo");
-                    }}
-                  />
-                </div>
+                <LogoImage logoPath={institucion.logo_path} />
               ) : (
                 <div className="bg-white/10 p-4 rounded-2xl backdrop-blur-md ring-1 ring-white/20">
                   <Activity className="text-blue-200 w-16 h-16" />
