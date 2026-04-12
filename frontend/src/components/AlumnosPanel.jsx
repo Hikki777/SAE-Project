@@ -1086,7 +1086,7 @@ export default function AlumnosPanel() {
 
 
                {/* Campos carrera/especialidad solo visibles para Diversificado */}
-               {formData.grado && (formData.grado.includes('Diversificado') || formData.grado.includes('Bachillerato')) && (
+               {formData.grado && (formData.grado.includes('Diversificado') || formData.grado.includes('Bachillerato') || formData.grado.includes('Graduandos')) && (
                  <>
                    <div>
                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Carrera</label>

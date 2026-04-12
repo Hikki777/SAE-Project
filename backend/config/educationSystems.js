@@ -57,8 +57,8 @@ const sistemaEducativoGuatemala = {
         {
           nombre: 'Secretariado y Oficinista',
           duracion: 2,
-          gradoInicio: '4to Diversificado',
-          gradoGraduacion: '5to Diversificado'
+          gradoInicio: '4to. Diversificado',
+          gradoGraduacion: '5to. Diversificado'
         },
         {
           nombre: 'Perito Contador',
@@ -69,7 +69,7 @@ const sistemaEducativoGuatemala = {
         {
           nombre: 'Secretariado Bilingüe',
           duracion: 3,
-          gradoInicio: '4to Diversificado',
+          gradoInicio: '4to. Diversificado',
           gradoGraduacion: 'Graduandos'
         },
         {

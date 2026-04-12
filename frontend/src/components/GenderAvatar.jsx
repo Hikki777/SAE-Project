@@ -2,8 +2,8 @@ import React from 'react';
 import { User } from 'lucide-react';
 
 const GenderAvatar = ({ sexo, size = 20, className = '' }) => {
-  const isFemale = typeof sexo === 'string' && (sexo.toLowerCase() === 'femenino' || sexo.toLowerCase() === 'mujer');
-  const isMale = typeof sexo === 'string' && (sexo.toLowerCase() === 'masculino' || sexo.toLowerCase() === 'hombre');
+  const isFemale = typeof sexo === 'string' && (sexo.toLowerCase() === 'femenino' || sexo.toLowerCase() === 'mujer' || sexo.toLowerCase() === 'f');
+  const isMale = typeof sexo === 'string' && (sexo.toLowerCase() === 'masculino' || sexo.toLowerCase() === 'hombre' || sexo.toLowerCase() === 'm');
 
   const baseClasses = `w-full h-full flex items-center justify-center ${className}`;
 

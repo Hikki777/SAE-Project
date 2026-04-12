@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X, LogOut, Home, Settings, BarChart3, Wrench, User, Clock, Users, FileText, Activity, ClipboardList, LogIn, Camera, Plus, Trash2, Save, XCircle, CheckCircle, Upload, Download, FileArchive, AlertOctagon, AlertCircle, RefreshCcw, Server, Lock, RotateCcw, Edit, FolderOpen, Building2, Timer } from 'lucide-react';
+import WebcamCaptureModal from './WebcamCaptureModal';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
 import GenderAvatar from './GenderAvatar';
@@ -240,6 +241,15 @@ const InstitucionSettings = ({ formData, setFormData, logoPreview, handleLogoCha
               className="w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2.5 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
             />
           </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Municipio</label>
+            <input
+              type="text"
+              value={formData.municipio}
+              onChange={(e) => setFormData({ ...formData, municipio: e.target.value })}
+              className="w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2.5 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
+            />
+          </div>
         </div>
       </div>
 
@@ -428,7 +438,7 @@ const DirectoresList = ({ directores, loading, onAdd, onEdit, onDelete }) => (
 );
 
 // --- SUBCOMPONENT: Director Modal ---
-const DirectorModal = ({ isOpen, onClose, director, onSave, saving }) => {
+const DirectorModal = ({ isOpen, onClose, director, onSave, saving, onWebcamClick, webcamPhoto, onClearWebcamPhoto }) => {
   const [localData, setLocalData] = React.useState({
     nombres: '',
     apellidos: '',
@@ -461,7 +471,15 @@ const DirectorModal = ({ isOpen, onClose, director, onSave, saving }) => {
       setPreview(null);
     }
     setFoto(null);
+    if (onClearWebcamPhoto) onClearWebcamPhoto();
   }, [director, isOpen]);
+
+  React.useEffect(() => {
+    if (webcamPhoto) {
+      setFoto(webcamPhoto.file);
+      setPreview(webcamPhoto.preview);
+    }
+  }, [webcamPhoto]);
 
   if (!isOpen) return null;
 
@@ -515,7 +533,25 @@ const DirectorModal = ({ isOpen, onClose, director, onSave, saving }) => {
                 <Upload size={20} className="text-white" />
               </div>
             </div>
-            <input 
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="p-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg text-gray-600 dark:text-gray-300 transition-colors"
+                title="Subir archivo"
+              >
+                <Upload size={18} />
+              </button>
+              <button
+                type="button"
+                onClick={onWebcamClick}
+                className="p-2 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded-lg text-blue-600 dark:text-blue-400 transition-colors"
+                title="Tomar foto con webcam"
+              >
+                <Camera size={18} />
+              </button>
+            </div>
+            <input
               type="file" 
               ref={fileInputRef} 
               className="hidden" 
@@ -586,8 +622,8 @@ const DirectorModal = ({ isOpen, onClose, director, onSave, saving }) => {
                 onChange={(e) => setLocalData({ ...localData, sexo: e.target.value })}
                 className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 transition-all outline-none"
               >
-                <option value="M">Masculino</option>
-                <option value="F">Femenino</option>
+                <option value="Masculino">Masculino</option>
+                <option value="Femenino">Femenino</option>
               </select>
             </div>
 
@@ -1937,7 +1973,9 @@ export default function ConfiguracionPanel() {
     email: '',
     telefono: '',
     pais: '',
-    departamento: ''
+    departamento: '',
+    municipio: '',
+    ciclo_escolar: new Date().getFullYear()
   });
   const [logoPreview, setLogoPreview] = useState(null);
   const [logoBase64, setLogoBase64] = useState(null);
@@ -1955,6 +1993,7 @@ export default function ConfiguracionPanel() {
     cargo: '',
     jornada: '',
     rol: 'operador',
+    sexo: 'Masculino',
     foto_file: null,
     foto_preview: null
   });
@@ -1981,6 +2020,9 @@ export default function ConfiguracionPanel() {
     foto_file: null,
     foto_preview: null
   });
+  const [directorWebcamPhoto, setDirectorWebcamPhoto] = useState(null);
+  const [showWebcam, setShowWebcam] = useState(false);
+  const [webcamTarget, setWebcamTarget] = useState(null); // 'user' | 'director'
 
   // Modal de confirmación reutilizable (reemplaza window.confirm en toda la panel)
   const [confirmDialog, setConfirmDialog] = useState(null);
@@ -2127,6 +2169,7 @@ export default function ConfiguracionPanel() {
       formData.append('cargo', newUser.cargo);
       formData.append('jornada', newUser.jornada);
       formData.append('rol', newUser.rol);
+      formData.append('sexo', newUser.sexo);
       
       if (newUser.foto_file) {
         formData.append('foto', newUser.foto_file);
@@ -2146,7 +2189,16 @@ export default function ConfiguracionPanel() {
 
   const handleUpdateUser = async () => {
     try {
-      await client.put(`/usuarios/${editingUserId}`, newUser);
+      await client.put(`/usuarios/${editingUserId}`, {
+        email: newUser.email,
+        password: newUser.password,
+        nombres: newUser.nombres,
+        apellidos: newUser.apellidos,
+        cargo: newUser.cargo,
+        jornada: newUser.jornada,
+        rol: newUser.rol,
+        sexo: newUser.sexo
+      });
       toast.success('Usuario actualizado correctamente');
       closeUserModal();
       fetchUsuarios();
@@ -2270,8 +2322,8 @@ export default function ConfiguracionPanel() {
         direccion: data.direccion || '',
         email: data.email || '',
         telefono: data.telefono || '',
-        pais: data.pais || '',
         departamento: data.departamento || '',
+        municipio: data.municipio || '',
         ciclo_escolar: data.ciclo_escolar || new Date().getFullYear()
       });
       
@@ -2498,7 +2550,7 @@ export default function ConfiguracionPanel() {
             <div className="p-5 space-y-3 max-h-[70vh] overflow-y-auto custom-scrollbar">
               {/* Foto del Usuario */}
               <div className="flex flex-col items-center gap-1 mb-1">
-                <div className="relative group/avatar-new">
+                <div className="relative group/avatar-new flex flex-col items-center">
                   <div className="w-20 h-20 rounded-full bg-gray-100 dark:bg-gray-700 border-2 border-dashed border-gray-300 dark:border-gray-600 flex items-center justify-center overflow-hidden">
                     {newUser.foto_preview ? (
                       <img src={newUser.foto_preview} alt="Preview" className="w-full h-full object-cover" />
@@ -2506,17 +2558,35 @@ export default function ConfiguracionPanel() {
                       <Camera size={28} className="text-gray-400" />
                     )}
                   </div>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleNewUserPhotoChange}
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                  />
-                  <div className="absolute inset-0 bg-black/20 rounded-full flex items-center justify-center opacity-0 group-hover/avatar-new:opacity-100 transition-opacity pointer-events-none">
-                    <Plus size={18} className="text-white" />
+                  <div className="flex gap-2 mt-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const input = document.createElement('input');
+                        input.type = 'file';
+                        input.accept = 'image/*';
+                        input.onchange = (e) => handleNewUserPhotoChange(e);
+                        input.click();
+                      }}
+                      className="p-1.5 bg-gray-100 dark:bg-gray-700 rounded-lg text-gray-500 hover:text-blue-600 transition-colors"
+                      title="Subir foto"
+                    >
+                      <Upload size={14} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setWebcamTarget('user');
+                        setShowWebcam(true);
+                      }}
+                      className="p-1.5 bg-blue-50 dark:bg-blue-900/30 rounded-lg text-blue-600 dark:text-blue-400 hover:bg-blue-100 transition-colors"
+                      title="Usar Cámara"
+                    >
+                      <Camera size={14} />
+                    </button>
                   </div>
                 </div>
-                <p className="text-[10px] text-gray-500 uppercase font-semibold">Foto de Perfil</p>
+                <p className="text-[10px] text-gray-500 uppercase font-semibold mt-1">Foto de Perfil</p>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -2617,6 +2687,17 @@ export default function ConfiguracionPanel() {
                   <option value="admin">Administrador (Total)</option>
                 </select>
               </div>
+              <div>
+                <label className="block text-sm font-medium mb-1 dark:text-gray-300">Género</label>
+                <select
+                  value={newUser.sexo}
+                  onChange={e => setNewUser({...newUser, sexo: e.target.value})}
+                  className="w-full px-3 py-1.5 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white text-sm"
+                >
+                  <option value="Masculino">Masculino</option>
+                  <option value="Femenino">Femenino</option>
+                </select>
+              </div>
             </div>
 
             <div className="p-5 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 flex justify-end gap-3">
@@ -2644,6 +2725,32 @@ export default function ConfiguracionPanel() {
         director={editingDirector}
         onSave={handleSaveDirector}
         saving={saving}
+        onWebcamClick={() => {
+          setWebcamTarget('director');
+          setShowWebcam(true);
+        }}
+        webcamPhoto={directorWebcamPhoto}
+        onClearWebcamPhoto={() => setDirectorWebcamPhoto(null)}
+      />
+
+      <WebcamCaptureModal 
+        isOpen={showWebcam}
+        onClose={() => {
+          setShowWebcam(false);
+          setWebcamTarget(null);
+        }}
+        onCapture={(file, preview) => {
+          if (webcamTarget === 'user') {
+            setNewUser(prev => ({
+              ...prev,
+              foto_file: file,
+              foto_preview: preview
+            }));
+          } else if (webcamTarget === 'director') {
+            setDirectorWebcamPhoto({ file, preview });
+          }
+          setShowWebcam(false);
+        }}
       />
     </div>
   );

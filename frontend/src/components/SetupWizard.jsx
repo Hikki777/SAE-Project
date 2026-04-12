@@ -2,10 +2,11 @@ import React, { useState } from 'react';
 import client from '../api/client';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
-import { School, User, Lock, Clock, CheckCircle, MapPin, Mail, Phone, LogOut, Upload, Edit2, Server, Wifi, Globe, Eye, EyeOff, Copy, Download, Users } from 'lucide-react';
+import { School, User, Lock, Clock, CheckCircle, MapPin, Mail, Phone, LogOut, Upload, Edit2, Server, Wifi, Globe, Eye, EyeOff, Copy, Download, Users, Camera } from 'lucide-react';
 import ConnectionModal from './ConnectionModal';
 import PasswordStrengthIndicator from './PasswordStrengthIndicator';
 import GenderAvatar from './GenderAvatar';
+import WebcamCaptureModal from './WebcamCaptureModal';
 
 export default function SetupWizard({ onComplete }) {
   const navigate = useNavigate();
@@ -57,8 +58,11 @@ export default function SetupWizard({ onComplete }) {
   
   // Estado para múltiples directores
   const [directores, setDirectores] = useState([
-    { nombres: '', apellidos: '', cargo: 'Director General', sexo: '', jornada: '', foto_file: null, foto_preview: null }
+    { nombres: '', apellidos: '', cargo: 'Director General', sexo: 'Masculino', jornada: 'Matutina', foto_file: null, foto_preview: null }
   ]);
+
+  const [showWebcam, setShowWebcam] = useState(false);
+  const [webcamTarget, setWebcamTarget] = useState({ type: null, index: null }); // type: 'admin' | 'director'
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -74,8 +78,8 @@ export default function SetupWizard({ onComplete }) {
       nombres: '', 
       apellidos: '', 
       cargo: 'Director General',
-      sexo: '',
-      jornada: '',
+      sexo: 'Masculino',
+      jornada: 'Matutina',
       foto_file: null,
       foto_preview: null
     }]);
@@ -901,8 +905,8 @@ export default function SetupWizard({ onComplete }) {
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white text-gray-900 text-sm"
                               >
                                 <option value="">Seleccione...</option>
-                                <option value="M">Masculino</option>
-                                <option value="F">Femenino</option>
+                                <option value="Masculino">Masculino</option>
+                                <option value="Femenino">Femenino</option>
                               </select>
                             </div>
                             <div>
@@ -933,12 +937,35 @@ export default function SetupWizard({ onComplete }) {
                                     <GenderAvatar sexo={director.sexo} size={30} />
                                   )}
                                 </div>
-                                <input
-                                  type="file"
-                                  accept="image/*"
-                                  onChange={(e) => handleDirectorFotoChange(index, e)}
-                                  className="block w-full text-xs text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                                />
+                                <div className="flex gap-2">
+                                   <button
+                                     type="button"
+                                     onClick={() => {
+                                       const input = document.createElement('input');
+                                       input.type = 'file';
+                                       input.accept = 'image/*';
+                                       input.onchange = (e) => handleDirectorFotoChange(index, e);
+                                       input.click();
+                                     }}
+                                     className="p-1.5 bg-gray-100 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-200 transition-colors flex items-center gap-1.5"
+                                     title="Subir archivo"
+                                   >
+                                      <Upload size={14} />
+                                      <span className="text-[10px] font-semibold">Subir</span>
+                                   </button>
+                                   <button
+                                     type="button"
+                                     onClick={() => {
+                                       setWebcamTarget({ type: 'director', index });
+                                       setShowWebcam(true);
+                                     }}
+                                     className="p-1.5 bg-blue-50 border border-blue-200 rounded-lg text-blue-600 hover:bg-blue-100 transition-colors flex items-center gap-1.5"
+                                     title="Tomar foto"
+                                   >
+                                      <Camera size={14} />
+                                      <span className="text-[10px] font-semibold">Cámara</span>
+                                   </button>
+                                </div>
                               </div>
                             </div>
                           </div>
@@ -1047,8 +1074,8 @@ export default function SetupWizard({ onComplete }) {
                           required
                         >
                           <option value="">Seleccione...</option>
-                          <option value="M">Masculino</option>
-                          <option value="F">Femenino</option>
+                          <option value="Masculino">Masculino</option>
+                          <option value="Femenino">Femenino</option>
                         </select>
                       </div>
                     </div>
@@ -1087,12 +1114,35 @@ export default function SetupWizard({ onComplete }) {
                             <GenderAvatar sexo={formData.admin_sexo} size={35} />
                           )}
                         </div>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={handleAdminFotoChange}
-                          className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                        />
+                        <div className="flex gap-2">
+                           <button
+                             type="button"
+                             onClick={() => {
+                               const input = document.createElement('input');
+                               input.type = 'file';
+                               input.accept = 'image/*';
+                               input.onchange = (e) => handleAdminFotoChange(e);
+                               input.click();
+                             }}
+                             className="p-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-200 transition-colors flex items-center gap-2"
+                             title="Subir archivo"
+                           >
+                              <Upload size={16} />
+                              <span className="text-xs font-semibold">Subir</span>
+                           </button>
+                           <button
+                             type="button"
+                             onClick={() => {
+                               setWebcamTarget({ type: 'admin', index: null });
+                               setShowWebcam(true);
+                             }}
+                             className="p-2 bg-blue-50 border border-blue-200 rounded-lg text-blue-600 hover:bg-blue-100 transition-colors flex items-center gap-2"
+                             title="Tomar foto"
+                           >
+                              <Camera size={16} />
+                              <span className="text-xs font-semibold">Cámara</span>
+                           </button>
+                        </div>
                      </div>
                   </div>
 
@@ -1485,6 +1535,28 @@ export default function SetupWizard({ onComplete }) {
         onCancel={cancelApprovalWait}
         errorMessage={connectionError}
         approvalCheckCount={approvalCheckCount}
+      />
+      <WebcamCaptureModal
+        isOpen={showWebcam}
+        onClose={() => {
+          setShowWebcam(false);
+          setWebcamTarget({ type: null, index: null });
+        }}
+        onCapture={(file, preview) => {
+          if (webcamTarget.type === 'admin') {
+            setFormData(prev => ({
+              ...prev,
+              admin_foto_file: file,
+              admin_foto_preview: preview
+            }));
+          } else if (webcamTarget.type === 'director' && webcamTarget.index !== null) {
+            const updated = [...directores];
+            updated[webcamTarget.index].foto_file = file;
+            updated[webcamTarget.index].foto_preview = preview;
+            setDirectores(updated);
+          }
+          setShowWebcam(false);
+        }}
       />
     </div>
   );

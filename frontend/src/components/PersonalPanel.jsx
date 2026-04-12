@@ -822,9 +822,7 @@ export default function PersonalPanel() {
                             className="w-full h-full object-cover"
                           />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center text-gray-400 dark:text-gray-500">
-                            <User size={24} />
-                          </div>
+                          <GenderAvatar sexo={miembro.sexo} size={24} />
                         )}
                       </div>
                       <div>
