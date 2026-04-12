@@ -25,6 +25,81 @@ client.interceptors.request.use((config) => {
   return config;
 });
 
+// --- SUBCOMPONENT: UserPhoto (con fallback para fotos 404) ---
+function UserPhoto({ fotoPath, nombres, sexo, size = 'lg', onError }) {
+  const [imageSrc, setImageSrc] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    if (!fotoPath) {
+      setIsLoading(false);
+      return;
+    }
+
+    const loadPhoto = async () => {
+      try {
+        const response = await fetch(`${BASE_URL}/uploads/${fotoPath}?t=${Date.now()}`, {
+          method: 'GET',
+          credentials: 'include',
+        });
+
+        if (response.ok) {
+          const blob = await response.blob();
+          const objectUrl = URL.createObjectURL(blob);
+          setImageSrc(objectUrl);
+          setIsLoading(false);
+          return;
+        }
+
+        // Si falla, usar fallback
+        setIsLoading(false);
+      } catch (error) {
+        setIsLoading(false);
+      }
+    };
+
+    loadPhoto();
+
+    return () => {
+      if (imageSrc && imageSrc.startsWith('blob:')) {
+        URL.revokeObjectURL(imageSrc);
+      }
+    };
+  }, [fotoPath]);
+
+  const sizeClasses = {
+    sm: 'w-10 h-10',
+    md: 'w-12 h-12',
+    lg: 'w-14 h-14',
+    xl: 'w-20 h-20',
+  };
+
+  const avatarSize = {
+    sm: 20,
+    md: 24,
+    lg: 35,
+    xl: 50,
+  };
+
+  if (imageSrc) {
+    return (
+      <img 
+        src={imageSrc}
+        alt={nombres}
+        className={`${sizeClasses[size]} rounded-full object-cover border-2 border-blue-100 dark:border-blue-900`}
+        onError={() => onError?.()}
+      />
+    );
+  }
+
+  // Fallback a GenderAvatar
+  return (
+    <div className={`${sizeClasses[size]} rounded-full bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center border-2 border-blue-100 dark:border-blue-900 overflow-hidden`}>
+      <GenderAvatar sexo={sexo} size={avatarSize[size]} />
+    </div>
+  );
+}
+
 // --- SUBCOMPONENT: Settings Sidebar ---
 const SettingsSidebar = ({ activeTab, setActiveTab }) => {
   const tabs = [
@@ -304,11 +379,7 @@ const DirectoresList = ({ directores, loading, onAdd, onEdit, onDelete }) => (
           >
             <div className="relative">
               {director.foto_path ? (
-                <img 
-                  src={`${BASE_URL}/uploads/${director.foto_path}`}
-                  alt={director.nombres}
-                  className="w-14 h-14 rounded-full object-cover border-2 border-blue-100 dark:border-blue-900"
-                />
+                <UserPhoto fotoPath={director.foto_path} nombres={director.nombres} sexo={director.sexo} size="lg" />
               ) : (
                 <div className="w-14 h-14 rounded-full bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center border-2 border-blue-100 dark:border-blue-900 overflow-hidden">
                   <GenderAvatar sexo={director.sexo} size={35} />
@@ -565,7 +636,7 @@ const DirectorModal = ({ isOpen, onClose, director, onSave, saving }) => {
 };
 
 // --- SUBCOMPONENT: Usuario Settings ---
-const UsuarioSettings = ({ usuarios, loadingUsers, showUserModal, setShowUserModal, newUser, setNewUser, handleCreateUser, handleDeleteUser, fetchUsuarios, handlePhotoUpload, handleNewUserPhotoChange }) => {
+const UsuarioSettings = ({ usuarios, loadingUsers, showUserModal, setShowUserModal, newUser, setNewUser, handleCreateUser, handleDeleteUser, fetchUsuarios, handlePhotoUpload, handleNewUserPhotoChange, setIsEditingUser, setEditingUserId }) => {
   const fileInputRef = React.useRef(null);
   const [uploadingUserId, setUploadingUserId] = React.useState(null);
 
@@ -635,13 +706,10 @@ const UsuarioSettings = ({ usuarios, loadingUsers, showUserModal, setShowUserMod
                     <div className="relative group/avatar cursor-pointer" onClick={() => onCameraClick(user.id)}>
                       <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center overflow-hidden border border-gray-300 dark:border-gray-600">
                         {user.foto_path ? (
-                          <img 
-                            src={`${BASE_URL}/uploads/${user.foto_path}?t=${Date.now()}`} 
-                            alt="Avatar" 
-                            className="w-full h-full object-cover"
-                          />
+                          <UserPhoto fotoPath={user.foto_path} nombres={user.nombres} sexo={user.sexo} size="sm" />
                         ) : (
                           <GenderAvatar sexo={user.sexo} size={24} />
+                        )}
                         )}
                       </div>
                       <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover/avatar:opacity-100 transition-opacity">
