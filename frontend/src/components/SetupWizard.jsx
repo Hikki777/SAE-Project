@@ -464,7 +464,7 @@ export default function SetupWizard({ onComplete }) {
               </div>
             </div>
             <div className="text-xs text-blue-300 mt-8">
-              SAE - Sistema de Administración Educativa v1.1.0
+              SAE - Sistema de Administración Educativa v1.1.1
             </div>
           </div>
 
