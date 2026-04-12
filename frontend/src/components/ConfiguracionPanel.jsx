@@ -710,7 +710,6 @@ const UsuarioSettings = ({ usuarios, loadingUsers, showUserModal, setShowUserMod
                         ) : (
                           <GenderAvatar sexo={user.sexo} size={24} />
                         )}
-                        )}
                       </div>
                       <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover/avatar:opacity-100 transition-opacity">
                          <Camera size={16} className="text-white" />
