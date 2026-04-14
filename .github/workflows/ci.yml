@@ -31,7 +31,7 @@ jobs:
         run: npm cache clean --force
 
       - name: Instalar dependencias raíz
-        run: npm install --no-audit --no-fund --legacy-peer-deps
+        run: npm install --no-audit --no-fund --legacy-peer-deps --ignore-scripts
         continue-on-error: false
 
       - name: Verificar archivo de bloqueo
