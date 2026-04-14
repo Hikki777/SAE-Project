@@ -102,7 +102,7 @@ npm run test:backups
   "size": 1396506,
   "metadata": {
     "type": "auto-update",
-    "systemVersion": "1.1.1"
+    "systemVersion": "1.1.2"
   }
 }
 ```

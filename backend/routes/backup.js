@@ -90,7 +90,7 @@ router.post('/create', verifyJWT, async (req, res) => {
     
     const internalMeta = {
         fecha: new Date().toISOString(),
-        version: '1.1.1',
+        version: '1.1.2',
         institucion: institucion?.nombre || 'SAE System'
     };
     archive.append(JSON.stringify(internalMeta), { name: 'backup-info.json' });
