@@ -41,7 +41,7 @@ async function prepareVirginDb() {
         ...process.env,
         DATABASE_URL: `file:${absoluteVirginPath}`
       },
-      cwd: projectRoot, // Cambiado rootDir por projectRoot si corresponde, pero aquí es rootDir
+      cwd: rootDir,
       stdio: 'inherit'
     });
 
