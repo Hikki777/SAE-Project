@@ -340,7 +340,7 @@ function App() {
   const logoUrl = institucion?.logo_path?.startsWith("http")
     ? institucion.logo_path
     : institucion?.logo_path
-      ? `${getBaseUrl()}/uploads/${institucion.logo_path}`
+      ? `${getBaseUrl()}/api/uploads/${institucion.logo_path}`
       : null;
 
   return (
@@ -363,7 +363,7 @@ function App() {
                 <div className="w-24 h-24 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-6 text-red-600 dark:text-red-400 border-2 border-red-100 dark:border-red-800 shadow-inner overflow-hidden">
                   {user?.foto_path ? (
                     <img
-                      src={`${getBaseUrl()}/uploads/${user.foto_path}`}
+                      src={`${getBaseUrl()}/api/uploads/${user.foto_path}`}
                       alt="Perfil"
                       className="w-full h-full object-cover"
                     />
@@ -427,7 +427,7 @@ function App() {
                       <div className="w-12 h-12 rounded-full bg-blue-500/50 dark:bg-slate-700 border-2 border-blue-400 dark:border-slate-600 flex items-center justify-center text-white dark:text-emerald-400 shadow-lg overflow-hidden transition-all duration-300 group-hover:border-white">
                         {user.foto_path ? (
                           <img
-                            src={`${getBaseUrl()}/uploads/${user.foto_path}`}
+                            src={`${getBaseUrl()}/api/uploads/${user.foto_path}`}
                             alt="Profile"
                             className="w-full h-full object-cover"
                           />
@@ -501,7 +501,7 @@ function App() {
                       institucion?.logo_path?.startsWith("http")
                         ? institucion.logo_path
                         : institucion?.logo_path
-                          ? `${getBaseUrl()}/uploads/${institucion.logo_path}`
+                          ? `${getBaseUrl()}/api/uploads/${institucion.logo_path}`
                           : "./logo.png"
                     }
                     alt="Logo"

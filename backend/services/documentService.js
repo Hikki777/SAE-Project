@@ -151,7 +151,7 @@ Se extiende la presente constancia a solicitud del interesado/a para los fines q
     return new Promise((resolve, reject) => {
       stream.on('finish', () => {
         logger.info({ alumnoId, filepath }, 'Constancia de inscripción generada');
-        resolve({ filepath, filename, url: `/uploads/documentos/${filename}` });
+        resolve({ filepath, filename, url: `/api/uploads/documentos/${filename}` });
       });
       stream.on('error', reject);
     });
@@ -233,7 +233,7 @@ Se extiende la presente carta a solicitud del interesado/a, para los fines que e
     return new Promise((resolve, reject) => {
       stream.on('finish', () => {
         logger.info({ alumnoId, filepath }, 'Carta de buena conducta generada');
-        resolve({ filepath, filename, url: `/uploads/documentos/${filename}` });
+        resolve({ filepath, filename, url: `/api/uploads/documentos/${filename}` });
       });
       stream.on('error', reject);
     });
@@ -325,7 +325,7 @@ const generarCertificadoEstudios = async (alumnoId) => {
     return new Promise((resolve, reject) => {
       stream.on('finish', () => {
         logger.info({ alumnoId, filepath }, 'Certificado de estudios generado');
-        resolve({ filepath, filename, url: `/uploads/documentos/${filename}` });
+        resolve({ filepath, filename, url: `/api/uploads/documentos/${filename}` });
       });
       stream.on('error', reject);
     });
@@ -453,7 +453,7 @@ const generarCarnetAlumno = async (alumnoId) => {
       .toFile(filepath);
 
     logger.info({ alumnoId, filepath }, 'Carnet de alumno generado');
-    return { filepath, filename, url: `/uploads/carnets/${filename}` };
+    return { filepath, filename, url: `/api/uploads/carnets/${filename}` };
 
   } catch (error) {
     logger.error({ err: error, alumnoId }, 'Error generando carnet de alumno');
@@ -574,7 +574,7 @@ const generarCarnetPersonal = async (personalId) => {
       .toFile(filepath);
 
     logger.info({ personalId, filepath }, 'Carnet de personal generado');
-    return { filepath, filename, url: `/uploads/carnets/${filename}` };
+    return { filepath, filename, url: `/api/uploads/carnets/${filename}` };
 
   } catch (error) {
     logger.error({ err: error, personalId }, 'Error generando carnet de personal');

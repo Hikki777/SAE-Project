@@ -1,4 +1,4 @@
-# 🛠️ Análisis de Anomalías y Fixes - Sistema SAE v1.1.1
+# 🛠️ Análisis de Anomalías y Fixes - Sistema SAE v1.1.2
 
 **Fecha:** 11 de Abril de 2026  
 **Objetivo:** Asegurar que el instalador esté libre de errores críticos  
@@ -234,6 +234,6 @@ El fix de **#4 (rollback en uploads)** es crítico pero requiere refactorizació
 
 ---
 
-**Generado:** 11 de Abril, 2026  
-**Versión:** SAE 1.1.1  
-**Estado:** Ready for installer build
+**Generado:** 13 de Abril, 2026  
+**Versión:** SAE 1.1.2  
+**Estado:** Ready for installer build (v1.1.2 stable)

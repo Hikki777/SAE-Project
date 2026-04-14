@@ -9,7 +9,7 @@ export default function CardAusente({ persona, onJustificar, onOmitir }) {
     if (persona.foto_path) {
       return persona.foto_path.startsWith('http') 
         ? persona.foto_path 
-        : `${BASE_URL}/uploads/${persona.foto_path}`;
+        : `${BASE_URL}/api/uploads/${persona.foto_path}`;
     }
     
     if (!persona.carnet) return null;
@@ -35,7 +35,7 @@ export default function CardAusente({ persona, onJustificar, onOmitir }) {
       }
     }
     
-    return `${BASE_URL}/uploads/${directory}/${prefix}_${cleanCarnet}.png`;
+    return `${BASE_URL}/api/uploads/${directory}/${prefix}_${cleanCarnet}.png`;
   };
 
   const fotoUrl = getFotoUrl();

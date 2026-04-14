@@ -36,7 +36,7 @@ Si no hay: continúa normalmente
 ### Flujo en Auto-Update
 
 ```
-Usuario tiene SAE 1.1.1 instalado
+Usuario tiene SAE 1.1.2 instalado
     ↓
 electron-updater descarga v1.1.2
     ↓
@@ -129,5 +129,5 @@ backend/
 
 ---
 
-**Versión**: SAE 1.1.1+  
+**Versión**: SAE 1.1.2+  
 **Cambio**: Migraciones ahora 100% automáticas en producción

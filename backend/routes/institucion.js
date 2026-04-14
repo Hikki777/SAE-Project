@@ -96,20 +96,6 @@ router.get('/', async (req, res) => {
 
     res.json(institucion);
   } catch (error) {
-    // AUTO-HEALING: Si falta la columna ciclo_escolar, intentar agregarla
-    if (error.message && error.message.includes('ciclo_escolar') && error.message.includes('does not exist')) {
-        logger.warn('[AUTO-REPAIR] Columna ciclo_escolar faltante, intentando reparar...');
-        try {
-            await prisma.$executeRawUnsafe('ALTER TABLE institucion ADD COLUMN ciclo_escolar INTEGER DEFAULT 2026');
-            logger.info('[AUTO-REPAIR] Columna ciclo_escolar agregada exitosamente');
-            
-            let institucion = await prisma.institucion.findFirst({ where: { id: 1 } });
-            return res.json(institucion);
-        } catch (repairError) {
-            logger.error({ err: repairError }, '[AUTO-REPAIR] Falló la reparación automática');
-        }
-    }
-    
     logger.error('Error al obtener institución:', error);
     res.status(500).json({
       error: 'Error al obtener datos de la institución',

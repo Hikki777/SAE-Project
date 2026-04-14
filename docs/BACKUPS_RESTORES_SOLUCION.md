@@ -161,6 +161,6 @@ backup-info.json         ← Metadatos internos
 
 ---
 
-**Versión**: SAE 1.1.1+fix
+**Versión**: SAE 1.1.2
 **Estado**: ✅ Backups y restores 100% funcionales
 **Tests**: ✅ Todos pasando

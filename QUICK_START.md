@@ -1,4 +1,4 @@
-# ⚡ QUICK START - SAE v1.0.7
+# ⚡ QUICK START - SAE v1.1.2
 
 ---
 
@@ -261,5 +261,5 @@ Si todos están ✓: **Listo para usar**
 
 ---
 
-**Última actualización**: 22 de Febrero de 2026  
-**Versión**: 1.0.7
+**Última actualización**: 13 de Abril de 2026  
+**Versión**: 1.1.2

@@ -64,13 +64,14 @@ export const generatePDF = async (data) => {
   const doc = new jsPDF();
 
   try {
-    const appLogoUrl = `./logo.png`;
+    // En Electron/Vite, /logo.png suele estar en la raíz de los assets servidos
+    const appLogoUrl = `/logo.png`; 
     await loadImageBase64(appLogoUrl);
   } catch (e) {}
 
   try {
     const imgApp = new Image();
-    imgApp.src = `./logo.png`;
+    imgApp.src = `/logo.png`;
     doc.addImage(imgApp, 'PNG', 170, 15, 25, 25);
   } catch (e) {}
 
@@ -327,7 +328,7 @@ export const generateJustificacionesPDF = async (data) => {
   // Cargar logo de la institución
   if (institucion && !institucion.logo_base64 && institucion.logo_path) {
     try {
-      const logoUrl = `${BASE_URL}/uploads/${institucion.logo_path}`;
+      const logoUrl = `${BASE_URL}/api/uploads/${institucion.logo_path}`;
       const base64 = await loadImageBase64(logoUrl);
       if (base64) institucion.logo_base64 = base64;
     } catch (e) {}
@@ -409,7 +410,7 @@ export const generateJustificacionesExcel = async (data) => {
   // Cargar logo de la institución
   if (institucion && !institucion.logo_base64 && institucion.logo_path) {
     try {
-      const logoUrl = `${BASE_URL}/uploads/${institucion.logo_path}`;
+      const logoUrl = `${BASE_URL}/api/uploads/${institucion.logo_path}`;
       const base64 = await loadImageBase64(logoUrl);
       if (base64) institucion.logo_base64 = base64;
     } catch (e) {}

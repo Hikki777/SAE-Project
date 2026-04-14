@@ -140,7 +140,8 @@ async function startBackend() {
   });
 
   // Copiar BD inicial de resources si no existe en AppData (primera vez)
-  const initialDb = path.join(resourcesPath, "prisma", "dev.db");
+  // RUTA ÚNICA: Evita colisiones con archivos de desarrollo
+  const initialDb = path.join(resourcesPath, "initial-data", "virgin.db");
   if (!fs.existsSync(dataDbPath) && fs.existsSync(initialDb)) {
     try {
       fs.copyFileSync(initialDb, dataDbPath);

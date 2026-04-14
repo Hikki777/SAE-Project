@@ -103,6 +103,6 @@ node scripts/restore-backup.js [backup-path]
 
 ---
 
-**Versión**: SAE 1.1.1+fix  
+**Versión**: SAE 1.1.2
 **Fecha**: 2026-04-09  
 **Crítica**: NO - Cambios de implementación interna

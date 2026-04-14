@@ -108,20 +108,28 @@
   DetailPrint "  Detectando archivos y directorios a eliminar..."
   DetailPrint ""
 
-  MessageBox MB_ICONQUESTION|MB_YESNO|MB_DEFBUTTON1 \
-    "Desea eliminar tambien los datos guardados?$\n$\nEsto incluye la base de datos, fotos de alumnos y personal, reportes y backups almacenados en:$\n$\n$APPDATA\SAE$\n$\nSeleccione SI para eliminar completamente todos los datos (recomendado)." \
-    /SD IDYES IDNO customUninstall_skip
+  ; Forzar el cierre de procesos para liberar bloqueos de archivos de forma robusta
+  DetailPrint "  Cerrando procesos activos de SAE..."
+  ExecWait 'taskkill /F /IM SAE.exe /T'
+  ExecWait 'taskkill /F /IM node.exe /T'
+  Sleep 2000 ; Esperar a que Windows libere los handles de archivos
+
+  MessageBox MB_ICONQUESTION|MB_YESNO|MB_DEFBUTTON2 \
+    "¿Desea eliminar también todos los datos guardados?$\n$\nEsto incluye:$\n- Base de Datos (alumnos, personal, notas)$\n- Fotos y Logos subidos$\n- Backups y Reportes$\n- Logs del sistema$\n$\nSeleccione NO si desea conservar sus datos para una futura instalación.$\nSeleccione SI para una limpieza TOTAL (Nueva Instalación)." \
+    /SD IDNO IDNO customUninstall_skip
 
   DetailPrint ""
   DetailPrint "  Eliminando datos de la aplicacion..."
   DetailPrint "  - Removiendo base de datos y archivos de datos..."
-  RMDir /r "$APPDATA\SAE"
-  DetailPrint "    ✓ Directorio $APPDATA\SAE eliminado"
-
+  RMDir /r /REBOOTOK "$APPDATA\SAE"
+  DetailPrint "    ✓ Directorio $APPDATA\SAE eliminado (o programado para reinicio)"
+ 
   DetailPrint ""
-  DetailPrint "  - Limpiando archivos temporales..."
-  RMDir /r "$LOCALAPPDATA\SAE"
-  DetailPrint "    ✓ Directorio $LOCALAPPDATA\SAE eliminado"
+  DetailPrint "  - Limpiando archivos temporales y registro..."
+  RMDir /r /REBOOTOK "$LOCALAPPDATA\SAE"
+  DeleteRegKey HKCU "Software\SAE"
+  DeleteRegKey HKCU "Software\sae-administracion-educativa" ; AppId de electron-builder
+  DetailPrint "    ✓ Directorio $LOCALAPPDATA\SAE y registro eliminados"
 
   DetailPrint ""
   DetailPrint "  - Eliminando cache de aplicacion..."
@@ -154,17 +162,11 @@
 !macro customUninstallSuccess
   DetailPrint ""
   DetailPrint "  ================================================"
-  DetailPrint "   Desinstalacion completada exitosamente"
-  DetailPrint "  ================================================"
   DetailPrint ""
-  DetailPrint "   SAE ha sido removido correctamente del sistema."
-  DetailPrint ""
-  ${If} ${FileExists} "$APPDATA\SAE"
-    DetailPrint "   NOTA: Algunos datos residuales aun existen en:"
-    DetailPrint "   $APPDATA\SAE"
-    DetailPrint ""
-    DetailPrint "   Puede eliminarlos manualmente si lo desea."
-  ${EndIf}
+  
+  MessageBox MB_ICONINFORMATION|MB_OK \
+    "SAE ha sido desinstalado correctamente de este equipo."
+
   DetailPrint ""
   DetailPrint "  ================================================"
   DetailPrint ""

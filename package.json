@@ -1,6 +1,6 @@
 {
   "name": "sae",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "SAE - Sistema de Administración Educativa | Gestión Educativa Libre para instituciones de Guatemala",
   "main": "electron/main.js",
   "type": "commonjs",
@@ -41,8 +41,8 @@
     "electron:silent": "node scripts/start-electron-dev.js",
     "electron:debug": "node scripts/start-electron-dev.js",
     "electron:dev": "electron electron/main.js",
-    "dist": "npm run icons && npm run build:frontend && electron-builder",
-    "dist:win": "npm run icons && npm run build:frontend && electron-builder --win --config.nsis.artifactName=SAE-${version}-Setup.exe",
+    "dist": "node scripts/prepare-clean-db.js && npm run icons && npm run build:frontend && electron-builder",
+    "dist:win": "node scripts/prepare-clean-db.js && npm run icons && npm run build:frontend && electron-builder --win --config.nsis.artifactName=SAE-${version}-Setup.exe",
     "dist:debug": "npm run icons && npm run build:frontend && electron-builder --dir",
     "dist:linux": "npm run icons && npm run build:frontend && electron-builder --linux",
     "dist:mac": "npm run icons && npm run build:frontend && electron-builder --mac"
@@ -147,7 +147,6 @@
     "asar": true,
     "asarUnpack": [
       "backend/**/*",
-      "prisma/**/*",
       "node_modules/**/*",
       "frontend/dist/**/*"
     ],
@@ -165,8 +164,8 @@
         "to": "prisma/migrations"
       },
       {
-        "from": "prisma/dev.db",
-        "to": "prisma/dev.db"
+        "from": "build/temp_db/virgin.db",
+        "to": "initial-data/virgin.db"
       },
       {
         "from": ".env",

@@ -136,7 +136,7 @@ export default function ModalSinSalida({ personas, fecha, onCerrar, onActualizar
                         const fotoUrl = persona.foto_path 
                           ? (persona.foto_path.startsWith('http') 
                               ? persona.foto_path 
-                              : `${BASE_URL}/uploads/${persona.foto_path}`)
+                              : `${BASE_URL}/api/uploads/${persona.foto_path}`)
                           : null;
                         
                         return fotoUrl ? (

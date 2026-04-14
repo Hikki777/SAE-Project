@@ -61,7 +61,11 @@ client.interceptors.request.use((config) => {
   // Si estamos enviando archivos (FormData), DEBEMOS eliminar el Content-Type por defecto 
   // ('application/json') para que Axios/Navegador genere automáticamente el header 
   // 'multipart/form-data' con el 'boundary' obligatorio.
-  if (config.data instanceof FormData) {
+  // Usamos una detección más robusta (instanceof o método .append)
+  const isFormData = config.data instanceof FormData || 
+                     (config.data && typeof config.data.append === 'function');
+
+  if (isFormData) {
     delete config.headers['Content-Type'];
   }
   

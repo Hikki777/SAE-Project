@@ -114,7 +114,7 @@ export default function LoginPage() {
               <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4 text-green-600 overflow-hidden border-2 border-green-200">
                 {loggedInUser?.foto_path ? (
                   <img 
-                    src={`${BASE_URL}/uploads/${loggedInUser.foto_path}`} 
+                    src={`${BASE_URL}/api/uploads/${loggedInUser.foto_path}`} 
                     alt="User" 
                     className="w-full h-full object-cover"
                   />

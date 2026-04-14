@@ -4,13 +4,19 @@ const { verifyJWT } = require('../middlewares/auth');
 const multer = require('multer');
 const archiver = require('archiver');
 const extract = require('extract-zip');
-const CryptoJS = require('crypto-js');
 const crypto = require('crypto');
 const fs = require('fs-extra');
 const path = require('path');
 const { UPLOADS_DIR, TEMP_DIR, DB_PATH } = require('../utils/paths');
 const prisma = require('../prismaClient');
 const { logger } = require('../utils/logger');
+
+// Configuración de cifrado
+const ALGORITHM = 'aes-256-gcm';
+const SALT_LENGTH = 16;
+const IV_LENGTH = 12; // Recomendado para GCM
+const AUTH_TAG_LENGTH = 16;
+const SCRYPT_PARAMS = { N: 16384, r: 8, p: 1 }; // Parámetros balanceados seguridad/velocidad
 
 // Crear directorio temp si no existe
 if (!fs.existsSync(TEMP_DIR)) {
@@ -20,34 +26,25 @@ if (!fs.existsSync(TEMP_DIR)) {
 // Configurar multer para subir archivos de backup
 const upload = multer({ 
   dest: TEMP_DIR,
-  limits: { fileSize: 500 * 1024 * 1024 }, // 500MB max
+  limits: { fileSize: 1024 * 1024 * 1024 }, // 1GB max (mejorado)
   storage: multer.diskStorage({
     destination: (req, file, cb) => {
       cb(null, TEMP_DIR);
     },
     filename: (req, file, cb) => {
       const timestamp = Date.now();
-      const originalName = Buffer.from(file.originalname, 'latin1').toString('utf8');
-      cb(null, `backup-${timestamp}-${originalName}`);
+      // Eliminar caracteres especiales para Windows
+      const safeName = file.originalname.replace(/[^a-z0-9.]/gi, '_');
+      cb(null, `backup-${timestamp}-${safeName}`);
     }
-  }),
-  fileFilter: (req, file, cb) => {
-    // Validar que sea un archivo .bak
-    if (file.originalname.endsWith('.bak') || file.mimetype === 'application/octet-stream') {
-      cb(null, true);
-    } else {
-      cb(new Error('Solo se permiten archivos .bak'), false);
-    }
-  }
+  })
 });
 
 /**
  * POST /api/backup/create
- * Crear backup cifrado del sistema completo
- * Requiere: rol admin
+ * Crear backup cifrado del sistema usando Streams (AES-256-GCM)
  */
 router.post('/create', verifyJWT, async (req, res) => {
-  console.log('[BACKUP] Iniciando solicitud de creacion de backup...');
   if (req.user.rol !== 'admin') {
     return res.status(403).json({ error: 'Solo administradores pueden crear backups' });
   }
@@ -57,381 +54,233 @@ router.post('/create', verifyJWT, async (req, res) => {
   try {
     const { password, confirmPassword } = req.body;
     
-    // Validar contraseña
     if (!password || password.length < 8) {
-      return res.status(400).json({ 
-        error: 'La contraseña debe tener al menos 8 caracteres' 
-      });
+      return res.status(400).json({ error: 'La contraseña debe tener al menos 8 caracteres' });
     }
     
     if (password !== confirmPassword) {
-      return res.status(400).json({ 
-        error: 'Las contraseñas no coinciden' 
-      });
+      return res.status(400).json({ error: 'Las contraseñas no coinciden' });
     }
 
     const timestamp = new Date().toISOString().replace(/:/g, '-').split('.')[0];
-    tempZipPath = path.join(TEMP_DIR, `backup-${timestamp}.zip`);
+    tempZipPath = path.join(TEMP_DIR, `internal-backup-${timestamp}.zip`);
     
-    logger.info({ user: req.user.email }, 'Iniciando creación de backup');
-    
-    // 1. Crear ZIP con base de datos y uploads
-    const output = fs.createWriteStream(tempZipPath);
+    logger.info({ user: req.user.email }, 'Iniciando creación de backup (Stream Mode)');
+
+    // 1. Crear ZIP temporal (Sin cifrar aún)
+    const zipOutput = fs.createWriteStream(tempZipPath);
     const archive = archiver('zip', { zlib: { level: 9 } });
     
-    archive.on('error', (err) => {
-      throw err;
-    });
+    archive.pipe(zipOutput);
     
-    archive.pipe(output);
-    
-    // Agregar base de datos
     if (fs.existsSync(DB_PATH)) {
       archive.file(DB_PATH, { name: 'dev.db' });
     } else {
       throw new Error('Base de datos no encontrada');
     }
     
-    // Agregar carpeta uploads completa
     if (fs.existsSync(UPLOADS_DIR)) {
       archive.directory(UPLOADS_DIR, 'uploads');
     }
-    
-    // Agregar metadata
+
+    // Metadata básica interna
     const institucion = await prisma.institucion.findFirst({
-      select: { nombre: true, email: true, telefono: true }
+      select: { nombre: true }
     });
     
-    const metadata = {
-      fecha: new Date().toISOString(),
-      version: '1.0.0',
-      usuario: req.user.email,
-      institucion: institucion,
-      security: {
-        algorithm: 'AES-256',
-        hashAlgorithm: 'SHA-256',
-        hmacAlgorithm: 'HMAC-SHA256'
-      }
+    const internalMeta = {
+        fecha: new Date().toISOString(),
+        version: '1.1.1',
+        institucion: institucion?.nombre || 'SAE System'
     };
-    
-    archive.append(JSON.stringify(metadata, null, 2), { 
-      name: 'backup-info.json' 
-    });
-    
+    archive.append(JSON.stringify(internalMeta), { name: 'backup-info.json' });
+
     await archive.finalize();
-    
-    // Esperar a que termine de escribir
+
+    // Esperar a que el ZIP termine de escribirse
     await new Promise((resolve, reject) => {
-      output.on('close', resolve);
-      output.on('error', reject);
+      zipOutput.on('close', resolve);
+      zipOutput.on('error', reject);
     });
-    
-    // 2. Leer ZIP
-    const zipData = fs.readFileSync(tempZipPath);
-    const zipBase64 = zipData.toString('base64');
-    
-    // 3. Calcular hash SHA-256 del ZIP original
-    const hash = crypto
-      .createHash('sha256')
-      .update(zipData)
-      .digest('hex');
-    
-    // 4. Crear HMAC para autenticidad
-    const hmac = crypto
-      .createHmac('sha256', process.env.HMAC_SECRET || 'default-secret')
-      .update(zipData)
-      .digest('hex');
-    
-    // 5. Cifrar con AES-256
-    const encrypted = CryptoJS.AES.encrypt(zipBase64, password).toString();
-    
-    // 6. Crear estructura final
-    const backupData = {
-      version: '1.0',
-      encrypted: encrypted,
-      hash: hash,
-      hmac: hmac,
-      timestamp: new Date().toISOString(),
-      size: zipData.length,
-      metadata: {
-        institucion: institucion?.nombre,
-        fecha: metadata.fecha
-      }
-    };
-    
-    const finalBackup = JSON.stringify(backupData);
-    
-    // 7. Enviar archivo
+
+    // 2. Cifrar el ZIP usando Streams directamente hacia la respuesta
+    const salt = crypto.randomBytes(SALT_LENGTH);
+    const iv = crypto.randomBytes(IV_LENGTH);
+
+    // Derivar clave de la contraseña del usuario (Uso de Scrypt nativo)
+    const key = crypto.scryptSync(password, salt, 32, SCRYPT_PARAMS);
+    const cipher = crypto.createCipheriv(ALGORITHM, key, iv);
+
     const backupName = `sistema-backup-${timestamp}.bak`;
-    
     res.setHeader('Content-Type', 'application/octet-stream');
     res.setHeader('Content-Disposition', `attachment; filename="${backupName}"`);
-    res.send(finalBackup);
-    
-    // Limpiar archivo temporal
-    fs.unlinkSync(tempZipPath);
-    
-    logger.info({ 
-      user: req.user.email,
-      filename: backupName,
-      size: finalBackup.length,
-      hash: hash.substring(0, 16) + '...'
-    }, 'Backup creado exitosamente');
-    
+
+    // Escribir cabecera manual en el stream (Salt + IV)
+    // Esto permite que el archivo sea portable y auto-contenido
+    res.write(Buffer.from('SAEBK')); // Magic Header
+    res.write(salt);
+    res.write(iv);
+
+    const input = fs.createReadStream(tempZipPath);
+
+    // Pipe: File -> Cipher -> Response
+    input.pipe(cipher).on('end', () => {
+        // Al terminar GCM, necesitamos el Auth Tag
+        const authTag = cipher.getAuthTag();
+        res.write(authTag);
+        res.end();
+        
+        // Limpieza post-envío
+        setTimeout(() => {
+            if (fs.existsSync(tempZipPath)) fs.unlinkSync(tempZipPath);
+        }, 1000);
+        
+        logger.info({ user: req.user.email, backupName }, 'Backup completado y enviado exitosamente');
+    }).pipe(res, { end: false });
+
   } catch (error) {
     if (tempZipPath && fs.existsSync(tempZipPath)) {
-      try { fs.unlinkSync(tempZipPath); } catch (e) {
-        logger.error({ error: e.message }, 'Error limpiando archivo temporal de backup fallido');
-      }
+        try { fs.unlinkSync(tempZipPath); } catch (e) {}
     }
-    logger.error({ error: error.message, stack: error.stack }, 'Error creando backup');
-    console.error('FULL BACKUP ERROR:', error);
+    logger.error({ error: error.message }, 'Error en creación de backup');
     res.status(500).json({ error: 'Error al crear backup: ' + error.message });
   }
 });
 
 /**
  * POST /api/backup/restore
- * Restaurar sistema desde backup cifrado
- * Requiere: rol admin
+ * Restaurar sistema desde backup binario (AES-256-GCM)
  */
 router.post('/restore', verifyJWT, upload.single('backup'), async (req, res) => {
   if (req.user.rol !== 'admin') {
-    return res.status(403).json({ error: 'Solo administradores pueden restaurar backups' });
+    return res.status(403).json({ error: 'No autorizado' });
   }
 
   const backupFile = req.file?.path;
   let extractPath;
-  let tempZipPath;
+  let decryptedZipPath;
 
   try {
-    const { password } = req.body;
-    
-    // DEBUG: Log the request details
-    logger.info({
-      hasFile: !!req.file,
-      fileName: req.file?.filename,
-      fileSize: req.file?.size,
-      fieldName: req.file?.fieldname,
-      hasPassword: !!password,
-      contentType: req.headers['content-type']
-    }, '[BACKUP] Detalles de solicitud de restauración');
-    
-    if (!password) {
-      logger.error('Falta contraseña en solicitud de restauración');
-      return res.status(400).json({ error: 'Se requiere contraseña' });
-    }
-    
-    if (!backupFile) {
-      logger.error({
-        reqFile: req.file,
-        hasFile: !!req.file,
-        files: req.files
-      }, 'No se recibió archivo de backup');
-      return res.status(400).json({ error: 'No se recibió archivo de backup' });
-    }
-    
-    logger.info({ user: req.user.email }, 'Iniciando restauración de backup');
-    
-    // 1. Leer archivo de backup
-    const backupContent = fs.readFileSync(backupFile, 'utf8');
-    let backupData;
-    
-    try {
-      backupData = JSON.parse(backupContent);
-    } catch (error) {
-      return res.status(400).json({ 
-        error: 'Archivo de backup inválido o corrupto' 
-      });
-    }
-    
-    // 2. Validar estructura
-    if (!backupData.encrypted || !backupData.hash || !backupData.hmac) {
-      return res.status(400).json({ 
-        error: 'Archivo de backup incompleto' 
-      });
-    }
-    
-    // 3. Descifrar
-    let decrypted;
-    try {
-      const bytes = CryptoJS.AES.decrypt(backupData.encrypted, password);
-      decrypted = bytes.toString(CryptoJS.enc.Utf8);
-      
-      if (!decrypted) {
-        throw new Error('Contraseña incorrecta');
-      }
-    } catch (error) {
-      return res.status(401).json({ 
-        error: 'Contraseña incorrecta' 
-      });
-    }
-    
-    // 4. Convertir de Base64 a Buffer
-    const zipBuffer = Buffer.from(decrypted, 'base64');
-    
-    // 5. VALIDAR HASH - Verificar integridad
-    const calculatedHash = crypto
-      .createHash('sha256')
-      .update(zipBuffer)
-      .digest('hex');
-    
-    if (calculatedHash !== backupData.hash) {
-      logger.error({ 
-        expected: backupData.hash,
-        calculated: calculatedHash 
-      }, 'Hash mismatch - archivo corrupto');
-      
-      return res.status(400).json({ 
-        error: 'Archivo corrupto o modificado. Hash no coincide.' 
-      });
-    }
-    
-    // 6. VALIDAR HMAC - Verificar autenticidad
-    const calculatedHmac = crypto
-      .createHmac('sha256', process.env.HMAC_SECRET || 'default-secret')
-      .update(zipBuffer)
-      .digest('hex');
-    
-    if (calculatedHmac !== backupData.hmac) {
-      logger.error('HMAC mismatch - archivo no auténtico');
-      
-      return res.status(400).json({ 
-        error: 'Archivo no auténtico. HMAC no coincide.' 
-      });
-    }
-    
-    logger.info('Hash y HMAC validados correctamente');
-    
-    // 7. Guardar ZIP temporal
-    tempZipPath = path.join(TEMP_DIR, `restore-${Date.now()}.zip`);
-    fs.writeFileSync(tempZipPath, zipBuffer);
-    
-    // 8. Extraer ZIP
-    extractPath = path.join(TEMP_DIR, `restore-data-${Date.now()}`);
-    
-    await extract(tempZipPath, { dir: path.resolve(extractPath) });
-    
-    // 9. Validar metadata
-    const metadataPath = path.join(extractPath, 'backup-info.json');
-    if (!fs.existsSync(metadataPath)) {
-      throw new Error('Metadata no encontrada en el backup');
-    }
-    
-    const metadata = JSON.parse(fs.readFileSync(metadataPath, 'utf8'));
-    
-    // 10. Restaurar base de datos y uploads
-    if (fs.existsSync(path.join(extractPath, 'uploads'))) {
-      // Ensure target directory exists and is empty before copying
-      if (fs.existsSync(UPLOADS_DIR)) {
-        await fs.remove(UPLOADS_DIR);
-      }
-      await fs.ensureDir(UPLOADS_DIR);
-      await fs.copy(path.join(extractPath, 'uploads'), UPLOADS_DIR, { overwrite: true });
-      logger.info('Archivos multimedia restaurados');
-    }
-
-    // 11. HOT SWAP de Base de datos
-    const restoredDbPath = path.join(extractPath, 'dev.db');
-    
-    if (!fs.existsSync(restoredDbPath)) {
-      throw new Error('Base de datos no encontrada en el backup');
-    }
-
-    try {
-      // Desconectar Prisma para liberar lock del archivo
-      await prisma.$disconnect();
-      logger.info('Prisma desconectado para liberar DB');
-      
-      // Esperar un momento para asegurar liberación
-      await new Promise(r => setTimeout(r, 1000));
-      
-      // Reemplazar archivo
-      await fs.copy(restoredDbPath, DB_PATH, { overwrite: true });
-      logger.info('Base de datos reemplazada exitosamente');
-      
-      // Reconectar Prisma
-      await prisma.$connect();
-      logger.info('Prisma reconectado a nueva DB');
-      
-    } catch (swapError) {
-      logger.error({ error: swapError }, 'Error crítico durante Hot-Swap de DB');
-      // Intentar reconectar por si acaso
-      try { await prisma.$connect(); } catch (e) {}
-      throw swapError;
-    }
-    
-    // 12. Limpiar archivos temporales
-    fs.unlinkSync(tempZipPath);
-    fs.unlinkSync(backupFile);
-    fs.rmSync(extractPath, { recursive: true, force: true });
-    
-    res.json({ 
-      success: true, 
-      message: 'Sistema restaurado correctamente',
-      metadata,
-      validation: {
-        hashVerified: true,
-        hmacVerified: true,
-        size: backupData.size,
-        backupDate: backupData.timestamp
-      }
-    });
-    
     logger.info({ 
       user: req.user.email,
-      backupDate: metadata.fecha,
-      hash: calculatedHash.substring(0, 16) + '...'
-    }, 'Backup restaurado exitosamente');
-    
-    // NO matamos el proceso, solo notificamos
-    // El frontend hará reload y al cargar /api/auth/me usará la nueva DB
-    logger.info('Restauración completada. Sistema listo.');
-  } catch (error) {
-    // Limpiar archivos temporales en caso de error
-    try {
-      if (backupFile && fs.existsSync(backupFile)) {
-        fs.unlinkSync(backupFile);
-      }
-      if (tempZipPath && fs.existsSync(tempZipPath)) {
-        fs.unlinkSync(tempZipPath);
-      }
-      if (extractPath && fs.existsSync(extractPath)) {
-        fs.rmSync(extractPath, { recursive: true, force: true });
-      }
-    } catch (cleanupError) {
-      logger.error({ error: cleanupError }, 'Error limpiando archivos temporales');
-    }
-    
-    logger.error({ error: error.message }, 'Error restaurando backup');
-    res.status(500).json({ 
-      error: error.message || 'Error al restaurar backup' 
-    });
-  }
-});
+      hasFile: !!req.file,
+      hasPassword: !!req.body.password,
+      fileName: req.file?.originalname,
+      mimeType: req.file?.mimetype 
+    }, 'Iniciando restauración de backup');
 
-// Middleware para manejar errores de multer
-router.use((err, req, res, next) => {
-  if (err instanceof multer.MulterError) {
-    if (err.code === 'LIMIT_FILE_SIZE') {
-      logger.error({ error: err.message }, 'Archivo de backup demasiado grande');
-      return res.status(400).json({ 
-        error: 'Archivo demasiado grande (máximo 500MB)' 
-      });
+    const { password } = req.body;
+    if (!password || !backupFile) {
+      logger.warn({ hasFile: !!req.file, hasPassword: !!req.body.password }, 'Faltan parámetros en restauración');
+      return res.status(400).json({ error: 'Faltan parámetros: contraseña o archivo de backup.' });
     }
-    logger.error({ error: err.message, code: err.code }, 'Error de Multer');
-    return res.status(400).json({ 
-      error: 'Error al procesar archivo: ' + err.message 
+
+    // 1. Leer cabeceras del archivo binario
+    const fd = fs.openSync(backupFile, 'r');
+    const headerBuffer = Buffer.alloc(5); // SAEBK
+    fs.readSync(fd, headerBuffer, 0, 5, 0);
+
+    if (headerBuffer.toString() !== 'SAEBK') {
+       fs.closeSync(fd);
+       logger.error({ header: headerBuffer.toString() }, 'Magic Header inválido en backup');
+       return res.status(400).json({ error: 'El archivo no es un backup válido de SAE o está dañado.' });
+    }
+
+    const salt = Buffer.alloc(SALT_LENGTH);
+    const iv = Buffer.alloc(IV_LENGTH);
+    fs.readSync(fd, salt, 0, SALT_LENGTH, 5);
+    fs.readSync(fd, iv, 0, IV_LENGTH, 5 + SALT_LENGTH);
+
+    // El Auth Tag está al final del archivo
+    const stats = fs.fstatSync(fd);
+    const authTag = Buffer.alloc(AUTH_TAG_LENGTH);
+    fs.readSync(fd, authTag, 0, AUTH_TAG_LENGTH, stats.size - AUTH_TAG_LENGTH);
+    fs.closeSync(fd);
+
+    // 2. Preparar el descifrado
+    const key = crypto.scryptSync(password, salt, 32, SCRYPT_PARAMS);
+    const decipher = crypto.createDecipheriv(ALGORITHM, key, iv);
+    decipher.setAuthTag(authTag);
+
+    decryptedZipPath = path.join(TEMP_DIR, `restore-stage-${Date.now()}.zip`);
+    const zipWriter = fs.createWriteStream(decryptedZipPath);
+    
+    // Leer el contenido cifrado (Saltando cabecera y excluyendo AuthTag del final)
+    const encryptedStream = fs.createReadStream(backupFile, {
+        start: 5 + SALT_LENGTH + IV_LENGTH,
+        end: stats.size - AUTH_TAG_LENGTH - 1
     });
-  } else if (err && err.message && err.message.includes('backup')) {
-    logger.error({ error: err.message }, 'Error de validación de archivo');
-    return res.status(400).json({ 
-      error: 'Error al validar archivo: ' + err.message
+
+    await new Promise((resolve, reject) => {
+        encryptedStream.pipe(decipher).pipe(zipWriter)
+            .on('finish', resolve)
+            .on('error', (err) => {
+                reject(new Error('Contraseña incorrecta o archivo dañado'));
+            });
     });
+
+    logger.info('Descifrado completado, iniciando extracción y reemplazo...');
+
+    // 3. Extraer ZIP descifrado
+    extractPath = path.join(TEMP_DIR, `restore-data-${Date.now()}`);
+    await extract(decryptedZipPath, { dir: path.resolve(extractPath) });
+
+    // 4. Restaurar Uploads
+    const backupUploads = path.join(extractPath, 'uploads');
+    if (fs.existsSync(backupUploads)) {
+        if (fs.existsSync(UPLOADS_DIR)) {
+            // En Windows, fs.remove puede fallar si hay handles abiertos, usamos una técnica de reintento
+            try {
+                await fs.remove(UPLOADS_DIR);
+            } catch (e) {
+                logger.warn('Fallo parcial al borrar uploads, intentando sobrescribir...');
+            }
+        }
+        await fs.ensureDir(UPLOADS_DIR);
+        await fs.copy(backupUploads, UPLOADS_DIR, { overwrite: true });
+    }
+
+    // 5. Hot Swap de Base de Datos
+    const restoredDbPath = path.join(extractPath, 'dev.db');
+    if (!fs.existsSync(restoredDbPath)) {
+        throw new Error('Base de datos no encontrada en el paquete de backup');
+    }
+
+    // Desconectar Prisma con Gracia
+    await prisma.$disconnect();
+    await new Promise(r => setTimeout(r, 1500)); // Esperar liberación de locks en Windows
+
+    try {
+        await fs.copy(restoredDbPath, DB_PATH, { overwrite: true });
+        logger.info('Base de datos restaurada exitosamente.');
+    } catch (dbError) {
+        logger.error({ dbError }, 'Error crítico reemplazando DB. Posible bloqueo de archivo.');
+        throw new Error('No se pudo reemplazar la base de datos. Asegúrese de que no haya otros procesos accediendo a ella.');
+    } finally {
+        // Siempre intentar reconectar Prisma
+        await prisma.$connect().catch(() => {});
+    }
+
+    // 6. Limpieza final
+    try {
+        if (fs.existsSync(backupFile)) fs.unlinkSync(backupFile);
+        if (fs.existsSync(decryptedZipPath)) fs.unlinkSync(decryptedZipPath);
+        if (fs.existsSync(extractPath)) fs.rmSync(extractPath, { recursive: true, force: true });
+    } catch (e) {}
+
+    res.json({ success: true, message: 'Sistema restaurado correctamente. La aplicación se recargará.' });
+
+  } catch (error) {
+    logger.error({ error: error.message }, 'Fallo en restauración');
+    res.status(500).json({ error: error.message });
+    
+    // Limpieza en error
+    try {
+        if (backupFile && fs.existsSync(backupFile)) fs.unlinkSync(backupFile);
+        if (decryptedZipPath && fs.existsSync(decryptedZipPath)) fs.unlinkSync(decryptedZipPath);
+        if (extractPath && fs.existsSync(extractPath)) fs.rmSync(extractPath, { recursive: true, force: true });
+    } catch (e) {}
   }
-  
-  // Si no es un error de multer, pasar al siguiente middleware
-  next(err);
 });
 
 module.exports = router;

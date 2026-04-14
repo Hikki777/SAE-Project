@@ -66,7 +66,7 @@ function LogoImage({ logoPath, logoBase64 }) {
 
           if (base) {
             // Intentar cargar desde servidor
-            const response = await fetch(`${base}/uploads/${logoPath}?t=${Date.now()}`, {
+            const response = await fetch(`${base}/api/uploads/${logoPath}?t=${Date.now()}`, {
               method: "GET",
               credentials: "include",
             });

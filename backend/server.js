@@ -224,8 +224,6 @@ app.locals.cache = cache;
 app.set('trust proxy', 1);
 
 // ============ MIDDLEWARE DE LOGGING ============
-
-// Request ID y logging (ANTES de otros middlewares)
 app.use(attachRequestId);
 app.use(requestLogger);
 
@@ -279,10 +277,14 @@ app.use(
   })
 );
 
-// Middleware adicional para asegurar CORS en todas las respuestas (incluyendo static files en Electron)
+// Middleware adicional para asegurar CORS en todas las respuestas
 app.use((req, res, next) => {
-  // Estos headers ya fueron aplicados por cors() arriba, pero nos aseguramos para archivos estáticos
-  res.header('Access-Control-Allow-Origin', '*');
+  const origin = req.headers.origin;
+  // Si hay un origen (browser request), lo devolvemos específicamente para permitir credentials
+  if (origin) {
+    res.header('Access-Control-Allow-Origin', origin);
+    res.header('Access-Control-Allow-Credentials', 'true');
+  }
   res.header('Cross-Origin-Resource-Policy', 'cross-origin');
   next();
 });
@@ -300,14 +302,19 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 // Detectar errores de JSON malformado (body-parser)
 app.use((err, req, res, next) => {
   if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
-    logger.error({ err }, '[JSON ERROR] JSON malformado recibido');
-    return res.status(400).json({ error: 'JSON inválido o malformado' });
+    logger.error({ err, body: req.body }, '[JSON ERROR] JSON malformado recibido');
+    return res.status(400).json({ error: 'JSON inválido o malformado. Verifique que no esté enviando archivos con el header Content-Type: application/json.' });
   }
   next(err);
 });
 
+// MIDDLEWARE DE REDIRECCIÓN: /uploads/* -> /api/uploads/* (Compatibilidad)
+app.use('/uploads', (req, res) => {
+  res.redirect(301, `/api/uploads${req.url}`);
+});
+
 // Endpoint para servir imágenes con CORS correcto (solución para Electron)
-app.get('/uploads/*', (req, res) => {
+app.get('/api/uploads/*', (req, res) => {
   const filePath = path.join(UPLOADS_DIR, req.params[0]);
   
   // Verificar que el archivo existe
@@ -315,8 +322,14 @@ app.get('/uploads/*', (req, res) => {
     return res.status(404).json({ error: 'Archivo no encontrado' });
   }
   
-  // Configurar headers CORS explícitamente para Electron + navegador
-  res.header('Access-Control-Allow-Origin', '*');
+  // Configurar headers CORS explícitamente para permitir credentials
+  const origin = req.headers.origin;
+  if (origin) {
+    res.header('Access-Control-Allow-Origin', origin);
+    res.header('Access-Control-Allow-Credentials', 'true');
+  } else {
+    res.header('Access-Control-Allow-Origin', '*');
+  }
   res.header('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Content-Type, Range, Origin');
   res.header('Access-Control-Expose-Headers', 'Content-Length, Content-Type, Content-Range');
@@ -459,10 +472,6 @@ async function iniciar() {
           port: PORT,
           databaseUrl: process.env.DATABASE_URL,
         });
-
-        logger.info(`[API] Health: http://localhost:${PORT}/api/health`);
-        logger.info(`[API] Docs: http://localhost:${PORT}/api-docs`);
-        logger.info(`[WS] Socket.IO server running on port ${PORT}`);
 
         resolve(server);
       });

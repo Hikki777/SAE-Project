@@ -250,7 +250,7 @@ export default function RevisionRapidaView({ fecha, onVolver }) {
                     if (persona.foto_path) {
                       return persona.foto_path.startsWith('http') 
                         ? persona.foto_path 
-                        : `${BASE_URL}/uploads/${persona.foto_path}`;
+                        : `${BASE_URL}/api/uploads/${persona.foto_path}`;
                     }
                     if (!persona.carnet) return null;
                     const cleanCarnet = String(persona.carnet).trim();
@@ -274,7 +274,7 @@ export default function RevisionRapidaView({ fecha, onVolver }) {
                         prefix = 'personal';
                       }
                     }
-                    return `${BASE_URL}/uploads/${directory}/${prefix}_${cleanCarnet}.png`;
+                    return `${BASE_URL}/api/uploads/${directory}/${prefix}_${cleanCarnet}.png`;
                   };
 
                   const fotoUrl = getFotoUrl();

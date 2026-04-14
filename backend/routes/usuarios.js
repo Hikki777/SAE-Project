@@ -27,10 +27,14 @@ const upload = multer({
   storage: storage,
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
   fileFilter: (req, file, cb) => {
-    if (file.mimetype.startsWith('image/')) {
-      cb(null, true);
+    const filetypes = /jpeg|jpg|png|webp|gif/;
+    const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = filetypes.test(file.mimetype);
+
+    if (mimetype || extname) {
+      return cb(null, true);
     } else {
-      cb(new Error('Solo se permiten imágenes'));
+      cb(new Error('Solo se permiten imágenes (jpeg, jpg, png, webp, gif)'));
     }
   }
 });
@@ -171,10 +175,10 @@ router.delete('/:id', async (req, res) => {
  * PUT /api/usuarios/:id
  * Actualizar usuario existente
  */
-router.put('/:id', async (req, res) => {
+router.put('/:id', upload.single('foto'), async (req, res) => {
   try {
-    if (req.user.rol !== 'admin') {
-      return res.status(403).json({ error: 'No autorizado. Solo administradores pueden modificar usuarios.' });
+    if (req.user.rol !== 'admin' && req.user.id !== parseInt(req.params.id)) {
+      return res.status(403).json({ error: 'No autorizado. Solo administradores pueden modificar usuarios o puedes modificar tu propio perfil.' });
     }
 
     const id = parseInt(req.params.id);
@@ -194,8 +198,19 @@ router.put('/:id', async (req, res) => {
       jornada,
       ...(sexo !== undefined && { sexo }),
       rol,
-      activo: activo !== undefined ? activo : undefined
+      activo: activo !== undefined ? (activo === 'true' || activo === true) : undefined
     };
+
+    // Manejar foto si viene en el request
+    if (req.file) {
+      updateData.foto_path = `usuarios/${req.file.filename}`;
+      
+      // Intentar borrar foto anterior si existe y no es la nueva
+      if (existingUser.foto_path && existingUser.foto_path !== updateData.foto_path) {
+          const oldPath = path.join(UPLOADS_DIR, existingUser.foto_path);
+          fs.remove(oldPath).catch(err => logger.warn({ err }, 'Error borrando foto antigua'));
+      }
+    }
 
     // Si hay password, hashearlo
     if (password && password.trim() !== '') {

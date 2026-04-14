@@ -1,10 +1,10 @@
 # SAE - Sistema de Administración Educativa
 
-![Version](https://img.shields.io/badge/version-1.0.8-brightgreen.svg) ![Electron](https://img.shields.io/badge/Electron-v39-9FEAF9.svg) ![React](https://img.shields.io/badge/React-18-61DAFB.svg) ![Node](https://img.shields.io/badge/Node-18%2B-339933.svg) ![Status](https://img.shields.io/badge/Status-Stable-brightgreen.svg) ![License](https://img.shields.io/badge/License-GPL--3.0-blue.svg)
+![Version](https://img.shields.io/badge/version-1.1.2-brightgreen.svg) ![Electron](https://img.shields.io/badge/Electron-v35-9FEAF9.svg) ![React](https://img.shields.io/badge/React-19-61DAFB.svg) ![Node](https://img.shields.io/badge/Node-18%2B-339933.svg) ![Status](https://img.shields.io/badge/Status-Stable-brightgreen.svg) ![License](https://img.shields.io/badge/License-GPL--3.0-blue.svg)
 
 **Gestión Educativa Libre** para instituciones de Guatemala
 
-> **✅ VERSIÓN 1.0.8 ESTABLE**: Versión de producción optimizada con mejoras de UI, fixes en PDF/Excel y arquitectura 100% local finalizada.
+> **✅ VERSIÓN 1.1.2 ESTABLE**: Versión de producción con motor de backup v2.0, sincronización horaria robusta y avatares dinámicos por género.
 
 ---
 
@@ -187,15 +187,14 @@ Guatemala 🇬🇹
 
 ---
 
-## 📝 Notas de la Versión 1.0.8
+## 📝 Notas de la Versión 1.1.2
 
-### 🚀 Mejoras Implementadas
-- ✅ Módulo de Justificaciones reestructurado completamente a interfaz Kanban.
-- ✅ Generación de Reportes PDF/Excel y estadísticas en tiempo real fijados (incluido).
-- ✅ Componentes de Instalador listos con íconos fijos (`SAE-Setup-1.0.8.exe`).
-- ✅ Módulo Asistencias completamente desvinculado de dependencias Cloud.
-- ✅ Limpieza completa de archivos residuales del repositorio, scripts sin uso eliminados y código optimizado.
-- ✅ Documentación robustecida para desarrolladores con instrucciones paso a paso para clonar repositorio.
-- ✅ Reducción de código basura (EJECUTAR.md unificado, logs viejos descartados).
+### 🚀 Estabilización y Mejoras Críticas
+- ✅ **Backup v2.0**: Migración a streams binarios con cifrado AES-256-GCM. Backups ahora son 100% portables y ligeros (sin límites de RAM).
+- ✅ **Restauración Estable**: Corregido error 400 Bad Request en restauración mediante uso de native fetch y gestión correcta de boundaries multipart.
+- ✅ **Sincronización Horaria**: Implementado sistema de doble consulta (WorldTimeAPI + TimeAPI.io) con failover automático para prevenir fraudes en asistencias.
+- ✅ **Identidad Visual**: Implementación de `GenderAvatar` en todo el sistema (Scanner QR, Personal, Alumnos, Usuarios) para una experiencia visual pulida si no hay foto.
+- ✅ **Estandarización**: "6to. Diversificado" oficialmente renombrado a "Graduandos" según nomenclatura educativa estándar.
+- ✅ **Webcam Cam**: Soporte nativo y estable de captura de fotos en todos los módulos (Setup, Personal, Usuarios).
 
-Esta versión sigue proveyendo una experiencia sólida de escritorio con Electron, 100% libre de la red externa e integrada al servidor web local interno de Node/Prisma en arquitectura Offline-first.
+Esta versión consolida todos los hotfixes previos en una base de código robusta, optimizada para entornos Windows con instalación de un solo clic y gestión automática de directorios en `%APPDATA%`.

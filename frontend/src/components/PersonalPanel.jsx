@@ -346,7 +346,7 @@ export default function PersonalPanel() {
       grado_guia: miembro.grado_guia || '',
       curso: miembro.curso || '',
       foto: null,
-      preview: miembro.foto_path ? (miembro.foto_path.startsWith('http') ? miembro.foto_path : `${BASE_URL}/uploads/${miembro.foto_path}`) : null
+      preview: miembro.foto_path ? (miembro.foto_path.startsWith('http') ? miembro.foto_path : `${BASE_URL}/api/uploads/${miembro.foto_path}`) : null
     });
     
     // Detectar automáticamente si el carnet fue autogenerado
@@ -711,7 +711,7 @@ export default function PersonalPanel() {
                           >
                             {miembro.foto_path ? (
                               <img 
-                                src={miembro.foto_path.startsWith('http') ? miembro.foto_path : `${BASE_URL}/uploads/${miembro.foto_path}`}
+                                src={miembro.foto_path.startsWith('http') ? miembro.foto_path : `${BASE_URL}/api/uploads/${miembro.foto_path}`}
                                 alt={`${miembro.nombres} ${miembro.apellidos}`}
                                 className="w-full h-full object-cover"
                               />
@@ -817,7 +817,7 @@ export default function PersonalPanel() {
                       >
                         {miembro.foto_path ? (
                           <img 
-                            src={miembro.foto_path.startsWith('http') ? miembro.foto_path : `${BASE_URL}/uploads/${miembro.foto_path}`}
+                            src={miembro.foto_path.startsWith('http') ? miembro.foto_path : `${BASE_URL}/api/uploads/${miembro.foto_path}`}
                             alt={`${miembro.nombres} ${miembro.apellidos}`}
                             className="w-full h-full object-cover"
                           />
@@ -1521,13 +1521,13 @@ export default function PersonalPanel() {
                 <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-white shadow-xl flex-shrink-0">
                   {previewPersonal.foto_path ? (
                     <img 
-                      src={previewPersonal.foto_path.startsWith('http') ? previewPersonal.foto_path : `${BASE_URL}/uploads/${previewPersonal.foto_path}`}
+                      src={previewPersonal.foto_path.startsWith('http') ? previewPersonal.foto_path : `${BASE_URL}/api/uploads/${previewPersonal.foto_path}`}
                       alt={`${previewPersonal.nombres} ${previewPersonal.apellidos}`}
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-white text-gray-400">
-                      <User size={48} />
+                    <div className="w-full h-full flex items-center justify-center bg-blue-50 dark:bg-blue-900/30 text-gray-400">
+                      <GenderAvatar sexo={previewPersonal.sexo} size={60} />
                     </div>
                   )}
                 </div>

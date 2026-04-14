@@ -1,17 +1,17 @@
-# 📥 Descargas - SAE v1.0.7
+# 📥 Descargas - SAE v1.1.2
 
 **Sistema de Administración Educativa**  
-**Versión:** 1.0.7  
-**Fecha:** 22 de febrero de 2026
+**Versión:** 1.1.2  
+**Fecha:** 13 de abril de 2026
 
 ---
 
 ## 🚀 Descargar Instaladores
 
 ### Opción 1: Instalador para Windows (RECOMENDADO)
-**Archivo:** `SAE - Sistema de Administración Educativa Setup 1.0.7.exe`  
+**Archivo:** `SAE - Sistema de Administración Educativa Setup 1.1.2.exe`  
 **Tamaño:** ~180 MB  
-**Ubicación:** `release/` → `SAE - Sistema de Administración Educativa Setup 1.0.7.exe`
+**Ubicación:** `release/` → `SAE - Sistema de Administración Educativa Setup 1.1.2.exe`
 
 **Ventajas:**
 - ✅ Instalación automática
@@ -29,9 +29,9 @@
 ---
 
 ### Opción 2: Portable (Versión sin Instalación)
-**Archivo:** `SAE-v1.0.7-Portable.zip`  
+**Archivo:** `SAE-v1.1.2-Portable.zip`  
 **Tamaño:** ~200 MB  
-**Ubicación:** `release/` → `SAE-v1.0.7-Portable.zip`
+**Ubicación:** `release/` → `SAE-v1.1.2-Portable.zip`
 
 **Ventajas:**
 - ✅ Sin instalación requerida
@@ -71,7 +71,7 @@ Para verificar que el archivo se descargó correctamente:
 ### Windows
 ```powershell
 # Abrir PowerShell en la carpeta donde descargaste el archivo
-certUtil -hashfile "SAE - Sistema de Administración Educativa Setup 1.0.7.exe" SHA256
+certUtil -hashfile "SAE - Sistema de Administración Educativa Setup 1.1.2.exe" SHA256
 ```
 
 El hash debe coincidir con el publicado en GitHub.
@@ -104,12 +104,12 @@ El hash debe coincidir con el publicado en GitHub.
 Los archivos también están disponibles en:
 
 ```
-GitHub → SAE-Project → Releases → v1.0.7
+GitHub → SAE-Project → Releases → v1.1.2
 ```
 
 **URL directa:**
 ```text
-https://github.com/Hikki777/SAE-Project/releases/tag/v1.0.7
+https://github.com/Hikki777/SAE-Project/releases/tag/v1.1.2
 ```
 
 ---
@@ -144,8 +144,8 @@ Si Windows muestra advertencia:
 
 | Archivo                 | Tamaño  | Tipo       | Nota            |
 |-------------------------|---------|------------|-----------------|
-| SAE Setup 1.0.7.exe     | ~180 MB | Instalador | Recomendado     |
-| SAE-v1.0.7-Portable.zip | ~200 MB | Portable   | Sin instalación |
+| SAE Setup 1.1.2.exe     | ~180 MB | Instalador | Recomendado     |
+| SAE-v1.1.2-Portable.zip | ~200 MB | Portable   | Sin instalación |
 
 **Nota:** El portable es más grande porque incluye recursos sin comprimir para acceso más rápido.
 
@@ -188,7 +188,7 @@ R: No, cada instalación tiene su propia base de datos.
 **P: ¿Puedo copiar la carpeta portable a otro USB?**  
 R: Sí, funciona en cualquier computadora con Windows 10+.
 
-**P: ¿Necesito desinstalar versiones anteriores antes de instalar v1.0.7?**  
+**P: ¿Necesito desinstalar versiones anteriores antes de instalar v1.1.2?**  
 R: No es requerido, pero se recomienda para evitar conflictos.
 
 **P: ¿Dónde se guardan los datos?**  
@@ -217,7 +217,7 @@ Si tienes problemas con la descarga o instalación:
 
 ---
 
-**Versión:** 1.0.7  
+**Versión:** 1.1.2  
 **Fecha:** 22 de febrero de 2026  
 **Status:** ✅ Publicado
 
@@ -226,5 +226,5 @@ Si tienes problemas con la descarga o instalación:
 ---
 
 *Para descargar directamente:*  
-📦 **release/SAE - Sistema de Administración Educativa Setup 1.0.7.exe** (~180 MB)  
-📦 **release/SAE-v1.0.7-Portable.zip** (~200 MB)
+📦 **release/SAE - Sistema de Administración Educativa Setup 1.1.2.exe** (~180 MB)  
+📦 **release/SAE-v1.1.2-Portable.zip** (~200 MB)

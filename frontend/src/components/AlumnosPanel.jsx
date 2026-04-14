@@ -235,7 +235,7 @@ export default function AlumnosPanel() {
       jornada: alumno.jornada || '',
       sexo: alumno.sexo || '',
       foto: null,
-      preview: alumno.foto_path ? (alumno.foto_path.startsWith('http') ? alumno.foto_path : `${BASE_URL}/uploads/${alumno.foto_path}`) : null
+      preview: alumno.foto_path ? (alumno.foto_path.startsWith('http') ? alumno.foto_path : `${BASE_URL}/api/uploads/${alumno.foto_path}`) : null
     });
     setCarnetMode('manual'); // En edición siempre es manual
     setShowModal(true);
@@ -614,7 +614,7 @@ export default function AlumnosPanel() {
                           >
                             {alumno.foto_path ? (
                               <img 
-                                src={alumno.foto_path.startsWith('http') ? alumno.foto_path : `${BASE_URL}/uploads/${alumno.foto_path}`}
+                                src={alumno.foto_path.startsWith('http') ? alumno.foto_path : `${BASE_URL}/api/uploads/${alumno.foto_path}`}
                                 alt={`${alumno.nombres} ${alumno.apellidos}`}
                                 className="w-full h-full object-cover"
                               />
@@ -767,7 +767,7 @@ export default function AlumnosPanel() {
                       >
                         {alumno.foto_path ? (
                           <img 
-                            src={alumno.foto_path.startsWith('http') ? alumno.foto_path : `${BASE_URL}/uploads/${alumno.foto_path}`}
+                            src={alumno.foto_path.startsWith('http') ? alumno.foto_path : `${BASE_URL}/api/uploads/${alumno.foto_path}`}
                             alt={`${alumno.nombres} ${alumno.apellidos}`}
                             className="w-full h-full object-cover"
                           />
@@ -1369,13 +1369,13 @@ export default function AlumnosPanel() {
                 <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-white shadow-xl flex-shrink-0">
                   {previewAlumno.foto_path ? (
                     <img 
-                      src={previewAlumno.foto_path.startsWith('http') ? previewAlumno.foto_path : `${BASE_URL}/uploads/${previewAlumno.foto_path}`}
+                      src={previewAlumno.foto_path.startsWith('http') ? previewAlumno.foto_path : `${BASE_URL}/api/uploads/${previewAlumno.foto_path}`}
                       alt={`${previewAlumno.nombres} ${previewAlumno.apellidos}`}
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-white text-gray-400">
-                      <User size={48} />
+                    <div className="w-full h-full flex items-center justify-center bg-primary-50 dark:bg-primary-900/30 text-gray-400">
+                      <GenderAvatar sexo={previewAlumno.sexo} size={60} />
                     </div>
                   )}
                 </div>

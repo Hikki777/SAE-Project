@@ -490,7 +490,7 @@ export default function JustificacionesPanel() {
                 <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden flex items-center justify-center flex-shrink-0">
                   {persona.foto_path ? (
                     <img
-                      src={persona.foto_path.startsWith('http') ? persona.foto_path : `${BASE_URL}/uploads/${persona.foto_path}`}
+                      src={persona.foto_path.startsWith('http') ? persona.foto_path : `${BASE_URL}/api/uploads/${persona.foto_path}`}
                       alt={persona.nombres}
                       className="w-full h-full object-cover"
                       onError={e => { e.target.style.display='none'; }}
@@ -841,7 +841,7 @@ function FilaJustificacion({ excusa, onAprobar, onRechazar, onVerDetalles }) {
   // Foto
   const [imgError, setImgError] = useState(false);
   const fotoUrl = !imgError && persona?.foto_path 
-     ? (persona.foto_path.startsWith('http') ? persona.foto_path : `http://localhost:5000/uploads/${persona.foto_path}`)
+     ? (persona.foto_path.startsWith('http') ? persona.foto_path : `${BASE_URL}/api/uploads/${persona.foto_path}`)
      : null;
 
   return (
@@ -959,7 +959,7 @@ function ModalDetalles({ persona, excusa, onClose, formatFecha, baseUrl }) {
   const [mostrarFormRechazo, setMostrarFormRechazo] = useState(false);
   
   const fotoUrl = !imgError && persona?.foto_path 
-    ? (persona.foto_path.startsWith('http') ? persona.foto_path : `http://localhost:5000/uploads/${persona.foto_path}`)
+    ? (persona.foto_path.startsWith('http') ? persona.foto_path : `${BASE_URL}/api/uploads/${persona.foto_path}`)
     : null;
 
   const handleAprobar = async () => {
@@ -1096,7 +1096,7 @@ function ModalDetalles({ persona, excusa, onClose, formatFecha, baseUrl }) {
               <div>
                  <label className="text-sm font-bold text-gray-500 dark:text-gray-400 block mb-2">Evidencia Adjunta</label>
                  <a 
-                   href={`${BASE_URL}/uploads/${excusa.documento_url}`} 
+                   href={`${BASE_URL}/api/uploads/${excusa.documento_url}`} 
                    target="_blank" 
                    rel="noreferrer"
                    className="flex items-center gap-2 text-blue-600 dark:text-blue-400 hover:underline bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg border border-gray-200 dark:border-gray-600 transition"

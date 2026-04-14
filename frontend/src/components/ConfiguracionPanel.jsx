@@ -39,7 +39,7 @@ function UserPhoto({ fotoPath, nombres, sexo, size = 'lg', onError }) {
 
     const loadPhoto = async () => {
       try {
-        const response = await fetch(`${BASE_URL}/uploads/${fotoPath}?t=${Date.now()}`, {
+        const response = await fetch(`${BASE_URL}/api/uploads/${fotoPath}?t=${Date.now()}`, {
           method: 'GET',
           credentials: 'include',
         });
@@ -459,7 +459,7 @@ const DirectorModal = ({ isOpen, onClose, director, onSave, saving, onWebcamClic
         sexo: director.sexo || 'Masculino',
         jornada: director.jornada || 'Matutina'
       });
-      setPreview(director.foto_path ? `${BASE_URL}/uploads/${director.foto_path}` : null);
+      setPreview(director.foto_path ? `${BASE_URL}/api/uploads/${director.foto_path}` : null);
     } else {
       setLocalData({
         nombres: '',
@@ -1354,54 +1354,53 @@ const SistemaSettings = ({ currentUser }) => {
       return;
     }
 
-    if (!clickedConfirmRestore) {
-        setClickedConfirmRestore(true);
-        // Pequeño timeout para evitar doble click accidental
-        setTimeout(() => setClickedConfirmRestore(false), 2000);
-        return; // Return to prevent double submission
-    }
-    
     setRestoringBackup(true);
     const formData = new FormData();
     formData.append('backup', selectedBackupFile);
     formData.append('password', restorePassword);
     
-    // DEBUG: Log FormData contents
-    console.log('[RESTORE] FormData info:', {
-      fileName: selectedBackupFile?.name,
-      fileSize: selectedBackupFile?.size,
-      fileType: selectedBackupFile?.type,
-      password: '****',
-      hasPassword: !!restorePassword
-    });
-    
     try {
-      const response = await client.post('/backup/restore', formData);
-      
-      toast.success('✅ Sistema restaurado correctamente');
-      toast('🔄 Reiniciando servidor...', { duration: 3000 });
-      setShowRestoreModal(false);
-      setSelectedBackupFile(null);
-      setRestorePassword('');
-      
-      setTimeout(() => {
-        window.location.hash = '/login';
-      }, 3000);
-    } catch (error) {
-      console.error('Error restaurando:', error);
-      let errorMsg = 'Error al restaurar backup';
-      
-      if (error.response?.status === 401) {
-        errorMsg = '❌ Contraseña incorrecta';
-      } else if (error.response?.status === 400) {
-        errorMsg = error.response.data?.error || 'Error en validación de archivo';
-      } else if (error.response?.data?.error) {
-        errorMsg = error.response.data.error;
-      } else {
-        errorMsg = error.message || errorMsg;
-      }
+      const token = localStorage.getItem('token');
+      // Usar fetch nativo para evitar interferencia de interceptores de axios en subidas pesadas
+      const response = await fetch(`${BASE_URL || ''}/api/backup/restore`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+          // NO establecer Content-Type: multipart/form-data manualmente para que el
+          // navegador asigne el boundary correcto automáticamente.
+        },
+        body: formData
+      });
 
-      toast.error(errorMsg);
+      const data = await response.json();
+
+      if (response.ok) {
+        toast.success('✅ Sistema restaurado correctamente');
+        toast('🔄 Reiniciando servidor...', { duration: 3000 });
+        setShowRestoreModal(false);
+        setSelectedBackupFile(null);
+        setRestorePassword('');
+        
+        setTimeout(() => {
+          window.location.hash = '/login';
+        }, 3000);
+      } else {
+        console.error('[RESTORE-ERROR] Servidor respondió con error:', data);
+        let errorMsg = 'Error al restaurar backup';
+        
+        if (response.status === 401) {
+          errorMsg = '❌ Contraseña incorrecta o sesión expirada';
+        } else if (response.status === 400) {
+          errorMsg = data.error || 'Error en validación de archivo';
+        } else if (data.error) {
+          errorMsg = data.error;
+        }
+
+        toast.error(errorMsg);
+      }
+    } catch (error) {
+      console.error('Error de red/petición en restauración:', error);
+      toast.error('Error de conexión al restaurar backup: ' + error.message);
     } finally {
       setRestoringBackup(false);
       setClickedConfirmRestore(false);
@@ -1461,7 +1460,7 @@ const SistemaSettings = ({ currentUser }) => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4">
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Versión</p>
-            <p className="text-xl font-bold text-gray-900 dark:text-gray-100">SAE v1.0.8</p>
+            <p className="text-xl font-bold text-gray-900 dark:text-gray-100">SAE v1.1.1</p>
           </div>
 
           <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4">
@@ -2189,15 +2188,23 @@ export default function ConfiguracionPanel() {
 
   const handleUpdateUser = async () => {
     try {
-      await client.put(`/usuarios/${editingUserId}`, {
-        email: newUser.email,
-        password: newUser.password,
-        nombres: newUser.nombres,
-        apellidos: newUser.apellidos,
-        cargo: newUser.cargo,
-        jornada: newUser.jornada,
-        rol: newUser.rol,
-        sexo: newUser.sexo
+      const formData = new FormData();
+      formData.append('email', newUser.email);
+      if (newUser.password) formData.append('password', newUser.password);
+      formData.append('nombres', newUser.nombres);
+      formData.append('apellidos', newUser.apellidos);
+      formData.append('cargo', newUser.cargo);
+      formData.append('jornada', newUser.jornada);
+      formData.append('rol', newUser.rol);
+      formData.append('sexo', newUser.sexo);
+      formData.append('activo', newUser.activo);
+
+      if (newUser.foto_file) {
+        formData.append('foto', newUser.foto_file);
+      }
+
+      await client.put(`/usuarios/${editingUserId}`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
       });
       toast.success('Usuario actualizado correctamente');
       closeUserModal();
@@ -2324,13 +2331,14 @@ export default function ConfiguracionPanel() {
         telefono: data.telefono || '',
         departamento: data.departamento || '',
         municipio: data.municipio || '',
+        pais: data.pais || '',
         ciclo_escolar: data.ciclo_escolar || new Date().getFullYear()
       });
       
       if (data.logo_path) {
         const logoUrl = data.logo_path.startsWith('http') 
           ? data.logo_path 
-          : `${BASE_URL}/uploads/${data.logo_path}?t=${Date.now()}`;
+          : `${BASE_URL}/api/uploads/${data.logo_path}?t=${Date.now()}`;
         setLogoPreview(logoUrl);
       }
     } catch (error) {
@@ -2554,6 +2562,16 @@ export default function ConfiguracionPanel() {
                   <div className="w-20 h-20 rounded-full bg-gray-100 dark:bg-gray-700 border-2 border-dashed border-gray-300 dark:border-gray-600 flex items-center justify-center overflow-hidden">
                     {newUser.foto_preview ? (
                       <img src={newUser.foto_preview} alt="Preview" className="w-full h-full object-cover" />
+                    ) : newUser.foto_path ? (
+                      <img 
+                        src={`${BASE_URL}/api/uploads/${newUser.foto_path}`} 
+                        alt="Profile" 
+                        className="w-full h-full object-cover" 
+                        onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.style.display = 'none';
+                        }}
+                      />
                     ) : (
                       <Camera size={28} className="text-gray-400" />
                     )}

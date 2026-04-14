@@ -114,7 +114,7 @@ export default function AsistenciasPanel() {
     if (personaObj && personaObj.foto_path) {
          return personaObj.foto_path.startsWith('http') 
             ? personaObj.foto_path 
-            : `${BASE_URL}/uploads/${personaObj.foto_path}`;
+            : `${BASE_URL}/api/uploads/${personaObj.foto_path}`;
     }
 
     if (!carnet) return null;
@@ -143,9 +143,8 @@ export default function AsistenciasPanel() {
       }
     }
     
-    // Construir URL: /uploads/{directory}/{prefix}_{carnet}.png
-    // Asegurar que no haya espacios en la URL generada
-    return `/uploads/${directory}/${prefix}_${cleanCarnet}.png`;
+    // Construir URL: /api/uploads/{directory}/{prefix}_{carnet}.png
+    return `${BASE_URL}/api/uploads/${directory}/${prefix}_${cleanCarnet}.png`;
   }, []);
 
   useEffect(() => {
@@ -169,35 +168,53 @@ export default function AsistenciasPanel() {
 
     // Verificar la hora con internet y prevenir fraudes o desincronización
     // Maneja errores silenciosamente para evitar que la aplicación se congele si cae la API
+    // Verificar la hora con internet y prevenir fraudes o desincronización
     const verificarHoraSistema = async () => {
       const fechaLocal = new Date();
       setHoraInternet(fechaLocal.toLocaleString('es-ES'));
 
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 4000);
+      const intentarFetch = async (url, timeoutMs) => {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+        try {
+          const response = await fetch(url, { signal: controller.signal });
+          clearTimeout(timeoutId);
+          if (response.ok) return await response.json();
+          return null;
+        } catch (e) {
+          clearTimeout(timeoutId);
+          return null;
+        }
+      };
 
       try {
-        // Se usa una API de hora pública
-        const response = await fetch('https://worldtimeapi.org/api/ip', { signal: controller.signal });
-        clearTimeout(timeoutId);
+        // Intentar con API 1: WorldTimeAPI (IP based)
+        let data = await intentarFetch('https://worldtimeapi.org/api/ip', 5000);
+        
+        // Si falla, intentar con API 2: TimeAPI (Stable fallback)
+        if (!data) {
+          data = await intentarFetch('https://www.timeapi.io/api/Time/current/zone?timeZone=UTC', 5000);
+        }
 
-        if (response.ok) {
-          const data = await response.json();
-          const fechaInternet = new Date(data.datetime);
-          
+        if (data) {
+          // Extraer fecha según la estructura de la API que respondió
+          const fechaIso = data.datetime || data.dateTime;
+          if (!fechaIso) return;
+
+          const fechaInternet = new Date(fechaIso);
           setHoraInternet(fechaInternet.toLocaleString('es-ES'));
 
           // Comparar si la diferencia de hora es mayor a 5 minutos
           const diffMinutos = Math.abs((fechaInternet.getTime() - fechaLocal.getTime()) / 60000);
           if (diffMinutos > 5) {
             toast.error(
-              '⚠️ La hora o fecha de esta computadora es incorrecta. Por favor ajusta el reloj del sistema.', 
+              '⚠️ La hora de esta computadora es incorrecta. Por favor ajusta el reloj del sistema para evitar errores en registros.', 
               { duration: 8000 }
             );
           }
         }
       } catch (error) {
-        console.warn('⚠️ No se pudo verificar la hora con internet. Usando hora local como respaldo.', error);
+        // Silencioso: Fallback a hora local ya seteado al inicio
       }
     };
 

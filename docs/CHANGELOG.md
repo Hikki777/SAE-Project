@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.1.2] - 2026-04-13
+### ✨ Mejoras de Estabilidad y UX (Pulido Final)
+- **[Backups]** Estabilización definitiva del proceso de restauración de archivos binarios v2.0.
+  - Fix: Migración de `axios` a `native fetch` para la subida de archivos pesados de backup, resolviendo el error `400 Bad Request` causado por la pérdida de `boundary` en los interceptores.
+  - UX: Eliminada la lógica redundante de "triple click" para restaurar; ahora el botón se bloquea inmediatamente al primer click.
+- **[Sincronización]** Optimización del sistema de verificación de hora de internet en `AsistenciasPanel.jsx`.
+  - Mejora: Implementado sistema de *failover* (API primaria: WorldTimeAPI, API secundaria: TimeAPI.io).
+  - Robustez: Aumentado el timeout a 10s y añadida gestión silenciosa de errores para evitar ruido excesivo en la consola de desarrollo.
+- **[Interfaz]** Avatares dinámicos en modales de vista previa.
+  - Mejora: Integrado el componente `GenderAvatar` en los modales de detalle de **Alumnos** y **Personal**.
+  - Estética: Reemplazado el icono de usuario genérico por una ilustración basada en el género del estudiante o trabajador, manteniendo la consistencia visual premium de la marca SAE.
+
 ## [1.1.1] - 2026-04-08 (Hotfix)
 ### Corregido
 - **[CRITICAL BUG]** El sistema de creación y restauración de Backups desde el panel de control fallaba devolviendo Error 500 (`tempDir is not defined`).
