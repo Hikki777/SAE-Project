@@ -3,7 +3,7 @@ const { autoUpdater } = require("electron-updater");
 const path = require("path");
 const { spawn } = require("child_process");
 const http = require("http");
-const fs = require("fs");
+const fs = require("fs-extra");
 const os = require("os");
 
 let mainWindow;
@@ -57,6 +57,60 @@ function ensureDataDirectories() {
     userDataPath,
     errors: creationErrors,
   };
+}
+
+/**
+ * Migra datos de carpetas con nombres antiguos si la nueva carpeta está vacía.
+ * Solo se ejecuta si no existe la base de datos en la ruta actual.
+ */
+function migrateLegacyDataSpeculative() {
+  const currentDataPath = app.getPath("userData");
+  const dbFile = path.join(currentDataPath, "prisma", "dev.db");
+
+  // 1. Si ya hay una base de datos, NO migramos (evita sobreescribir datos nuevos)
+  if (fs.existsSync(dbFile)) {
+    log("Directorio de datos actual ya contiene base de datos. Omitiendo migración.");
+    return;
+  }
+
+  const appData = app.getPath("appData");
+  
+  // Posibles nombres de carpetas antiguas basados en versiones previas
+  const legacyFolders = [
+    "SAE - Sistema de Administracion Educativa",
+    "SAE - Sistema de Administración Educativa",
+    "sae-project",
+    "sae"
+  ];
+
+  for (const folderName of legacyFolders) {
+    const legacyPath = path.join(appData, folderName);
+    const legacyDb = path.join(legacyPath, "prisma", "dev.db");
+
+    if (fs.existsSync(legacyDb)) {
+      log(`¡Datos antiguos detectados en: ${legacyPath}! Iniciando migración automática...`);
+      
+      try {
+        // Asegurar que el directorio padre existe
+        fs.ensureDirSync(currentDataPath);
+        
+        // Copiar contenido de la carpeta antigua a la nueva
+        // No sobreescribimos si algo ya existe por accidente
+        fs.copySync(legacyPath, currentDataPath, {
+          overwrite: false,
+          preserveTimestamps: true,
+          errorOnExist: false
+        });
+
+        log(`✓ Migración desde "${folderName}" completada con éxito.`);
+        
+        // NOTA: No borramos la carpeta antigua por seguridad, el usuario puede hacerlo manualmente.
+        return; // Detener tras la primera migración exitosa
+      } catch (err) {
+        logError(`Falló migración desde ${folderName}: ${err.message}`);
+      }
+    }
+  }
 }
 
 // ─────────────────────────────────────────────
@@ -547,6 +601,9 @@ function stopBackend() {
 app.whenReady().then(async () => {
   initLogFile();
   log("App lista. Iniciando...");
+
+  // Migración de datos legados si es necesario
+  migrateLegacyDataSpeculative();
 
   // Validar directorios de datos antes de iniciar
   const dirCheck = ensureDataDirectories();
