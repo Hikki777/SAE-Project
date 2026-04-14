@@ -24,14 +24,14 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20.x"
+          node-version: "22.x"
           cache: "npm"
 
       - name: Clear npm cache
         run: npm cache clean --force
 
       - name: Instalar dependencias raíz
-        run: npm ci --verbose --omit=optional
+        run: npm install --no-audit --no-fund --legacy-peer-deps
         continue-on-error: false
 
       - name: Verificar archivo de bloqueo
@@ -67,7 +67,7 @@ jobs:
           cat package.json | grep -A 20 '"scripts"'
           echo ""
           echo "=== Instalando dependencias ==="
-          npm ci --verbose --omit=optional --legacy-peer-deps
+          npm install --no-audit --no-fund --legacy-peer-deps
 
       - name: Verificar dependencias críticas
         run: |
