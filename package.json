@@ -45,7 +45,8 @@
     "dist:win": "node scripts/prepare-clean-db.js && npm run icons && npm run build:frontend && electron-builder --win --config.nsis.artifactName=SAE-${version}-Setup.exe",
     "dist:debug": "npm run icons && npm run build:frontend && electron-builder --dir",
     "dist:linux": "npm run icons && npm run build:frontend && electron-builder --linux",
-    "dist:mac": "npm run icons && npm run build:frontend && electron-builder --mac"
+    "dist:mac": "npm run icons && npm run build:frontend && electron-builder --mac",
+    "dist:publish": "npm run icons && npm run build:frontend && electron-builder --win --publish always"
   },
   "keywords": [
     "asistencias",

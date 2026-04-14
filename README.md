@@ -119,6 +119,13 @@ Opción 2 (Desde terminal):
 npm run electron
 ```
 
+### Distribución y Lanzamiento (Generar Instalador)
+Para generar el instalador de Windows (`.exe`) y subirlo automáticamente a GitHub:
+```bash
+npm run dist:publish
+```
+*Nota: Este comando generará el ejecutable y lo publicará en los Releases de GitHub con todos los metadatos necesarios (latest.yml) para que las actualizaciones automáticas funcionen correctamente.*
+
 **Linux / macOS**
 ```bash
 npm run electron:silent
@@ -196,5 +203,7 @@ Guatemala 🇬🇹
 - ✅ **Identidad Visual**: Implementación de `GenderAvatar` en todo el sistema (Scanner QR, Personal, Alumnos, Usuarios) para una experiencia visual pulida si no hay foto.
 - ✅ **Estandarización**: "6to. Diversificado" oficialmente renombrado a "Graduandos" según nomenclatura educativa estándar.
 - ✅ **Webcam Cam**: Soporte nativo y estable de captura de fotos en todos los módulos (Setup, Personal, Usuarios).
+- ✅ **Auto-Updater Fix**: Corrección de firma digital SHA-512 y metadatos `latest.yml` para garantizar que el sistema detecte nuevas versiones automáticamente.
+- ✅ **Automatización de Builds**: Implementación del script `dist:publish` para evitar olvidos manuales en futuros despliegues.
 
 Esta versión consolida todos los hotfixes previos en una base de código robusta, optimizada para entornos Windows con instalación de un solo clic y gestión automática de directorios en `%APPDATA%`.
