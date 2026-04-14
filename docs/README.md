@@ -30,4 +30,5 @@ Esta carpeta contiene toda la documentación técnica y de usuario del Sistema d
 
 ---
 
-**SAE Project** - Sistema de Administración Educativa para Guatemala 🇬🇹
+**SAE Project v1.1.2** - Sistema de Administración Educativa para Guatemala 🇬🇹  
+*Última actualización de documentación: Abril 2026*

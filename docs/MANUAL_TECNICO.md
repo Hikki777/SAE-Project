@@ -1,7 +1,7 @@
 # 📘 Manual Técnico - SAE Sistema de Administración Educativa
 
-**Versión:** 1.0.8  
-**Fecha:** 20 de Febrero, 2026  
+**Versión:** 1.1.2  
+**Fecha:** 13 de Abril, 2026  
 **Stack:** Electron + React + Node.js + SQLite  
 **Licencia:** GPL v3.0
 
@@ -19,8 +19,9 @@ SAE es una **aplicación de escritorio** construida con Electron que funciona co
 - **Puerto:** `5000` (configurable)
 - API RESTful para lógica de negocio
 - Autenticación JWT
-- Sistema de archivos y backups
-- WebSocket para sincronización en tiempo real
+- **Backup v2.0:** Sistema de respaldo binario con cifrado AES-256-GCM y restauración fiable.
+- **WebSocket:** Sincronización en tiempo real para eventos de asistencia.
+- **Time Sync:** Sistema de failover automático para validación horaria contra servidores externos.
 
 #### 1.2 Frontend (React 18 + Vite + TailwindCSS)
 - **Puerto desarrollo:** `5173`
@@ -68,7 +69,7 @@ SAE es una **aplicación de escritorio** construida con Electron que funciona co
 
 1. **Descargar instalador**
    - Ir a [Releases en GitHub](https://github.com/Hikki777/SAE-Project/releases)
-   - Descargar `SAE-Setup-1.0.8.exe`
+   - Descargar la última versión `SAE-Setup-1.1.2.exe`
 
 2. **Ejecutar instalador**
    - Doble click en el archivo `.exe`
@@ -373,5 +374,5 @@ Los usuarios con v1.0+ recibirán notificación automática.
 
 ---
 
-**Última actualización:** 20 de Febrero, 2026  
-**Versión del documento:** 1.0.8
+**Última actualización:** 13 de Abril, 2026  
+**Versión del documento:** 1.1.2

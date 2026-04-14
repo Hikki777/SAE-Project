@@ -1,7 +1,7 @@
 # SAE - Sistema de Administración Educativa - Estado del Proyecto
 
-**Fecha:** 20 de febrero de 2026  
-**Versión:** 1.0.8 (Release Stable)  
+**Fecha:** 13 de abril de 2026  
+**Versión:** 1.1.2 (Release Stable)  
 **Estado:** ✅ Listo para Release de Producción
 
 ---
@@ -14,7 +14,7 @@ Sistema integral de gestión educativa diseñado específicamente para instituci
 
 ---
 
-## ✅ Funcionalidades Implementadas (v1.0.8)
+## ✅ Funcionalidades Implementadas (v1.1.2)
 
 ### 🖥️ Plataforma y Core
 - **Aplicación de Escritorio:** Electron v39 para Windows (Linux y macOS en desarrollo)
@@ -82,10 +82,11 @@ Sistema integral de gestión educativa diseñado específicamente para instituci
   - Validación estricta de inputs
   - Headers de seguridad con Helmet
   
-- **Backups:**
-  - Sistema manual de respaldo de base de datos
-  - Carpeta `uploads/` para archivos multimedia
-  - Scripts de rollback disponibles
+- **Backups v2.0:**
+  - Sistema de respaldo binario con cifrado AES-256-GCM
+  - Migración a streams para manejar archivos grandes sin saturar memoria
+  - Restauración ultra-estable vía `native fetch` (mejor compatibilidad Electron)
+  - Carpeta `uploads/` integrada en el proceso de empaquetado
 
 - **Logs:**
   - Sistema de logging estructurado (Pino)
@@ -94,27 +95,19 @@ Sistema integral de gestión educativa diseñado específicamente para instituci
 
 ---
 
-## 🔧 Cambios Recientes (Camino a v1.0)
+## ✨ Evolución Reciente (Serie v1.1.x)
 
-### Mejoras de UI/UX
-- ✅ Modal de vista previa con foto, información completa y código QR
-- ✅ Fotos clickeables con hover effects
-- ✅ Vista compacta de cursos para docentes en formularios
-- ✅ Agregados grados faltantes de Diversificado (4to, 5to, 6to)
-- ✅ Mejoras en z-index y overlays de modales
-- ✅ Limpieza correcta de estados en formularios
+### v1.1.2 — Estabilidad y Pulido Premium
+- ✅ **Backups v2.0:** Migración a streams binarios con cifrado AES-256-GCM y restauración ultra-estable vía `native fetch`.
+- ✅ **Sincronización Horaria:** Sistema de failover robusto (WorldTimeAPI + TimeAPI.io) para prevenir fraudes en asistencias.
+- ✅ **Identidad Visual:** Integración de `GenderAvatar` en Scanner, Personal y Alumnos (avatares dinámicos por género).
+- ✅ **Nomenclatura:** Estandarización de "Graduandos" en reportes y vistas de 6to Diversificado.
 
-### Organización del Código
-- ✅ Movida toda la documentación a carpeta `/docs`
-- ✅ Eliminados archivos de test temporales
-- ✅ Eliminada documentación obsoleta y redundante
-- ✅ Repositorio limpio y profesional
-- ✅ Documentación completamente en español
-
-### Seguridad
-- ✅ Actualizado `.gitignore` para excluir datos sensibles
-- ✅ Carpeta `uploads/` correctamente excluida de git
-- ✅ Archivos personales (fotos, carnets) protegidos
+### v1.1.0 — Multimedia y Automatización
+- ✅ **Webcam Nativa:** Soporte de captura de fotos en registro de Alumnos, Personal y Usuarios.
+- ✅ **Justificaciones v2:** Flujo completo de ausentes justificados integrado en el panel de asistencias.
+- ✅ **Auto-Updates:** Sistema de actualizaciones automáticas (OTA) integrado en Electron.
+- ✅ **Instalador Moderno:** Instalación "One-Click" en `%APPDATA%` sin requerir permisos de Administrador.
 
 ---
 
@@ -123,132 +116,78 @@ Sistema integral de gestión educativa diseñado específicamente para instituci
 ### Backend (`/backend`)
 ```
 backend/
-├── config/              # Configuración del sistema
-├── middlewares/         # Auth, validación, logging
+├── config/              # Parámetros de versión y sistema
+├── middlewares/         # Seguridad, Auth y Logging
 ├── prisma/             
-│   ├── schema.prisma    # Modelo de datos
-│   └── dev.db           # Base de datos SQLite
-├── routes/              # API Endpoints
-│   ├── alumnos.js
-│   ├── personal.js
-│   ├── asistencias.js
-│   ├── justificaciones.js
-│   └── ...
-├── services/            # Lógica de negocio
-└── server.js            # Entry point
+│   ├── schema.prisma    # Modelo de datos unificado
+│   └── dev.db           # SQLite (Modo alto rendimiento)
+├── routes/              # API Endpoints (Alumnos, Asistencias, etc)
+├── services/            # Lógica de negocio (Backups, Carnets)
+└── server.js            # Punto de entrada principal
 ```
 
 ### Frontend (`/frontend`)
 ```
 frontend/
 ├── src/
-│   ├── api/             # Cliente API (axios)
-│   ├── components/      # React Components
-│   │   ├── AlumnosPanel.jsx
-│   │   ├── PersonalPanel.jsx
-│   │   ├── AsistenciasPanel.jsx
-│   │   └── ...
-│   ├── pages/           # Login, Dashboard
-│   └── App.jsx          # Router principal
-└── dist/                # Build de producción
-```
-
-### Electron (`/electron`)
-```
-electron/
-└── main.cjs             # Proceso principal de Electron
+│   ├── api/             # Cliente API optimizado
+│   ├── components/      # UI Components (React + Framer Motion)
+│   ├── pages/           # Vistas principales y Dashboard
+│   └── App.jsx          # Enrutamiento y App Shell
+└── dist/                # Bundle de producción
 ```
 
 ---
 
 ## 🚀 Comandos Principales
 
-### Usuario Final
-- `npm run electron` - Inicia la aplicación de escritorio
-
-### Desarrollo
-- `npm run dev` - Desarrollo con hot reload
-- `npm test` - Ejecutar pruebas
-- `npm run admin` - Crear usuario administrador
+### Operación
+- `npm run electron` - Iniciar entorno de producción
+- `npm run dev` - Modo desarrollo (Hot Reload)
 
 ### Mantenimiento
-- `npm run update` - Actualizar sistema (con backup)
-- `npm run rollback` - Restaurar versión anterior
-- `npm run db:reset` - Reiniciar base de datos
-
-### Distribución
-- `npm run dist:win` - Crear instalador Windows
+- `npm run update` - Actualizar sistema con backup automático
+- `npm run rollback` - Revertir a la versión anterior estable
+- `npm run admin` - Gestión de usuarios administrativos
 
 ---
 
-## 📋 Roadmap v1.x
+## 📋 Roadmap 2026
 
-### v1.0.8 (ACTUAL - Release Stable)
-- ✅ Sistema core completo y estable
-- ✅ Documentación actualizada
-- 🔄 Instalador Windows con auto-actualización
-- 🔄 Release en GitHub
+### v1.1.2 (ESTADO ACTUAL)
+- ✅ Base de código estable y documentada
+- ✅ Motor de backups v2.0 funcional
+- ✅ UX/UI de alta fidelidad
 
-### v1.0.1-1.0.x (Estabilización - 1-2 meses)
-- Corrección de bugs reportados por usuarios
-- Optimizaciones de rendimiento
-- Mejoras incrementales de UI/UX
+### v1.2.0 (Próximo Hito - Q2 2026)
+- 🔄 **Búsqueda Global:** Motor de búsqueda instantánea en todo el sistema.
+- 🔄 **Reportes Personalizados:** Constructor de tablas dinámicas para exportación.
+- 🔄 **Temas dinámicos:** Personalización de colores institucionales.
 
-### v1.1.0 (Features Menores - 2-3 meses)
-- Exportación de reportes a más formatos (CSV, JSON)
-- Temas de color personalizables
-- Búsqueda global en todo el sistema
-- Dashboard con más métricas
-
-### v1.2.0 (Features Medianas - 3-6 meses)
-- Módulo de notificaciones internas
-- Gestión básica de horarios escolares
-- Multi-idioma (español/inglés)
-- Mejoras en reportes estadísticos
-
-### v2.0.0 (Major Release - 6-12 meses)
-- Modo multi-sede (opcional con PostgreSQL)
-- Portal web para padres
-- API pública para integraciones
-- App móvil complementaria
+### v2.0.0 (Visión a Largo Plazo)
+- 🚀 **Multi-Sede:** Arquitectura para múltiples establecimientos con PostgreSQL.
+- 🚀 **Portal Web:** Consulta de asistencias para padres de familia.
+- 🚀 **App Móvil:** Notificaciones push de entradas/salidas en tiempo real.
 
 ---
 
 ## 🎯 Filosofía del Proyecto
 
 ### Principios
-1. **Offline-First:** Debe funcionar sin internet
-2. **Simple y Robusto:** Fácil de usar, difícil de romper
-3. **Datos Locales:** Control total de la información
-4. **Código Libre:** GPL v3.0 para la comunidad educativa
-
-### Público Objetivo
-- Instituciones educativas de Guatemala
-- Colegios privados pequeños/medianos
-- Escuelas públicas con recursos limitados
-- Centros educativos que valoran privacidad de datos
+1. **Offline-First:** Funcionamiento garantizado sin Internet.
+2. **Simple y Robusto:** Interfaz intuitiva tipo "encender y usar".
+3. **Privacidad Etica:** Todos los datos pertenecen a la institución.
 
 ---
 
 ## 📞 Información del Proyecto
 
-### Proyecto
 - **Nombre:** SAE - Sistema de Administración Educativa
 - **Repositorio:** https://github.com/Hikki777/SAE-Project
-- **Licencia:** GPL v3.0
 - **Autor:** Kevin Pérez
 - **País:** Guatemala 🇬🇹
 
-### Reporte de Bugs
-Si encuentras algún problema:
-1. Revisa logs en carpeta `logs/`
-2. Abre un issue en GitHub con:
-   - Versión del sistema
-   - Pasos para reproducir
-   - Logs relevantes
-   - Capturas de pantalla si aplica
-
 ---
 
-**Última actualización de este documento:** 20 de Febrero, 2026  
-**Próxima milestone:** Release v1.1.0
+**Última actualización de este documento:** 13 de Abril, 2026  
+**Próxima milestone:** Mantenimiento y Mejoras v1.2.0

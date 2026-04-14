@@ -1,7 +1,7 @@
 # 📖 Manual de Usuario - Sistema de Registro Institucional
 
-**Versión:** 1.0.8  
-**Fecha:** 20 de Febrero, 2026
+**Versión:** 1.1.2  
+**Fecha:** 13 de Abril, 2026
 
 Bienvenido al Manual de Usuario. Este documento te guiará para sacar el máximo provecho al sistema de control de asistencia.
 
@@ -32,9 +32,10 @@ Tu centro de control. Aquí verás:
 
 ### 👩‍🎓 Alumnos
 Gestiona el expediente de tus estudiantes:
--   **Crear:** Registra nuevos alumnos con sus datos, foto y grado.
--   **Carnet:** El sistema genera automáticamente un **Carnet con código QR** listo para imprimir.
--   **Historial:** Consulta todas las asistencias de un alumno específico.
+-   **Crear:** Registra nuevos alumnos con sus datos completos. Ahora incluye soporte para **captura directa desde Webcam**.
+-   **Avatares Dinámicos:** Si no hay foto, el sistema muestra un avatar basado en el género registrado.
+-   **Carnet:** Generación automática de carnets con código QR.
+-   **Historial:** Consulta de todas las asistencias del estudiante.
 
 ### 👔 Personal
 Similar al módulo de alumnos, pero para docentes y administrativos. Permite controlar sus jornadas laborales y asistencia.
@@ -69,7 +70,7 @@ Solo para administradores:
 ### Copias de Seguridad (Backups)
 El sistema realiza backups automáticos antes de cada actualización. También puedes crear backups manuales desde:
 `Configuración > Sistema > Crear Respaldo`.  
-Guarda el archivo `.bak` descargado en un lugar seguro (USB o Nube).
+El sistema ahora usa el motor de backup v2.0, mucho más rápido y confiable. Guarda el archivo descargado en un lugar seguro.
 
 ### Actualizaciones
 Para mantener el sistema al día con las últimas mejoras, el encargado técnico puede ejecutar el script de actualización. El sistema se encargará de proteger tus datos.
