@@ -6,12 +6,31 @@
  * Garantiza que:
  * 1. Las migraciones pendientes se apliquen sin borrar datos
  * 2. No se ejecuta "db push" destructivo 
- * 3. Funciona en desarrollo y producción (Electron)
+ * 3. Funciona en desarrollo (NO debe ejecutarse en Electron ni en CI/CD de build)
  * 4. Tiene rollback automático si falla
  * 
  * Uso:
  *   node scripts/safe-migrate.js
  */
+
+// ── GUARDIA DE SEGURIDAD ────────────────────────────────────────────────────
+// Este script SOLO debe ejecutarse en entorno de desarrollo local.
+// En producción (Electron) las migraciones se aplican automáticamente
+// en bootstrap.js vía ALTER TABLE (sin prisma CLI).
+// En builds de CI/CD tampoco debe modificar bases de datos de usuario.
+const isElectronBuild = process.env.ELECTRON_RUN_AS_NODE || process.env.RESOURCES_PATH;
+const isCI = process.env.CI || process.env.GITHUB_ACTIONS || process.env.npm_lifecycle_event === 'postinstall' && process.env.NODE_ENV === 'production';
+
+if (isElectronBuild) {
+  console.log('[safe-migrate] Entorno Electron detectado. Omitiendo migraciones de CLI.');
+  process.exit(0);
+}
+
+if (isCI && process.env.NODE_ENV === 'production') {
+  console.log('[safe-migrate] Build de producción detectado. Omitiendo migraciones de CLI.');
+  process.exit(0);
+}
+// ───────────────────────────────────────────────────────────────────────────
 
 require('dotenv').config();
 const { execSync } = require('child_process');

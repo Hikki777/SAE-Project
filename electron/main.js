@@ -60,6 +60,55 @@ function ensureDataDirectories() {
 }
 
 /**
+ * Crea un backup automático de la base de datos antes de cualquier operación
+ * que pueda sobreescribirla. El backup se guarda en %APPDATA%\SAE\backups\<fecha>_pre-update.db
+ */
+function safeBackupDatabase() {
+  const userDataPath = app.getPath("userData");
+  const dbPath = path.join(userDataPath, "prisma", "dev.db");
+  const backupsDir = path.join(userDataPath, "backups");
+
+  if (!fs.existsSync(dbPath)) return; // No hay BD que respaldar
+
+  try {
+    fs.ensureDirSync(backupsDir);
+    const timestamp = new Date().toISOString().replace(/[:.]/g, "-").substring(0, 19);
+    const backupPath = path.join(backupsDir, `${timestamp}_pre-update.db`);
+
+    // Solo crear backup si no existe ya uno reciente (menos de 10 min)
+    const recentBackup = fs.readdirSync(backupsDir)
+      .filter(f => f.endsWith("_pre-update.db"))
+      .sort()
+      .pop();
+
+    if (recentBackup) {
+      const recentTimestamp = fs.statSync(path.join(backupsDir, recentBackup)).mtime;
+      const minsSinceBackup = (Date.now() - recentTimestamp.getTime()) / 60000;
+      if (minsSinceBackup < 10) {
+        log(`[Backup] Backup reciente encontrado (${minsSinceBackup.toFixed(1)} min). Omitiendo.`);
+        return;
+      }
+    }
+
+    fs.copyFileSync(dbPath, backupPath);
+    log(`[Backup] Backup preventivo creado: ${backupPath}`);
+
+    // Limpiar backups de pre-update antiguos (conservar solo los últimos 5)
+    const preUpdateBackups = fs.readdirSync(backupsDir)
+      .filter(f => f.endsWith("_pre-update.db"))
+      .sort();
+    if (preUpdateBackups.length > 5) {
+      const toDelete = preUpdateBackups.slice(0, preUpdateBackups.length - 5);
+      toDelete.forEach(f => {
+        try { fs.unlinkSync(path.join(backupsDir, f)); } catch (_) {}
+      });
+    }
+  } catch (err) {
+    logError(`[Backup] No se pudo crear backup preventivo: ${err.message}`);
+  }
+}
+
+/**
  * Migra datos de carpetas con nombres antiguos si la nueva carpeta está vacía.
  * Solo se ejecuta si no existe la base de datos en la ruta actual.
  */
@@ -196,13 +245,24 @@ async function startBackend() {
   // Copiar BD inicial de resources si no existe en AppData (primera vez)
   // RUTA ÚNICA: Evita colisiones con archivos de desarrollo
   const initialDb = path.join(resourcesPath, "initial-data", "virgin.db");
-  if (!fs.existsSync(dataDbPath) && fs.existsSync(initialDb)) {
-    try {
-      fs.copyFileSync(initialDb, dataDbPath);
-      log(`[DB] BD inicial copiada a: ${dataDbPath}`);
-    } catch (e) {
-      logError(`[DB] No se pudo copiar la BD inicial: ${e.message}`);
+  if (!fs.existsSync(dataDbPath)) {
+    if (fs.existsSync(initialDb)) {
+      // DOBLE VERIFICACIÓN: Si por alguna razón hay datos legados no detectados, abortar
+      // Este check es defensa en profundidad — migrateLegacyDataSpeculative() ya corrió antes
+      log(`[DB] No se encontró BD en AppData. Copiando BD virgen inicial...`);
+      try {
+        fs.copyFileSync(initialDb, dataDbPath);
+        log(`[DB] BD inicial copiada a: ${dataDbPath}`);
+      } catch (e) {
+        logError(`[DB] No se pudo copiar la BD inicial: ${e.message}`);
+      }
+    } else {
+      logError(`[DB] ADVERTENCIA: No existe ni dev.db ni virgin.db. El sistema puede no iniciar correctamente.`);
     }
+  } else {
+    // La BD ya existe: hacer backup preventivo antes de que el backend la use
+    log(`[DB] BD existente detectada en AppData. Datos del usuario preservados.`);
+    safeBackupDatabase();
   }
 
   // Calcular heap según RAM
@@ -600,9 +660,9 @@ function stopBackend() {
 // ─────────────────────────────────────────────
 app.whenReady().then(async () => {
   initLogFile();
-  log("App lista. Iniciando...");
+  log(`App lista. Iniciando... (v${app.getVersion()})`);
 
-  // Migración de datos legados si es necesario
+  // 1. Migración de datos legados (carpetas antiguas → %APPDATA%\SAE)
   migrateLegacyDataSpeculative();
 
   // Validar directorios de datos antes de iniciar
