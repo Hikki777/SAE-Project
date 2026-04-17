@@ -13,11 +13,8 @@ const requestLogger = (req, res, next) => {
   // Timestamp de inicio
   const startTime = Date.now();
 
-  // Capturar cuando la respuesta se envía
-  const originalSend = res.send;
-  res.send = function(data) {
-    res.send = originalSend;
-    
+  // Capturar asíncronamente cuando la respuesta finaliza
+  res.on('finish', () => {
     // Increment metrics
     incrementMetric('request', req.path || req.url.split('?')[0]);
     incrementMetric('status', res.statusCode);
@@ -34,7 +31,7 @@ const requestLogger = (req, res, next) => {
       user: req.user ? { id: req.user.id, email: req.user.email, rol: req.user.rol } : undefined
     };
 
-    // Loggear según código de estado
+    // Loggear según código de estado con telemetría robusta
     if (res.statusCode >= 500) {
       logger.error(logData, `[ERROR] ${req.method} ${req.url} - ${res.statusCode}`);
     } else if (res.statusCode >= 400) {
@@ -44,9 +41,7 @@ const requestLogger = (req, res, next) => {
     } else {
       logger.info(logData, `[OK] ${req.method} ${req.url} - ${res.statusCode}`);
     }
-
-    return res.send(data);
-  };
+  });
 
   // Log inicial de la request
   logger.debug({

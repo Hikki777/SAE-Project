@@ -36,9 +36,9 @@ Si no hay: continúa normalmente
 ### Flujo en Auto-Update
 
 ```
-Usuario tiene SAE 1.1.2 instalado
+Usuario tiene SAE 1.1.3-HOTFIX instalado
     ↓
-electron-updater descarga v1.1.2
+electron-updater descarga v1.1.3-HOTFIX
     ↓
 Recopia archivos incluidas nuevas migraciones
     ↓
@@ -129,5 +129,5 @@ backend/
 
 ---
 
-**Versión**: SAE 1.1.2+  
+**Versión**: SAE 1.1.3-HOTFIX+  
 **Cambio**: Migraciones ahora 100% automáticas en producción

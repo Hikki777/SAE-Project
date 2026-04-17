@@ -321,14 +321,26 @@ function App() {
   }
 
   const getBaseUrl = () => {
+    // 1. Verificar Puerto Dinámico inyectado por Electron
+    let dynamicAPI = null;
+    if (typeof window !== "undefined") {
+      const hashMatch = window.location.hash.match(/apiPort=(\d+)/);
+      const savedDynPort = hashMatch ? hashMatch[1] : sessionStorage.getItem('dynamic_api_port');
+      if (savedDynPort) {
+        dynamicAPI = `http://localhost:${savedDynPort}/api`;
+        sessionStorage.setItem('dynamic_api_port', savedDynPort);
+      }
+    }
+
     let api =
+      dynamicAPI ||
       localStorage.getItem("api_url") ||
       import.meta.env.VITE_API_URL ||
       "http://localhost:5000/api";
 
     // FILTRO DE SEGURIDAD: Bloquear URLs legacy
     if (api && (api.includes("railway.app") || api.includes("herokuapp"))) {
-      api = "http://localhost:5000/api";
+      api = dynamicAPI || "http://localhost:5000/api";
     }
 
     if (api.startsWith("http")) {

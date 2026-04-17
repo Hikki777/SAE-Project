@@ -66,11 +66,6 @@ const developmentTransport = {
 const logDestination = process.env.LOGS_PATH || (process.env.SAE_DATA_DIR ? path.join(process.env.SAE_DATA_DIR, 'logs') : path.join(__dirname, '../../logs'));
 
 const productionTransports = [
-  // Console output en JSON
-  {
-    target: 'pino/file',
-    options: { destination: 1 } // stdout
-  },
   // Archivo de logs generales
   {
     target: 'pino/file',
@@ -90,6 +85,14 @@ const productionTransports = [
   }
 ];
 
+// Solo loggear JSON a consola si NO está siendo interceptado por Electron (evita duplicidad mútiple de IO y Archivos)
+if (!process.env.ELECTRON_RUN_AS_NODE) {
+  productionTransports.unshift({
+    target: 'pino/file',
+    options: { destination: 1 } // stdout
+  });
+}
+
 // Configuración base de Pino
 const pinoConfig = {
   level: isTest ? 'silent' : (process.env.LOG_LEVEL || 'info'),
@@ -100,17 +103,17 @@ const pinoConfig = {
   // Campos base en cada log
   base: {
     env: process.env.NODE_ENV || 'development',
-    app: 'asistencia-institucional'
+    app: 'asistencia-institucional',
+    electron: !!process.env.ELECTRON_RUN_AS_NODE
   },
   
   // Formateadores para ajustar salida
   formatters: {
-    // level(label) {
-    //   return { level: label };
-    // },
     log(object) {
       if (!NO_EMOJI) return object;
-      const out = stripEmojisDeep(object);
+      // Optimización masiva de rendimiento: Solo sanear el msg principal en lugar de tree traversal
+      const out = { ...object };
+      if (typeof out.msg === 'string') out.msg = stripEmojis(out.msg);
       return out;
     }
   },
@@ -184,11 +187,20 @@ const logRequest = (req, res, responseTime) => {
  * Helper para logs de inicio de sistema
  */
 const logSystemStart = (config) => {
+  const os = require('os');
   logger.info({
     port: config.port,
     nodeVersion: process.version,
     environment: process.env.NODE_ENV,
-    database: config.databaseUrl ? '[OK] Connected' : '[ERROR] Not configured'
+    database: config.databaseUrl ? '[OK] Connected' : '[ERROR] Not configured',
+    system: {
+      platform: os.platform(),
+      release: os.release(),
+      arch: os.arch(),
+      cpus: os.cpus().length,
+      memoryTotalGB: (os.totalmem() / 1024 / 1024 / 1024).toFixed(2),
+      memoryFreeGB: (os.freemem() / 1024 / 1024 / 1024).toFixed(2)
+    }
   }, '[SYSTEM] Sistema iniciado correctamente');
 };
 

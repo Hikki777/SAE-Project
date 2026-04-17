@@ -3,13 +3,30 @@ import toast from 'react-hot-toast';
 import offlineQueueService from '../services/offlineQueue';
 
 const getApiUrl = () => {
-  // 1. Intentar usar variable de entorno de Vite (desde .env.development/.env.production)
+  // 1. Verificar si Electron inyectó un puerto dinámico en el Hash de la ventana
+  if (typeof window !== 'undefined') {
+    const hashMatch = window.location.hash.match(/apiPort=(\d+)/);
+    if (hashMatch) {
+      const dynPort = hashMatch[1];
+      sessionStorage.setItem('dynamic_api_port', dynPort);
+      console.log(`[API Client] Detectado puerto dinámico Electron: ${dynPort}`);
+      return `http://localhost:${dynPort}/api`;
+    }
+    
+    // Recuperar de sessionStorage si React Router ya sobrescribió el hash
+    const savedDynPort = sessionStorage.getItem('dynamic_api_port');
+    if (savedDynPort) {
+      return `http://localhost:${savedDynPort}/api`;
+    }
+  }
+
+  // 2. Intentar usar variable de entorno de Vite (desde .env.development/.env.production)
   if (import.meta.env.VITE_API_URL) {
     console.log('[API Client] Usando VITE_API_URL:', import.meta.env.VITE_API_URL);
     return import.meta.env.VITE_API_URL;
   }
 
-  // 2. Intentar usar URL guardada en localStorage
+  // 3. Intentar usar URL guardada en localStorage
   let url = localStorage.getItem('api_url');
   
   // FILTRO DE SEGURIDAD: Ignorar URLs de nube antiguas que causan error 404
@@ -24,19 +41,13 @@ const getApiUrl = () => {
     return url;
   }
 
-  // 3. En Electron (file://) usar http://localhost:5000/api
+  // 4. En Electron (file://) usar http://localhost:5000/api (Fallback legacy)
   if (typeof window !== 'undefined' && window.location.protocol === 'file:') {
-    console.log('[API Client] Detectado Electron (file://), usando http://localhost:5000/api');
+    console.log('[API Client] Detectado Electron (file://), usando fallback 5000');
     return 'http://localhost:5000/api';
   }
 
-  // 4. En desarrollo con Vite (http://localhost:5173) usar backend en 5000
-  if (typeof window !== 'undefined' && window.location.hostname === 'localhost' && window.location.port === '5173') {
-    console.log('[API Client] Detectado Vite dev, usando http://localhost:5000/api');
-    return 'http://localhost:5000/api';
-  }
-
-  // 5. Default fallback
+  // 5. Default fallback general
   console.log('[API Client] Usando default fallback: http://localhost:5000/api');
   return 'http://localhost:5000/api';
 };

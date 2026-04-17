@@ -104,12 +104,18 @@ async function applyMigration(prisma, migrationName, sqlContent) {
         await prisma.$executeRawUnsafe(stmt);
         appliedSteps++;
       } catch (stmtErr) {
-        // Si la sentencia ya existía (tabla/índice duplicado), no es error fatal
-        const isDuplicate = stmtErr.message &&
-          (stmtErr.message.includes('already exists') ||
-           stmtErr.message.includes('duplicate column'));
+        // Si la sentencia ya existía (tabla/índice/columna duplicada), no es error fatal.
+        // SQLite usa diferentes mensajes según el caso:
+        //   - "table X already exists"
+        //   - "index X already exists"  
+        //   - "duplicate column name: X"
+        //   - "UNIQUE constraint failed" (al intentar crear índice unique duplicado)
+        const msg = (stmtErr.message || '').toLowerCase();
+        const isDuplicate = msg.includes('already exists') ||
+          msg.includes('duplicate column') ||
+          msg.includes('duplicate column name');
         if (isDuplicate) {
-          log(`  [SKIP] Objeto ya existe, omitiendo: ${stmt.substring(0, 60)}...`, 'info');
+          log(`  [SKIP] Objeto ya existe, omitiendo: ${stmt.substring(0, 80)}...`, 'info');
           appliedSteps++;
         } else {
           throw stmtErr;
@@ -228,6 +234,26 @@ async function repairTable(prisma, tableName, columns) {
   }
 }
 
+/**
+ * Función auxiliar para crear tablas completas si no existen.
+ * Usado para tablas que se añadieron después de las migraciones iniciales.
+ */
+async function repairCreateTable(prisma, tableName, createSQL) {
+  try {
+    const tables = await prisma.$queryRawUnsafe(
+      `SELECT name FROM sqlite_master WHERE type='table' AND name=?`,
+      tableName
+    );
+
+    if (!tables || tables.length === 0) {
+      log(`Creando tabla faltante [${tableName}]...`, 'warn');
+      await prisma.$executeRawUnsafe(createSQL);
+      log(`Tabla [${tableName}] creada correctamente.`, 'success');
+    }
+  } catch (e) {
+    log(`No se pudo crear la tabla ${tableName}: ${e.message}`, 'error');
+  }
+}
 // ─────────────────────────────────────────────────────────────
 // ENTRADA PRINCIPAL
 // ─────────────────────────────────────────────────────────────
@@ -244,44 +270,114 @@ async function initializeDatabase() {
       const nativeOk = await runNativeMigrations(prisma);
 
       if (!nativeOk) {
-        // Fallback: repairTable (menos potente pero seguro)
+        // Fallback: repairTable + repairCreateTable (menos potente pero seguro)
         log('Usando repairTable como fallback de migración...', 'warn');
+
+        // ── Tablas existentes: añadir columnas faltantes ──
+
         await repairTable(prisma, 'institucion', [
+          { name: 'horario_salida',          type: 'TEXT' },
+          { name: 'direccion',               type: 'TEXT' },
+          { name: 'pais',                    type: 'TEXT' },
+          { name: 'departamento',            type: 'TEXT' },
+          { name: 'municipio',               type: 'TEXT' },
+          { name: 'email',                   type: 'TEXT' },
+          { name: 'telefono',                type: 'TEXT' },
           { name: 'ciclo_escolar',           type: 'INTEGER DEFAULT 2026' },
           { name: 'carnet_counter_global',   type: 'INTEGER DEFAULT 0' },
           { name: 'carnet_counter_personal', type: 'INTEGER DEFAULT 0' },
           { name: 'carnet_counter_alumnos',  type: 'INTEGER DEFAULT 0' },
           { name: 'master_recovery_key',     type: 'TEXT' }
         ]);
+
+        await repairTable(prisma, 'alumnos', [
+          { name: 'sexo',            type: 'TEXT' },
+          { name: 'seccion',         type: 'TEXT' },
+          { name: 'carrera',         type: 'TEXT' },
+          { name: 'especialidad',    type: 'TEXT' },
+          { name: 'anio_ingreso',    type: 'INTEGER' },
+          { name: 'anio_graduacion', type: 'INTEGER' },
+          { name: 'nivel_actual',    type: 'TEXT' },
+          { name: 'motivo_baja',     type: 'TEXT' },
+          { name: 'fecha_baja',      type: 'DATETIME' },
+          { name: 'foto_path',       type: 'TEXT' }
+        ]);
+
+        await repairTable(prisma, 'personal', [
+          { name: 'sexo',       type: 'TEXT' },
+          { name: 'cargo',      type: 'TEXT' },
+          { name: 'grado_guia', type: 'TEXT' },
+          { name: 'foto_path',  type: 'TEXT' },
+          { name: 'curso',      type: 'TEXT' }
+        ]);
+
         await repairTable(prisma, 'usuarios', [
-          { name: 'sexo',      type: "TEXT DEFAULT 'Masculino'" },
+          { name: 'nombres',   type: 'TEXT' },
+          { name: 'apellidos', type: 'TEXT' },
+          { name: 'sexo',      type: 'TEXT' },
           { name: 'foto_path', type: 'TEXT' },
           { name: 'cargo',     type: 'TEXT' },
           { name: 'jornada',   type: 'TEXT' }
         ]);
-        await repairTable(prisma, 'alumnos', [
-          { name: 'sexo',        type: "TEXT DEFAULT 'Masculino'" },
-          { name: 'foto_path',   type: 'TEXT' },
-          { name: 'nivel_actual',type: 'TEXT' },
-          { name: 'grado',       type: 'TEXT' },
-          { name: 'seccion',     type: 'TEXT' }
-        ]);
-        await repairTable(prisma, 'personal', [
-          { name: 'sexo',      type: "TEXT DEFAULT 'Masculino'" },
-          { name: 'foto_path', type: 'TEXT' },
-          { name: 'cargo',     type: 'TEXT' },
-          { name: 'jornada',   type: 'TEXT' },
-          { name: 'curso',     type: 'TEXT' }
-        ]);
+
         await repairTable(prisma, 'codigos_qr', [
           { name: 'png_path', type: 'TEXT' },
           { name: 'vigente',  type: 'BOOLEAN DEFAULT 1' }
         ]);
-        await repairTable(prisma, 'excusas', [
-          { name: 'fecha_ausencia', type: 'DATETIME' },
-          { name: 'documento_url',  type: 'TEXT' }
-        ]);
-        log('repairTable completado.', 'success');
+
+        // ── Tablas nuevas: crear si no existen ──
+
+        await repairCreateTable(prisma, 'excusas', `
+          CREATE TABLE IF NOT EXISTS "excusas" (
+            "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+            "alumno_id" INTEGER,
+            "personal_id" INTEGER,
+            "motivo" TEXT NOT NULL,
+            "descripcion" TEXT,
+            "estado" TEXT NOT NULL DEFAULT 'pendiente',
+            "fecha" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            "fecha_ausencia" DATETIME,
+            "documento_url" TEXT,
+            "observaciones" TEXT,
+            "creado_en" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            "actualizado_en" DATETIME NOT NULL,
+            CONSTRAINT "excusas_alumno_id_fkey" FOREIGN KEY ("alumno_id") REFERENCES "alumnos" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+            CONSTRAINT "excusas_personal_id_fkey" FOREIGN KEY ("personal_id") REFERENCES "personal" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+          )
+        `);
+
+        await repairCreateTable(prisma, 'historial_academico', `
+          CREATE TABLE IF NOT EXISTS "historial_academico" (
+            "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+            "alumno_id" INTEGER NOT NULL,
+            "anio_escolar" INTEGER NOT NULL,
+            "grado_cursado" TEXT NOT NULL,
+            "nivel" TEXT NOT NULL,
+            "carrera" TEXT,
+            "promovido" BOOLEAN NOT NULL DEFAULT true,
+            "observaciones" TEXT,
+            "creado_en" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            CONSTRAINT "historial_academico_alumno_id_fkey" FOREIGN KEY ("alumno_id") REFERENCES "alumnos" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+          )
+        `);
+
+        await repairCreateTable(prisma, 'equipos', `
+          CREATE TABLE IF NOT EXISTS "equipos" (
+            "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+            "nombre" TEXT,
+            "hostname" TEXT,
+            "ip" TEXT NOT NULL,
+            "os" TEXT,
+            "mac_address" TEXT,
+            "aprobado" BOOLEAN NOT NULL DEFAULT false,
+            "clave_seguridad" TEXT NOT NULL,
+            "ultima_conexion" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            "creado_en" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            "actualizado_en" DATETIME NOT NULL
+          )
+        `);
+
+        log('repairTable/repairCreateTable completado.', 'success');
       }
     } catch (err) {
       log(`Error crítico en migraciones de producción: ${err.message}`, 'error');
@@ -333,6 +429,15 @@ async function initializeDatabase() {
     } catch (e) {
       log('Error durante el bootstrap de desarrollo: ' + e.message, 'warn');
     }
+  }
+
+  // --- REPARACIÓN DE CONSISTENCIA AUTOMÁTICA ---
+  try {
+    const { repairDataConsistency } = require('../scripts/repair_db_consistency');
+    log('Verificando consistencia de datos...', 'info');
+    await repairDataConsistency(prisma);
+  } catch (err) {
+    log('Error durante la reparación de consistencia: ' + err.message, 'warn');
   }
 
   return true;

@@ -5,7 +5,14 @@ CREATE TABLE "institucion" (
     "logo_base64" TEXT,
     "logo_path" TEXT,
     "horario_inicio" TEXT,
+    "horario_salida" TEXT,
     "margen_puntualidad_min" INTEGER NOT NULL DEFAULT 5,
+    "direccion" TEXT,
+    "pais" TEXT,
+    "departamento" TEXT,
+    "municipio" TEXT,
+    "email" TEXT,
+    "telefono" TEXT,
     "inicializado" BOOLEAN NOT NULL DEFAULT false,
     "creado_en" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "actualizado_en" DATETIME NOT NULL
@@ -19,8 +26,15 @@ CREATE TABLE "alumnos" (
     "apellidos" TEXT NOT NULL,
     "sexo" TEXT,
     "grado" TEXT NOT NULL,
+    "carrera" TEXT,
+    "especialidad" TEXT,
     "jornada" TEXT,
     "estado" TEXT NOT NULL DEFAULT 'activo',
+    "anio_ingreso" INTEGER,
+    "anio_graduacion" INTEGER,
+    "nivel_actual" TEXT,
+    "motivo_baja" TEXT,
+    "fecha_baja" DATETIME,
     "foto_path" TEXT,
     "creado_en" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "actualizado_en" DATETIME NOT NULL
@@ -33,8 +47,9 @@ CREATE TABLE "personal" (
     "nombres" TEXT NOT NULL,
     "apellidos" TEXT NOT NULL,
     "sexo" TEXT,
-    "grado" TEXT,
+    "cargo" TEXT,
     "jornada" TEXT,
+    "grado_guia" TEXT,
     "estado" TEXT NOT NULL DEFAULT 'activo',
     "foto_path" TEXT,
     "creado_en" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -77,6 +92,11 @@ CREATE TABLE "asistencias" (
 CREATE TABLE "usuarios" (
     "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
     "email" TEXT NOT NULL,
+    "nombres" TEXT,
+    "apellidos" TEXT,
+    "foto_path" TEXT,
+    "cargo" TEXT,
+    "jornada" TEXT,
     "rol" TEXT NOT NULL DEFAULT 'operador',
     "hash_pass" TEXT NOT NULL,
     "activo" BOOLEAN NOT NULL DEFAULT true,
@@ -97,6 +117,31 @@ CREATE TABLE "auditoria" (
 );
 
 -- CreateTable
+CREATE TABLE "excusas" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "alumno_id" INTEGER,
+    "personal_id" INTEGER,
+    "motivo" TEXT NOT NULL,
+    "fecha" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "excusas_alumno_id_fkey" FOREIGN KEY ("alumno_id") REFERENCES "alumnos" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "excusas_personal_id_fkey" FOREIGN KEY ("personal_id") REFERENCES "personal" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+-- CreateTable
+CREATE TABLE "historial_academico" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "alumno_id" INTEGER NOT NULL,
+    "anio_escolar" INTEGER NOT NULL,
+    "grado_cursado" TEXT NOT NULL,
+    "nivel" TEXT NOT NULL,
+    "carrera" TEXT,
+    "promovido" BOOLEAN NOT NULL DEFAULT true,
+    "observaciones" TEXT,
+    "creado_en" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "historial_academico_alumno_id_fkey" FOREIGN KEY ("alumno_id") REFERENCES "alumnos" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+-- CreateTable
 CREATE TABLE "diagnostic_results" (
     "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
     "tipo" TEXT NOT NULL,
@@ -111,10 +156,28 @@ CREATE TABLE "diagnostic_results" (
 CREATE UNIQUE INDEX "alumnos_carnet_key" ON "alumnos"("carnet");
 
 -- CreateIndex
+CREATE INDEX "alumnos_estado_idx" ON "alumnos"("estado");
+
+-- CreateIndex
+CREATE INDEX "alumnos_grado_idx" ON "alumnos"("grado");
+
+-- CreateIndex
+CREATE INDEX "alumnos_nivel_actual_idx" ON "alumnos"("nivel_actual");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "personal_carnet_key" ON "personal"("carnet");
 
 -- CreateIndex
+CREATE INDEX "personal_estado_idx" ON "personal"("estado");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "codigos_qr_token_key" ON "codigos_qr"("token");
+
+-- CreateIndex
+CREATE INDEX "codigos_qr_token_idx" ON "codigos_qr"("token");
+
+-- CreateIndex
+CREATE INDEX "codigos_qr_vigente_idx" ON "codigos_qr"("vigente");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "codigos_qr_persona_tipo_alumno_id_key" ON "codigos_qr"("persona_tipo", "alumno_id");
@@ -130,3 +193,21 @@ CREATE INDEX "asistencias_persona_tipo_idx" ON "asistencias"("persona_tipo");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "usuarios_email_key" ON "usuarios"("email");
+
+-- CreateIndex
+CREATE INDEX "auditoria_timestamp_idx" ON "auditoria"("timestamp");
+
+-- CreateIndex
+CREATE INDEX "auditoria_entidad_idx" ON "auditoria"("entidad");
+
+-- CreateIndex
+CREATE INDEX "excusas_fecha_idx" ON "excusas"("fecha");
+
+-- CreateIndex
+CREATE INDEX "historial_academico_alumno_id_anio_escolar_idx" ON "historial_academico"("alumno_id", "anio_escolar");
+
+-- CreateIndex
+CREATE INDEX "diagnostic_results_reparado_idx" ON "diagnostic_results"("reparado");
+
+-- CreateIndex
+CREATE INDEX "diagnostic_results_timestamp_idx" ON "diagnostic_results"("timestamp");

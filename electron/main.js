@@ -165,48 +165,51 @@ function migrateLegacyDataSpeculative() {
 // ─────────────────────────────────────────────
 //  Log a archivo persistente (AppData/SAE/logs)
 // ─────────────────────────────────────────────
-let logStream = null;
-function getLogDir() {
-  const dir = path.join(app.getPath("userData"), "logs");
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  return dir;
-}
+const electronLog = require('electron-log/main');
+electronLog.transports.file.maxSize = 10 * 1024 * 1024; // 10MB file limit before rotation
+electronLog.transports.file.resolvePathFn = () => path.join(app.getPath("userData"), "logs", "main.log");
+electronLog.initialize();
+
 function initLogFile() {
   if (isDev) return;
-  try {
-    const logDir = getLogDir();
-    const logFile = path.join(logDir, "main.log");
-    logStream = fs.createWriteStream(logFile, { flags: "a" });
-    logStream.write(`\n\n=== SAE Start ${new Date().toISOString()} ===\n`);
-  } catch (e) {
-    /* ignore */
-  }
+  electronLog.info(`\n\n=== SAE Start ${new Date().toISOString()} ===\n`);
 }
 function writeLog(line) {
-  if (logStream)
-    try {
-      logStream.write(line + "\n");
-    } catch (e) {}
+  electronLog.info(line);
 }
 function log(msg) {
   const line = `[Electron] ${msg}`;
-  console.log(line);
-  writeLog(line);
+  electronLog.info(line);
 }
 function logError(msg) {
   const line = `[Electron][ERROR] ${msg}`;
-  console.error(line);
-  writeLog(line);
+  electronLog.error(line);
+}
+
+// ─────────────────────────────────────────────
+//  Detección de Puerto Dinámico
+// ─────────────────────────────────────────────
+function getAvailablePort(startingAt = 49152) {
+  const net = require("net");
+  return new Promise((resolve) => {
+    const srv = net.createServer();
+    srv.listen(0, "127.0.0.1", () => {
+      const port = srv.address().port;
+      srv.close(() => resolve(port));
+    });
+  });
 }
 
 // ─────────────────────────────────────────────
 //  Iniciar el backend en producción
 // ─────────────────────────────────────────────
 async function startBackend() {
-  if (isDev) return true;
+  if (isDev) return 5000;
 
+  const port = await getAvailablePort();
   const resourcesPath = process.resourcesPath;
-  const nodeBin = process.execPath; // Use the bundled Electron executable
+  const customNode = path.join(resourcesPath, "node.exe");
+  const nodeBin = require("fs").existsSync(customNode) ? customNode : process.execPath;
   const serverScript = path.join(
     resourcesPath,
     "app.asar.unpacked",
@@ -284,6 +287,7 @@ async function startBackend() {
 
   const env = {
     ...process.env,
+    PORT: port.toString(),
     ELECTRON_RUN_AS_NODE: "1", // Force Electron to run as a standard Node.js process for this spawn
     NODE_ENV: "production",
     NODE_NO_WARNINGS: "1",
@@ -298,22 +302,11 @@ async function startBackend() {
   };
 
   // Abrir stream de log del backend
-  const backendLogFile = path.join(getLogDir(), "backend.log");
-  writeLog(`Backend log: ${backendLogFile}`);
-  let backendLogStream = null;
-  try {
-    backendLogStream = fs.createWriteStream(backendLogFile, { flags: "a" });
-    backendLogStream.write(
-      `\n=== Backend Start ${new Date().toISOString()} ===\n`,
-    );
-    backendLogStream.write(`CWD (spawn): ${userDataPath}\n`);
-    backendLogStream.write(`Script: ${serverScript}\n`);
-    backendLogStream.write(`NODE_ENV: ${env.NODE_ENV}\n`);
-    backendLogStream.write(`DATABASE_URL: ${env.DATABASE_URL}\n`);
-    backendLogStream.write(
-      `PRISMA_QUERY_ENGINE_LIBRARY: ${env.PRISMA_QUERY_ENGINE_LIBRARY}\n`,
-    );
-  } catch (e) {}
+  writeLog(`Iniciando backend: ${serverScript}`);
+  electronLog.info(`CWD (spawn): ${userDataPath}`);
+  electronLog.info(`NODE_ENV: ${env.NODE_ENV}`);
+  electronLog.info(`DATABASE_URL: ${env.DATABASE_URL}`);
+  electronLog.info(`PRISMA_QUERY_ENGINE_LIBRARY: ${env.PRISMA_QUERY_ENGINE_LIBRARY}`);
 
   backendProcess = spawn(
     nodeBin,
@@ -330,51 +323,46 @@ async function startBackend() {
   );
 
   backendProcess.stdout.on("data", (data) => {
-    const text = data.toString();
-    if (backendLogStream) backendLogStream.write(text);
-    text
-      .split("\n")
-      .filter(Boolean)
-      .forEach((l) => log(`[backend] ${l}`));
+    // Cuando Pino escribe en prod, no lo imprimimos porque va a su app.log
+    // Pero en el raro caso que Node imprima algo fuera de Pino, lo capturamos.
+    const text = data.toString().trim();
+    if(text) {
+      log(`[backend] ${text}`);
+    }
   });
+
   backendProcess.stderr.on("data", (data) => {
-    const text = data.toString();
-    if (backendLogStream) backendLogStream.write("[ERR] " + text);
-    text
-      .split("\n")
-      .filter(Boolean)
-      .forEach((l) => logError(`[backend] ${l}`));
+    const text = data.toString().trim();
+    if(text) {
+      logError(`[backend stderr] ${text}`);
+    }
   });
+
   backendProcess.on("error", (err) => {
     logError(`Spawn error: ${err.message}`);
-    if (backendLogStream)
-      backendLogStream.write(`SPAWN ERROR: ${err.message}\n`);
   });
+
   backendProcess.on("exit", (code, signal) => {
     log(`Backend terminó: code=${code} signal=${signal}`);
-    if (backendLogStream) {
-      backendLogStream.write(`EXIT code=${code} signal=${signal}\n`);
-      backendLogStream.end();
-    }
     backendProcess = null;
   });
 
-  return waitForBackend();
+  return waitForBackend(port);
 }
 
 // ─────────────────────────────────────────────
 //  Esperar a que el backend esté disponible
 // ─────────────────────────────────────────────
-function waitForBackend(maxAttempts = 30, delayMs = 1000) {
+function waitForBackend(port, maxAttempts = 30, delayMs = 1000) {
   return new Promise((resolve) => {
     let attempts = 0;
 
     const check = () => {
       attempts++;
-      const req = http.get("http://localhost:5000/api/health", (res) => {
+      const req = http.get(`http://localhost:${port}/api/health`, (res) => {
         if (res.statusCode === 200) {
-          log("Backend listo y respondiendo.");
-          resolve(true);
+          log(`Backend listo y respondiendo en el puerto ${port}.`);
+          resolve(port);
         } else {
           retry();
         }
@@ -524,8 +512,8 @@ function createSplashWindow() {
 // ─────────────────────────────────────────────
 //  Crear ventana principal
 // ─────────────────────────────────────────────
-function createWindow() {
-  log("Creando ventana principal...");
+function createWindow(backendPort) {
+  log(`Creando ventana principal... (Backend Port: ${backendPort})`);
 
   // FIX: En producción usar process.resourcesPath (fuera del asar, siempre accesible).
   const base = isDev ? path.join(__dirname, "..") : process.resourcesPath;
@@ -563,8 +551,9 @@ function createWindow() {
 
   // Cargar la app
   if (isDev) {
-    log("Modo desarrollo — cargando http://localhost:5173");
-    mainWindow.loadURL("http://localhost:5173");
+    const devUrl = `http://localhost:5173/#apiPort=${backendPort}`;
+    log(`Modo desarrollo — cargando ${devUrl}`);
+    mainWindow.loadURL(devUrl);
     if (process.env.OPEN_DEVTOOLS === "true") {
       mainWindow.webContents.openDevTools();
     }
@@ -576,8 +565,8 @@ function createWindow() {
       "dist",
       "index.html",
     );
-    log(`Modo producción — cargando ${indexPath}`);
-    mainWindow.loadFile(indexPath);
+    log(`Modo producción — cargando ${indexPath} con #apiPort=${backendPort}`);
+    mainWindow.loadFile(indexPath, { hash: `apiPort=${backendPort}` });
   }
 
   // Abrir enlaces externos en el navegador del sistema
@@ -698,9 +687,9 @@ app.whenReady().then(async () => {
     }
 
     // Iniciar backend y esperar que esté listo
-    const backendOk = await startBackend();
+    const backendPort = await startBackend();
 
-    if (!backendOk && !isDev) {
+    if (!backendPort && !isDev) {
       logError("El backend no pudo iniciarse.");
       if (splash) splash.destroy();
       const logDir = path.join(app.getPath("userData"), "logs");
@@ -717,8 +706,8 @@ app.whenReady().then(async () => {
       return;
     }
 
-    // Crear ventana principal
-    createWindow();
+    // Crear ventana principal pasándole el puerto dinámico (si es 0, false, etc.)
+    createWindow(backendPort || 5000);
 
     // Cerrar splash cuando la ventana principal esté lista
     if (splash) {
@@ -740,7 +729,7 @@ app.whenReady().then(async () => {
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {
-      createWindow();
+      createWindow(5000); // Falback if re-opened dynamically
     }
   });
 });
