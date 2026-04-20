@@ -464,7 +464,7 @@ export default function SetupWizard({ onComplete }) {
               </div>
             </div>
             <div className="text-xs text-blue-300 mt-8">
-              SAE - Sistema de Administración Educativa v1.1.3 HOTFIX
+              SAE - Sistema de Administración Educativa v1.1.3
             </div>
           </div>
 
@@ -573,13 +573,13 @@ export default function SetupWizard({ onComplete }) {
                           type="url"
                           value={serverUrl}
                           onChange={(e) => setServerUrl(e.target.value)}
-                          placeholder="http://192.168.1.100:5000"
+                          placeholder="http://192.168.1.100:58824"
                           className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white text-gray-900"
                           required
                         />
                       </div>
                       <p className="text-xs text-gray-500 mt-1">
-                        Ingresa la URL del servidor local (ej. http://192.168.1.100:5000).
+                        Ingresa la URL del servidor local (ej. http://192.168.1.100:58824).
                       </p>
                     </div>
                     <button

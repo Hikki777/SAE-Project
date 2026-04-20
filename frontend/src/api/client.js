@@ -3,11 +3,14 @@ import toast from 'react-hot-toast';
 import offlineQueueService from '../services/offlineQueue';
 
 const getApiUrl = () => {
-  // 1. Verificar si Electron inyectó un puerto dinámico en el Hash de la ventana
+  // 1. Verificar si Electron inyectó un puerto dinámico en la URL o Hash
   if (typeof window !== 'undefined') {
+    const urlParams = new URLSearchParams(window.location.search);
+    const apiPortParam = urlParams.get('apiPort');
     const hashMatch = window.location.hash.match(/apiPort=(\d+)/);
-    if (hashMatch) {
-      const dynPort = hashMatch[1];
+    const dynPort = apiPortParam || (hashMatch ? hashMatch[1] : null);
+
+    if (dynPort) {
       sessionStorage.setItem('dynamic_api_port', dynPort);
       console.log(`[API Client] Detectado puerto dinámico Electron: ${dynPort}`);
       return `http://localhost:${dynPort}/api`;
@@ -41,22 +44,24 @@ const getApiUrl = () => {
     return url;
   }
 
-  // 4. En Electron (file://) usar http://localhost:5000/api (Fallback legacy)
+  // 4. En Electron (file://) usar puerto de desarrollo como fallback (Legacy)
   if (typeof window !== 'undefined' && window.location.protocol === 'file:') {
-    console.log('[API Client] Detectado Electron (file://), usando fallback 5000');
+    console.warn('[API Client] Puerto dinámico no encontrado. Usando fallback legacy: 5000');
     return 'http://localhost:5000/api';
   }
 
-  // 5. Default fallback general
-  console.log('[API Client] Usando default fallback: http://localhost:5000/api');
+  // 5. Default fallback general (Desarrollo Web)
+  console.log('[API Client] No se detectó configuración. Usando default (Dev): http://localhost:5000/api');
   return 'http://localhost:5000/api';
 };
 
-const API_BASE = getApiUrl();
-console.log('[API Client] API Base URL resuelto como:', API_BASE);
+const API_URL = getApiUrl();
+const BASE_URL = API_URL.replace(/\/api$/, '').replace(/\/$/, '');
+
+console.log('[API Client] API Base URL resuelto como:', API_URL);
 
 const client = axios.create({
-  baseURL: API_BASE,
+  baseURL: API_URL,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -132,4 +137,5 @@ client.interceptors.response.use(
   }
 );
 
+export { API_URL, BASE_URL };
 export default client;

@@ -92,6 +92,10 @@ router.post('/', upload.single('foto'), async (req, res) => {
       return res.status(400).json({ error: 'Email y contraseña son obligatorios' });
     }
 
+    if (rol && !['admin', 'operador'].includes(rol)) {
+      return res.status(400).json({ error: 'El rol debe ser estrictamente "admin" o "operador"' });
+    }
+
     // Verificar si ya existe
     const existente = await prisma.usuario.findUnique({ where: { email } });
     if (existente) {
@@ -158,6 +162,15 @@ router.delete('/:id', async (req, res) => {
       return res.status(400).json({ error: 'No puedes eliminar tu propio usuario' });
     }
 
+    // Protección del último admin
+    const userToDelete = await prisma.usuario.findUnique({ where: { id } });
+    if (userToDelete && userToDelete.rol === 'admin') {
+      const adminCount = await prisma.usuario.count({ where: { rol: 'admin', activo: true } });
+      if (adminCount <= 1) {
+        return res.status(403).json({ error: 'Operación denegada: No puedes eliminar al último administrador del sistema.' });
+      }
+    }
+
     await prisma.usuario.delete({
       where: { id }
     });
@@ -184,9 +197,24 @@ router.put('/:id', upload.single('foto'), async (req, res) => {
     const id = parseInt(req.params.id);
     const { email, password, nombres, apellidos, cargo, jornada, sexo, rol, activo } = req.body;
 
+    if (rol && !['admin', 'operador'].includes(rol)) {
+      return res.status(400).json({ error: 'El rol debe ser estrictamente "admin" o "operador"' });
+    }
+
     const existingUser = await prisma.usuario.findUnique({ where: { id } });
     if (!existingUser) {
       return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    // Protección de último admin en caso de intentar pasarlo a operador o desactivarlo
+    if (existingUser.rol === 'admin') {
+      const isDowngradingOrDisabling = (rol && rol !== 'admin') || (activo !== undefined && String(activo) === 'false');
+      if (isDowngradingOrDisabling) {
+        const adminCount = await prisma.usuario.count({ where: { rol: 'admin', activo: true } });
+        if (adminCount <= 1) {
+          return res.status(403).json({ error: 'Operación denegada: No puedes degradar o desactivar al último administrador activo del sistema.' });
+        }
+      }
     }
 
     // Preparar objeto de datos

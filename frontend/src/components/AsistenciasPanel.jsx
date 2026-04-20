@@ -5,16 +5,14 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Clock, UserCheck, UserX, Search, Calendar, TrendingUp, QrCode, Camera, CameraOff, XCircle } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
-import client from '../api/client';
+import client, { API_URL, BASE_URL } from '../api/client';
 import QrScanner from 'qr-scanner';
 import { TableSkeleton } from './LoadingSpinner';
 import ModalSinSalida from './ModalSinSalida';
 import ModalJustificacionRapida from './ModalJustificacionRapida';
 import GenderAvatar from './GenderAvatar';
 
-// Usamos el cliente API compartido (con baseURL '/api' e interceptor JWT)
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-const BASE_URL = API_URL.replace('/api', '');
+
 
 export default function AsistenciasPanel() {
   const navigate = useNavigate();

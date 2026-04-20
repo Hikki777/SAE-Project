@@ -62,6 +62,31 @@ async function repairDataConsistency(prismaInstance = null) {
     });
     console.log(`  Updated ${personal6to.count} personal guia.`);
 
+    // 3. User Roles Migration
+    console.log('Migrating User Roles to strictly admin and operador...');
+    
+    // Elevate any "administrador", "superadmin", etc to "admin"
+    const adminsMigrated = await prismaToUse.usuario.updateMany({
+      where: {
+        rol: {
+          in: ['administrador', 'superadmin', 'root']
+        }
+      },
+      data: { rol: 'admin' }
+    });
+    console.log(`  Elevated ${adminsMigrated.count} deprecated admin roles to 'admin'.`);
+
+    // Downgrade any other non-admin role to 'operador' (failsafe)
+    const operadoresMigrated = await prismaToUse.usuario.updateMany({
+      where: {
+        rol: {
+          notIn: ['admin', 'operador']
+        }
+      },
+      data: { rol: 'operador' }
+    });
+    console.log(`  Downgraded ${operadoresMigrated.count} unknown roles to 'operador'.`);
+
     console.log('--- Database Repair Completed ---');
   } finally {
     if (!prismaInstance) {

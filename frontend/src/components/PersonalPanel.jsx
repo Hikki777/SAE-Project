@@ -5,28 +5,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Users, Plus, Edit, Trash2, Download, Search, Filter, X, User, QrCode, Briefcase, Sun, CheckCircle, XCircle, Camera } from 'lucide-react';
 import WebcamCaptureModal from './WebcamCaptureModal';
 import toast, { Toaster } from 'react-hot-toast';
-import axios from 'axios';
-import { TableSkeleton } from './LoadingSpinner';
+import client, { API_URL, BASE_URL } from '../api/client';
 import { qrAPI } from '../api/endpoints';
 import GenderAvatar from './GenderAvatar';
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-const BASE_URL = API_URL.replace('/api', ''); // http://localhost:5000
+import { TableSkeleton } from './LoadingSpinner';
 
-const client = axios.create({
-  baseURL: API_URL,
-  headers: {
-    'Content-Type': 'application/json'
-  }
-});
 
-// Interceptor para agregar token
-client.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
 
 export default function PersonalPanel() {
   const [personal, setPersonal] = useState([]);

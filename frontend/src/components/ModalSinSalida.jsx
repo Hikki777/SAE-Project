@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, LogOut, CheckCircle2 } from 'lucide-react';
-import client from '../api/client';
+import client, { API_URL, BASE_URL } from '../api/client';
 import toast from 'react-hot-toast';
 
 export default function ModalSinSalida({ personas, fecha, onCerrar, onActualizar }) {
@@ -131,33 +131,37 @@ export default function ModalSinSalida({ personas, fecha, onCerrar, onActualizar
                     {/* Avatar */}
                     <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-600 flex-shrink-0">
                       {(() => {
-                        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-                        const BASE_URL = API_URL.replace('/api', '');
                         const fotoUrl = persona.foto_path 
                           ? (persona.foto_path.startsWith('http') 
                               ? persona.foto_path 
                               : `${BASE_URL}/api/uploads/${persona.foto_path}`)
                           : null;
                         
-                        return fotoUrl ? (
-                          <>
-                            <img 
-                              src={fotoUrl} 
-                              alt={`${persona.nombres} ${persona.apellidos}`}
-                              className="w-full h-full object-cover"
-                              onError={(e) => {
-                                e.target.style.display = 'none';
-                                e.target.nextElementSibling.style.display = 'flex';
-                              }}
-                            />
-                            <div 
-                              className="text-2xl flex items-center justify-center w-full h-full"
-                              style={{ display: 'none' }}
-                            >
-                              {persona.tipo === 'alumno' ? '👨‍🎓' : '👨‍🏫'}
-                            </div>
-                          </>
-                        ) : (
+                        if (fotoUrl) {
+                          return (
+                            <>
+                              <img 
+                                src={fotoUrl} 
+                                alt={`${persona.nombres} ${persona.apellidos}`}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  e.target.style.display = 'none';
+                                  if (e.target.nextElementSibling) {
+                                    e.target.nextElementSibling.style.display = 'flex';
+                                  }
+                                }}
+                              />
+                              <div 
+                                className="text-2xl flex items-center justify-center w-full h-full"
+                                style={{ display: 'none' }}
+                              >
+                                {persona.tipo === 'alumno' ? '👨‍🎓' : '👨‍🏫'}
+                              </div>
+                            </>
+                          );
+                        }
+                        
+                        return (
                           <div className="text-2xl flex items-center justify-center w-full h-full">
                             {persona.tipo === 'alumno' ? '👨‍🎓' : '👨‍🏫'}
                           </div>

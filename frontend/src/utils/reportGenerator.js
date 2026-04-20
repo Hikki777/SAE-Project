@@ -2,8 +2,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import ExcelJS from 'exceljs';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-const BASE_URL = API_URL.replace('/api', '');
+import { BASE_URL } from '../api/client';
 
 /**
  * Cargar imagen desde URL y convertir a Base64

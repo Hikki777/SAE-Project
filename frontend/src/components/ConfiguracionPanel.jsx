@@ -2,29 +2,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, LogOut, Home, Settings, BarChart3, Wrench, User, Clock, Users, FileText, Activity, ClipboardList, LogIn, Camera, Plus, Trash2, Save, XCircle, CheckCircle, Upload, Download, FileArchive, AlertOctagon, AlertCircle, RefreshCcw, Server, Lock, RotateCcw, Edit, FolderOpen, Building2, Timer } from 'lucide-react';
+import { Menu, X, LogOut, Home, Settings, BarChart3, Wrench, User, Clock, Users, FileText, Activity, ClipboardList, LogIn, Camera, Plus, Trash2, Save, XCircle, CheckCircle, Upload, Download, FileArchive, AlertOctagon, AlertCircle, RefreshCcw, Server, Lock, RotateCcw, Edit, FolderOpen, Building2, Timer, Smartphone } from 'lucide-react';
 import WebcamCaptureModal from './WebcamCaptureModal';
-import axios from 'axios';
+import { QRCodeSVG } from 'qrcode.react';
 import { toast } from 'react-hot-toast';
 import GenderAvatar from './GenderAvatar';
+import client, { API_URL, BASE_URL } from '../api/client';
 
-const API_URL = localStorage.getItem('api_url') || import.meta.env.VITE_API_URL || '/api';
-const BASE_URL = API_URL.startsWith('http') ? API_URL.replace(/\/api$/, '').replace(/\/$/, '') : '';
-const client = axios.create({
-  baseURL: API_URL,
-  headers: {
-    'Content-Type': 'application/json'
-  }
-});
 
-// Interceptor para agregar token
-client.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
 
 // --- SUBCOMPONENT: UserPhoto (con fallback para fotos 404) ---
 function UserPhoto({ fotoPath, nombres, sexo, size = 'lg', onError }) {
@@ -811,8 +796,17 @@ const UsuarioSettings = ({ usuarios, loadingUsers, showUserModal, setShowUserMod
   );
 };
 
-// --- SUBCOMPONENT: Equipo Settings ---
 const EquipoSettings = ({ equipos, loading, onApprove, onDelete, serverInfo }) => {
+  const [showQR, setShowQR] = useState(false);
+
+  // Obtener IP e Inyectar Puerto Dinámico Actual (si existe)
+  const ipv4 = serverInfo?.ips?.[0] || 'localhost';
+  const urlParams = new URLSearchParams(window.location.search);
+  const hashMatch = window.location.hash.match(/apiPort=(\d+)/);
+  const port = urlParams.get('apiPort') || (hashMatch ? hashMatch[1] : sessionStorage.getItem('dynamic_api_port')) || '5000'; // 5000 is legacy dev fallback
+  
+  const qrData = `SAE-CONFIG|http://${ipv4}:${port}`;
+
   return (
     <motion.div
       initial={{ opacity: 0, x: 20 }}
@@ -828,6 +822,13 @@ const EquipoSettings = ({ equipos, loading, onApprove, onDelete, serverInfo }) =
           </h3>
           <p className="text-sm text-gray-500 mt-1">Administra los dispositivos que pueden acceder al sistema en la red interna.</p>
         </div>
+        <button
+          onClick={() => setShowQR(true)}
+          className="bg-sky-600 hover:bg-sky-700 text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 transition-colors"
+        >
+          <Smartphone size={16} />
+          Vincular Celular
+        </button>
       </div>
 
       {/* Info Servidor */}
@@ -931,6 +932,43 @@ const EquipoSettings = ({ equipos, loading, onApprove, onDelete, serverInfo }) =
           </tbody>
         </table>
       </div>
+
+      {/* MODAL QR */}
+      {showQR && createPortal(
+        <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-sm flex flex-col overflow-hidden"
+          >
+            <div className="flex justify-between items-center p-5 border-b border-gray-100 dark:border-gray-700">
+              <h3 className="font-bold text-lg text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                <Smartphone size={20} className="text-sky-600" />
+                Vincular App Móvil
+              </h3>
+              <button onClick={() => setShowQR(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-8 flex flex-col items-center justify-center space-y-6">
+              <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+                <QRCodeSVG value={qrData} size={200} level="H" />
+              </div>
+              <div className="text-center">
+                <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+                  Escanea este código desde el Celular
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  Dirección URL Inyectada de forma Mágica:<br/>
+                  <span className="font-mono bg-gray-100 dark:bg-gray-900 px-1 py-0.5 rounded text-sky-600">http://{ipv4}:{port}</span>
+                </p>
+              </div>
+            </div>
+          </motion.div>
+        </div>,
+        document.body
+      )}
     </motion.div>
   );
 };

@@ -6,11 +6,8 @@ import GenderAvatar from './GenderAvatar';
 import toast from 'react-hot-toast';
 import CardAusente from './CardAusente';
 import ModalJustificacionRapida from './ModalJustificacionRapida';
-import client from '../api/client';
+import client, { API_URL, BASE_URL } from '../api/client';
 import './RevisionRapida.css';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-const BASE_URL = API_URL.replace('/api', '');
 
 export default function RevisionRapidaView({ fecha, onVolver }) {
   const [pendientes, setPendientes] = useState([]);

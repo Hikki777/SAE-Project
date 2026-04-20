@@ -47,7 +47,9 @@ HMAC_SECRET=${hmacSecret}
 UPDATE_SECRET=${updateSecret}
 
 # Configuración del Servidor
-PORT=5000
+# El puerto es gestionado dinámicamente por Electron en producción.
+# El valor por defecto para desarrollo es 5000.
+# PORT=5000
 NODE_ENV=production
 
 # Socket.IO (Web Production - Dejar vacío para Electron)

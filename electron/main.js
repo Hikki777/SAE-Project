@@ -8,6 +8,7 @@ const os = require("os");
 
 let mainWindow;
 let backendProcess = null;
+const DEFAULT_FALLBACK_PORT = 5000;
 const isDev = !app.isPackaged;
 
 // ─────────────────────────────────────────────
@@ -204,7 +205,7 @@ function getAvailablePort(startingAt = 49152) {
 //  Iniciar el backend en producción
 // ─────────────────────────────────────────────
 async function startBackend() {
-  if (isDev) return 5000;
+  if (isDev) return DEFAULT_FALLBACK_PORT;
 
   const port = await getAvailablePort();
   const resourcesPath = process.resourcesPath;
@@ -551,7 +552,7 @@ function createWindow(backendPort) {
 
   // Cargar la app
   if (isDev) {
-    const devUrl = `http://localhost:5173/#apiPort=${backendPort}`;
+    const devUrl = `http://localhost:5173/?apiPort=${backendPort}`;
     log(`Modo desarrollo — cargando ${devUrl}`);
     mainWindow.loadURL(devUrl);
     if (process.env.OPEN_DEVTOOLS === "true") {
@@ -565,8 +566,8 @@ function createWindow(backendPort) {
       "dist",
       "index.html",
     );
-    log(`Modo producción — cargando ${indexPath} con #apiPort=${backendPort}`);
-    mainWindow.loadFile(indexPath, { hash: `apiPort=${backendPort}` });
+    log(`Modo producción — cargando ${indexPath} con ?apiPort=${backendPort}`);
+    mainWindow.loadFile(indexPath, { search: `apiPort=${backendPort}` });
   }
 
   // Abrir enlaces externos en el navegador del sistema
@@ -707,7 +708,7 @@ app.whenReady().then(async () => {
     }
 
     // Crear ventana principal pasándole el puerto dinámico (si es 0, false, etc.)
-    createWindow(backendPort || 5000);
+    createWindow(backendPort || DEFAULT_FALLBACK_PORT);
 
     // Cerrar splash cuando la ventana principal esté lista
     if (splash) {
@@ -729,7 +730,7 @@ app.whenReady().then(async () => {
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {
-      createWindow(5000); // Falback if re-opened dynamically
+      createWindow(DEFAULT_FALLBACK_PORT); // Fallback if re-opened dynamically
     }
   });
 });

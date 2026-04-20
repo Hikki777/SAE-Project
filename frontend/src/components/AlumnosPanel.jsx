@@ -7,11 +7,8 @@ import WebcamCaptureModal from './WebcamCaptureModal';
 import toast, { Toaster } from 'react-hot-toast';
 import { alumnosAPI, qrAPI, institucionAPI } from '../api/endpoints';
 import { TableSkeleton } from './LoadingSpinner';
-import axios from 'axios';
 import GenderAvatar from './GenderAvatar';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-const BASE_URL = API_URL.replace('/api', ''); // http://localhost:5000
+import client, { API_URL, BASE_URL } from '../api/client';
 
 
 export default function AlumnosPanel() {
@@ -133,9 +130,7 @@ export default function AlumnosPanel() {
   // Fetch next carnet preview
   const fetchNextCarnet = async () => {
     try {
-      const response = await axios.get(`${API_URL}/alumnos/next-carnet`, {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-      });
+      const response = await client.get(`/alumnos/next-carnet?grado=${formData.grado}`);
       setSuggestedCarnet(response.data.carnet);
       if (carnetMode === 'auto' && !editingAlumno) {
         setFormData(prev => ({ ...prev, carnet: response.data.carnet }));
@@ -152,9 +147,8 @@ export default function AlumnosPanel() {
       return;
     }
     try {
-      const response = await axios.post(`${API_URL}/alumnos/validate-carnet`,
-        { carnet, excludeId: editingAlumno?.id },
-        { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } }
+      const response = await client.post('/alumnos/validate-carnet',
+        { carnet, excludeId: editingAlumno?.id }
       );
       setCarnetValidation(response.data);
     } catch (error) {
@@ -198,9 +192,8 @@ export default function AlumnosPanel() {
         
         // Usar axios directamente para multipart
         const token = localStorage.getItem('token');
-        await axios.post(`${API_URL}/alumnos/${alumnoId}/foto`, fotoData, {
+        await client.post(`/alumnos/${alumnoId}/foto`, fotoData, {
             headers: { 
-                'Authorization': `Bearer ${token}`,
                 'Content-Type': 'multipart/form-data' 
             }
         });
@@ -261,10 +254,9 @@ export default function AlumnosPanel() {
       
       // 2. Regenerar QR automáticamente
       try {
-        await axios.post(
-          `${API_URL}/alumnos/${editingAlumno.id}/regenerar-qr`,
-          {},
-          { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } }
+        await client.post(
+          `/alumnos/${editingAlumno.id}/regenerar-qr`,
+          {}
         );
         toast.success('Carnet reasignado y QR regenerado', { id: toastId });
       } catch (qrError) {

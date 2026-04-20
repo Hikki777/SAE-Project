@@ -2,11 +2,9 @@ import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion } from 'framer-motion';
 import { X, ArrowRight, Upload } from 'lucide-react';
+import client, { API_URL, BASE_URL } from '../api/client';
 import { excusasAPI } from '../api/endpoints';
 import toast from 'react-hot-toast';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-const BASE_URL = API_URL.replace('/api', '');
 
 export default function ModalJustificacionRapida({ persona, fecha, onGuardar, onCancelar }) {
   const [formData, setFormData] = useState({

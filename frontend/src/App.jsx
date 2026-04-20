@@ -21,6 +21,7 @@ import {
   Activity,
   ClipboardList,
   LogIn,
+  Info,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import ThemeToggle from "./components/ThemeToggle";
@@ -35,10 +36,11 @@ import ConfiguracionPanel from "./components/ConfiguracionPanel";
 import ReportesPanel from "./components/ReportesPanel";
 import MetricsPanel from "./components/MetricsPanel";
 import JustificacionesPanel from "./components/JustificacionesPanel";
+import AcercaDePanel from "./components/AcercaDePanel";
 
 import SetupWizard from "./components/SetupWizard";
 import LoginPage from "./pages/LoginPage";
-import client from "./api/client";
+import client, { API_URL, BASE_URL } from "./api/client";
 import offlineQueueService from "./services/offlineQueue";
 import notificationService from "./services/notificationService";
 import syncService from "./services/syncService";
@@ -320,39 +322,10 @@ function App() {
     );
   }
 
-  const getBaseUrl = () => {
-    // 1. Verificar Puerto Dinámico inyectado por Electron
-    let dynamicAPI = null;
-    if (typeof window !== "undefined") {
-      const hashMatch = window.location.hash.match(/apiPort=(\d+)/);
-      const savedDynPort = hashMatch ? hashMatch[1] : sessionStorage.getItem('dynamic_api_port');
-      if (savedDynPort) {
-        dynamicAPI = `http://localhost:${savedDynPort}/api`;
-        sessionStorage.setItem('dynamic_api_port', savedDynPort);
-      }
-    }
-
-    let api =
-      dynamicAPI ||
-      localStorage.getItem("api_url") ||
-      import.meta.env.VITE_API_URL ||
-      "http://localhost:5000/api";
-
-    // FILTRO DE SEGURIDAD: Bloquear URLs legacy
-    if (api && (api.includes("railway.app") || api.includes("herokuapp"))) {
-      api = dynamicAPI || "http://localhost:5000/api";
-    }
-
-    if (api.startsWith("http")) {
-      return api.replace(/\/api$/, "").replace(/\/$/, "");
-    }
-    return ""; // Relative path
-  };
-
   const logoUrl = institucion?.logo_path?.startsWith("http")
     ? institucion.logo_path
     : institucion?.logo_path
-      ? `${getBaseUrl()}/api/uploads/${institucion.logo_path}`
+      ? `${BASE_URL}/api/uploads/${institucion.logo_path}`
       : null;
 
   return (
@@ -375,7 +348,7 @@ function App() {
                 <div className="w-24 h-24 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-6 text-red-600 dark:text-red-400 border-2 border-red-100 dark:border-red-800 shadow-inner overflow-hidden">
                   {user?.foto_path ? (
                     <img
-                      src={`${getBaseUrl()}/api/uploads/${user.foto_path}`}
+                      src={`${BASE_URL}/api/uploads/${user.foto_path}`}
                       alt="Perfil"
                       className="w-full h-full object-cover"
                     />
@@ -439,7 +412,7 @@ function App() {
                       <div className="w-12 h-12 rounded-full bg-blue-500/50 dark:bg-slate-700 border-2 border-blue-400 dark:border-slate-600 flex items-center justify-center text-white dark:text-emerald-400 shadow-lg overflow-hidden transition-all duration-300 group-hover:border-white">
                         {user.foto_path ? (
                           <img
-                            src={`${getBaseUrl()}/api/uploads/${user.foto_path}`}
+                            src={`${BASE_URL}/api/uploads/${user.foto_path}`}
                             alt="Profile"
                             className="w-full h-full object-cover"
                           />
@@ -469,14 +442,20 @@ function App() {
                 <NavLink to="/docentes" icon={Users} label="Personal" />
                 <NavLink to="/asistencias" icon={Clock} label="Asistencias" />
 
-                <NavLink to="/reportes" icon={FileText} label="Reportes" />
-                <NavLink to="/metricas" icon={Activity} label="Métricas" />
-                <NavLink
-                  to="/configuracion"
-                  icon={Settings}
-                  label="Configuración"
-                  badge={pendingEquipmentCount}
-                />
+                {(!user || user.rol === 'admin') && (
+                  <>
+                    <NavLink to="/reportes" icon={FileText} label="Reportes" />
+                    <NavLink to="/metricas" icon={Activity} label="Métricas" />
+                    <NavLink
+                      to="/configuracion"
+                      icon={Settings}
+                      label="Configuración"
+                      badge={pendingEquipmentCount}
+                    />
+                  </>
+                )}
+                
+                <NavLink to="/acerca-de" icon={Info} label="Acerca de" />
               </nav>
 
               <div className="absolute bottom-16 left-3 right-3 overflow-hidden flex justify-center py-2">
@@ -486,13 +465,13 @@ function App() {
               <div className="absolute bottom-3 left-3 right-3 overflow-hidden">
                 <button
                   onClick={handleLogout}
-                  className="w-full bg-red-500/20 hover:bg-red-600 text-red-100 hover:text-white font-medium py-2 px-2 rounded-lg flex items-center gap-2 transition-all duration-300 group/btn min-w-max"
+                  className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 px-3 rounded-xl flex items-center gap-3 transition-all duration-300 shadow-lg shadow-red-900/20 group/btn border border-red-500/50 hover:shadow-red-500/40 relative overflow-hidden flex-nowrap"
                   title="Cerrar Sesión"
                 >
-                  <div className="w-5 flex justify-center flex-shrink-0">
+                  <div className="w-8 flex justify-center flex-shrink-0">
                     <LogOut size={20} />
                   </div>
-                  <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap delay-100">
+                  <span className="opacity-0 group-hover:opacity-100 transition-all duration-300 whitespace-nowrap delay-100 overflow-hidden w-0 group-hover:w-auto">
                     Cerrar Sesión
                   </span>
                 </button>
@@ -513,7 +492,7 @@ function App() {
                       institucion?.logo_path?.startsWith("http")
                         ? institucion.logo_path
                         : institucion?.logo_path
-                          ? `${getBaseUrl()}/api/uploads/${institucion.logo_path}`
+                          ? `${BASE_URL}/api/uploads/${institucion.logo_path}`
                           : "./logo.png"
                     }
                     alt="Logo"
@@ -614,23 +593,37 @@ function App() {
                 <Route
                   path="/reportes"
                   element={
-                    isLoggedIn ? <ReportesPanel /> : <Navigate to="/login" />
+                    isLoggedIn ? (
+                      (!user || user.rol === 'admin') ? <ReportesPanel /> : <Navigate to="/" replace />
+                    ) : (
+                      <Navigate to="/login" />
+                    )
                   }
                 />
                 <Route
                   path="/metricas"
                   element={
-                    isLoggedIn ? <MetricsPanel /> : <Navigate to="/login" />
+                    isLoggedIn ? (
+                      (!user || user.rol === 'admin') ? <MetricsPanel /> : <Navigate to="/" replace />
+                    ) : (
+                      <Navigate to="/login" />
+                    )
                   }
                 />
                 <Route
                   path="/configuracion"
                   element={
                     isLoggedIn ? (
-                      <ConfiguracionPanel />
+                      (!user || user.rol === 'admin') ? <ConfiguracionPanel /> : <Navigate to="/" replace />
                     ) : (
                       <Navigate to="/login" />
                     )
+                  }
+                />
+                <Route
+                  path="/acerca-de"
+                  element={
+                    isLoggedIn ? <AcercaDePanel /> : <Navigate to="/login" />
                   }
                 />
               </Routes>

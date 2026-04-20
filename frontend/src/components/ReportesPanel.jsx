@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { FileText, Download, Calendar, Filter, FileSpreadsheet, Users, TrendingUp, Clock, Award, CreditCard, User, Search, Loader, FileCheck, Construction } from 'lucide-react';
-import client from '../api/client';
+import client, { API_URL, BASE_URL } from '../api/client';
 import { exportAttendancePDF } from '../utils/exportPdf';
 import { exportAttendanceExcel } from '../utils/exportExcel';
 import { generateJustificacionesPDF, generateJustificacionesExcel } from '../utils/reportGenerator';
@@ -224,7 +224,7 @@ export default function ReportesPanel({ initialTab = 'asistencias' }) {
     try {
       const response = await documentosAPI.generarCarnetAlumno(alumnoCarnet);
       const link = document.createElement('a');
-      link.href = `${import.meta.env.VITE_API_URL}${response.data.data.url}`;
+      link.href = `${API_URL}${response.data.data.url}`;
       link.setAttribute('download', response.data.data.filename);
       link.setAttribute('target', '_blank');
       document.body.appendChild(link);
@@ -245,7 +245,7 @@ export default function ReportesPanel({ initialTab = 'asistencias' }) {
     try {
       const response = await documentosAPI.generarCarnetPersonal(personalCarnet);
       const link = document.createElement('a');
-      link.href = `${import.meta.env.VITE_API_URL}${response.data.data.url}`;
+      link.href = `${API_URL}${response.data.data.url}`;
       link.setAttribute('download', response.data.data.filename);
       link.setAttribute('target', '_blank');
       document.body.appendChild(link);

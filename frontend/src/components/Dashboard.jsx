@@ -25,6 +25,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
+import client, { API_URL, BASE_URL } from "../api/client";
 import {
   healthAPI,
   alumnosAPI,
@@ -55,18 +56,9 @@ function LogoImage({ logoPath, logoBase64 }) {
             return;
           }
 
-          // Obtener URL base de la API
-          const api =
-            localStorage.getItem("api_url") ||
-            import.meta.env.VITE_API_URL ||
-            "";
-          const base = api.startsWith("http")
-            ? api.replace(/\/api$/, "").replace(/\/$/, "")
-            : "";
-
-          if (base) {
-            // Intentar cargar desde servidor
-            const response = await fetch(`${base}/api/uploads/${logoPath}?t=${Date.now()}`, {
+          if (BASE_URL) {
+            // Intentar cargar desde servidor usando la base centralizada
+            const response = await fetch(`${BASE_URL}/api/uploads/${logoPath}?t=${Date.now()}`, {
               method: "GET",
               credentials: "include",
             });
@@ -383,7 +375,7 @@ export default function Dashboard() {
                 )}
 
                 <div className="flex items-center text-sm text-blue-100/90 mt-4">
-                  <span className="mr-3">SAE v1.0.8</span>
+                  <span className="mr-3">SAE v{__APP_VERSION__}</span>
 
                   {/* --- PILL START --- */}
                   <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/20 backdrop-blur-md shadow-lg transition-all hover:bg-white/20">

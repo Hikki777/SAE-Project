@@ -1,8 +1,6 @@
 import { motion } from 'framer-motion';
 import { Check, SkipForward } from 'lucide-react';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-const BASE_URL = API_URL.replace('/api', '');
+import { BASE_URL } from '../api/client';
 
 export default function CardAusente({ persona, onJustificar, onOmitir }) {
   const getFotoUrl = () => {

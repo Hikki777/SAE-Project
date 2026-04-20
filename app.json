@@ -1,0 +1,12 @@
+{
+  "expo": {
+    "extra": {
+      "eas": {
+        "projectId": "edbbcec5-25e7-471c-9f1f-69397c4795e2"
+      }
+    },
+    "android": {
+      "package": "com.hikki777.sae"
+    }
+  }
+}

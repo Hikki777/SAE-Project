@@ -151,10 +151,11 @@ Solución: El backend no se inició correctamente
 
 ```
 npm run electron
-├─ Backend (puerto 5000)
+├─ Backend (puerto dinámico en producción, 5000 en dev)
 │  └─ Base de datos: %APPDATA%\SAE\sae.db (producción)
 │  └─                ./prisma/dev.db     (desarrollo)
-│  └─ API: http://localhost:5000/api
+│  ├─ API: http://localhost:[PUERTO]/api
+│  └─ Logs: AppData/SAE/logs/backend.log
 │
 ├─ Frontend Vite (puerto 5173)
 │  └─ Interfaz React
@@ -197,13 +198,13 @@ npm run prisma:generate
 
 ## 6️⃣ URLs Importantes
 
-| Servicio | URL | Propósito |
-| -------- | --- | --------- |
-| Backend | http://localhost:5000 | API REST |
-| API Health | http://localhost:5000/api/health | Verificar backend |
-| Frontend | http://localhost:5173 | Interfaz Vite (dev) |
+| Componente | URL / Ruta | Propósito |
+| :--- | :--- | :--- |
+| Backend | http://localhost:[PORT] | API REST (Dinámico) |
+| API Health | http://localhost:[PORT]/api/health | Verificar backend |
+| Documentación| /api-docs | Swagger UI (Dev) |
+| Uploads | /api/uploads | Archivos estáticos |
 | Electron | `file://` | Aplicación de escritorio |
-| Uploads | http://localhost:5000/uploads | Archivos estáticos |
 
 ---
 

@@ -3,11 +3,10 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { AlertCircle, LogIn, GraduationCap, Mail, Lock, CheckCircle2, XCircle, Eye, EyeOff, Info } from 'lucide-react';
 import { AnimatePresence } from 'framer-motion';
+import client, { API_URL, BASE_URL } from '../api/client';
 import { authAPI } from '../api/endpoints';
 import soundService from '../services/soundService';
-
-const API_URL = localStorage.getItem('api_url') || import.meta.env.VITE_API_URL || '/api';
-const BASE_URL = API_URL.startsWith('http') ? API_URL.replace(/\/api$/, '').replace(/\/$/, '') : '';
+import toast from 'react-hot-toast';
 
 // Sound effects
 const playSound = (type) => {

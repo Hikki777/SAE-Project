@@ -5,15 +5,12 @@ import {
   UserX, Clock, ChevronDown, ChevronUp, FileDown, FileSpreadsheet,
   Search, ChevronLeft, ChevronRight, Users, Upload, ClipboardList
 } from 'lucide-react';
-import client from '../api/client';
+import client, { API_URL, BASE_URL } from '../api/client';
 import toast, { Toaster } from 'react-hot-toast';
 import { generateJustificacionesPDF, generateJustificacionesExcel } from '../utils/reportGenerator';
 import RevisionRapidaView from './RevisionRapidaView';
 import ModalJustificacionRapida from './ModalJustificacionRapida';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-const BASE_URL = API_URL.replace('/api', '');
 
 export default function JustificacionesPanel() {
   const [searchParams] = useSearchParams();

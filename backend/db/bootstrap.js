@@ -84,18 +84,84 @@ function splitSqlStatements(sql) {
 async function applyMigration(prisma, migrationName, sqlContent) {
   const id = `${Date.now()}-${migrationName}`;
   const startedAt = new Date().toISOString();
+  let DatabaseSync;
+
+  try {
+    DatabaseSync = require('node:sqlite').DatabaseSync;
+  } catch (e) {
+    DatabaseSync = null; // Fallback para versiones viejas de Node
+  }
 
   log(`Aplicando migración: ${migrationName}`, 'warn');
 
+  if (DatabaseSync && process.env.DATABASE_URL) {
+    log(`  -> Usando driver nativo SQLite Seguro para transacciones (Anticorrupción)`);
+    const dbPath = process.env.DATABASE_URL.replace('file:', '').trim();
+    const db = new DatabaseSync(dbPath);
+    
+    try {
+      // Forzamos desconexión de Foreign Keys previo a la transacción (vital para SQLite Drop Table)
+      db.exec('PRAGMA foreign_keys=OFF;');
+      db.exec('BEGIN EXCLUSIVE;');
+
+      const statements = splitSqlStatements(sqlContent);
+      let appliedSteps = 0;
+
+      for (const stmt of statements) {
+        // Ignoramos PRAGMAS conflictivos dentro de la transacción que arruinarían el bloqueo
+        if (stmt.toUpperCase().includes('PRAGMA FOREIGN_KEYS=')) continue;
+        
+        try {
+          db.exec(stmt);
+          appliedSteps++;
+        } catch (stmtErr) {
+          const msg = (stmtErr.message || '').toLowerCase();
+          const isDuplicate = msg.includes('already exists') || msg.includes('duplicate column');
+          if (isDuplicate) {
+            log(`    [SKIP] Objeto ya existe: ${stmt.substring(0, 50)}...`, 'info');
+            appliedSteps++;
+          } else {
+            throw stmtErr;
+          }
+        }
+      }
+
+      const finishedAt = new Date().toISOString();
+      const insertControl = `INSERT INTO "_prisma_migrations" (id, checksum, migration_name, started_at, finished_at, applied_steps_count) 
+                 VALUES ('${id}', 'native-sqlite', '${migrationName}', '${startedAt}', '${finishedAt}', ${appliedSteps})`;
+      db.exec(insertControl);
+      db.exec('COMMIT;');
+      db.close();
+
+      log(`Migración completada de forma 100% segura: ${migrationName} (${appliedSteps} sentencias)`, 'success');
+      return;
+    } catch (err) {
+      db.exec('ROLLBACK;'); // ¡Salvavidas! Restaura la BD a su estado original si algo explota
+      db.exec('PRAGMA foreign_keys=ON;');
+      
+      const safeErrorMsg = err.message.replace(/'/g, "''");
+      const insertFail = `INSERT INTO "_prisma_migrations" (id, checksum, migration_name, started_at, logs, applied_steps_count) 
+                 VALUES ('${id}', 'native-sqlite', '${migrationName}', '${startedAt}', '${safeErrorMsg}', 0)`;
+      db.exec(insertFail);
+      db.close();
+
+      log(`FALLO CRÍTICO en migración ${migrationName}: ${err.message}. ROLLBACK EJECUTADO (BD Protegida)`, 'error');
+      throw err;
+    }
+  }
+
+  // ============================================
+  // FALLBACK: PRISMA EXEC (Sólo para Node < 22)
+  // ============================================
+  log(`  -> Advertencia: Usando fallback Prisma Exec (menos seguro)`, 'warn');
   try {
     // Registrar inicio
     await prisma.$executeRawUnsafe(
       `INSERT INTO "_prisma_migrations" (id, checksum, migration_name, started_at, applied_steps_count)
        VALUES (?, ?, ?, ?, 0)`,
-      id, 'native-runner', migrationName, startedAt
+      id, 'fallback-runner', migrationName, startedAt
     );
 
-    // Ejecutar cada sentencia SQL de forma secuencial
     const statements = splitSqlStatements(sqlContent);
     let appliedSteps = 0;
 
@@ -104,18 +170,10 @@ async function applyMigration(prisma, migrationName, sqlContent) {
         await prisma.$executeRawUnsafe(stmt);
         appliedSteps++;
       } catch (stmtErr) {
-        // Si la sentencia ya existía (tabla/índice/columna duplicada), no es error fatal.
-        // SQLite usa diferentes mensajes según el caso:
-        //   - "table X already exists"
-        //   - "index X already exists"  
-        //   - "duplicate column name: X"
-        //   - "UNIQUE constraint failed" (al intentar crear índice unique duplicado)
         const msg = (stmtErr.message || '').toLowerCase();
-        const isDuplicate = msg.includes('already exists') ||
-          msg.includes('duplicate column') ||
-          msg.includes('duplicate column name');
+        const isDuplicate = msg.includes('already exists') || msg.includes('duplicate column');
         if (isDuplicate) {
-          log(`  [SKIP] Objeto ya existe, omitiendo: ${stmt.substring(0, 80)}...`, 'info');
+          log(`  [SKIP] Objeto ya existe: ${stmt.substring(0, 50)}...`, 'info');
           appliedSteps++;
         } else {
           throw stmtErr;
@@ -123,23 +181,18 @@ async function applyMigration(prisma, migrationName, sqlContent) {
       }
     }
 
-    // Marcar como completada
     const finishedAt = new Date().toISOString();
     await prisma.$executeRawUnsafe(
-      `UPDATE "_prisma_migrations"
-       SET finished_at = ?, applied_steps_count = ?
-       WHERE id = ?`,
+      `UPDATE "_prisma_migrations" SET finished_at = ?, applied_steps_count = ? WHERE id = ?`,
       finishedAt, appliedSteps, id
     );
 
-    log(`Migración completada: ${migrationName} (${appliedSteps} sentencias)`, 'success');
+    log(`Migración completada (Fallback): ${migrationName}`, 'success');
   } catch (err) {
-    // Marcar la migración como fallida en la tabla de control
     await prisma.$executeRawUnsafe(
       `UPDATE "_prisma_migrations" SET logs = ? WHERE id = ?`,
       err.message, id
     ).catch(() => {});
-
     log(`FALLO en migración ${migrationName}: ${err.message}`, 'error');
     throw err;
   }
@@ -254,6 +307,116 @@ async function repairCreateTable(prisma, tableName, createSQL) {
     log(`No se pudo crear la tabla ${tableName}: ${e.message}`, 'error');
   }
 }
+// ============================================================================
+// FUNCIONES AUXILIARES DE REPARACIÓN
+// ============================================================================
+
+async function runEsquemaRepairs(prisma) {
+  log('Ejecutando reparaciones de esquema previas...', 'info');
+  // ── Tablas existentes: añadir columnas faltantes ──
+  await repairTable(prisma, 'institucion', [
+    { name: 'horario_salida',          type: 'TEXT' },
+    { name: 'direccion',               type: 'TEXT' },
+    { name: 'pais',                    type: 'TEXT' },
+    { name: 'departamento',            type: 'TEXT' },
+    { name: 'municipio',               type: 'TEXT' },
+    { name: 'email',                   type: 'TEXT' },
+    { name: 'telefono',                type: 'TEXT' },
+    { name: 'ciclo_escolar',           type: 'INTEGER DEFAULT 2026' },
+    { name: 'carnet_counter_global',   type: 'INTEGER DEFAULT 0' },
+    { name: 'carnet_counter_personal', type: 'INTEGER DEFAULT 0' },
+    { name: 'carnet_counter_alumnos',  type: 'INTEGER DEFAULT 0' },
+    { name: 'master_recovery_key',     type: 'TEXT' }
+  ]);
+
+  await repairTable(prisma, 'alumnos', [
+    { name: 'sexo',            type: 'TEXT' },
+    { name: 'seccion',         type: 'TEXT' },
+    { name: 'carrera',         type: 'TEXT' },
+    { name: 'especialidad',    type: 'TEXT' },
+    { name: 'anio_ingreso',    type: 'INTEGER' },
+    { name: 'anio_graduacion', type: 'INTEGER' },
+    { name: 'nivel_actual',    type: 'TEXT' },
+    { name: 'motivo_baja',     type: 'TEXT' },
+    { name: 'fecha_baja',      type: 'DATETIME' },
+    { name: 'foto_path',       type: 'TEXT' }
+  ]);
+
+  await repairTable(prisma, 'personal', [
+    { name: 'sexo',       type: 'TEXT' },
+    { name: 'cargo',      type: 'TEXT' },
+    { name: 'grado_guia', type: 'TEXT' },
+    { name: 'foto_path',  type: 'TEXT' },
+    { name: 'curso',      type: 'TEXT' }
+  ]);
+
+  await repairTable(prisma, 'usuarios', [
+    { name: 'nombres',   type: 'TEXT' },
+    { name: 'apellidos', type: 'TEXT' },
+    { name: 'sexo',      type: 'TEXT' },
+    { name: 'foto_path', type: 'TEXT' },
+    { name: 'cargo',     type: 'TEXT' },
+    { name: 'jornada',   type: 'TEXT' }
+  ]);
+
+  await repairTable(prisma, 'codigos_qr', [
+    { name: 'png_path', type: 'TEXT' },
+    { name: 'vigente',  type: 'BOOLEAN DEFAULT 1' }
+  ]);
+
+  // ── Tablas nuevas: crear si no existen ──
+  await repairCreateTable(prisma, 'excusas', `
+    CREATE TABLE IF NOT EXISTS "excusas" (
+      "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+      "alumno_id" INTEGER,
+      "personal_id" INTEGER,
+      "motivo" TEXT NOT NULL,
+      "descripcion" TEXT,
+      "estado" TEXT NOT NULL DEFAULT 'pendiente',
+      "fecha" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "fecha_ausencia" DATETIME,
+      "documento_url" TEXT,
+      "observaciones" TEXT,
+      "creado_en" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "actualizado_en" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT "excusas_alumno_id_fkey" FOREIGN KEY ("alumno_id") REFERENCES "alumnos" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+      CONSTRAINT "excusas_personal_id_fkey" FOREIGN KEY ("personal_id") REFERENCES "personal" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+    )
+  `);
+
+  await repairCreateTable(prisma, 'historial_academico', `
+    CREATE TABLE IF NOT EXISTS "historial_academico" (
+      "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+      "alumno_id" INTEGER NOT NULL,
+      "anio_escolar" INTEGER NOT NULL,
+      "grado_cursado" TEXT NOT NULL,
+      "nivel" TEXT NOT NULL,
+      "carrera" TEXT,
+      "promovido" BOOLEAN NOT NULL DEFAULT true,
+      "observaciones" TEXT,
+      "creado_en" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT "historial_academico_alumno_id_fkey" FOREIGN KEY ("alumno_id") REFERENCES "alumnos" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+    )
+  `);
+
+  await repairCreateTable(prisma, 'equipos', `
+    CREATE TABLE IF NOT EXISTS "equipos" (
+      "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+      "nombre" TEXT,
+      "hostname" TEXT,
+      "ip" TEXT NOT NULL,
+      "os" TEXT,
+      "mac_address" TEXT,
+      "aprobado" BOOLEAN NOT NULL DEFAULT false,
+      "clave_seguridad" TEXT NOT NULL,
+      "ultima_conexion" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "creado_en" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "actualizado_en" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+  log('Reparaciones de esquema completadas.', 'success');
+}
+
 // ─────────────────────────────────────────────────────────────
 // ENTRADA PRINCIPAL
 // ─────────────────────────────────────────────────────────────
@@ -263,124 +426,21 @@ async function initializeDatabase() {
 
   // ── MODO PRODUCCIÓN (ELECTRON) ──────────────────────────────
   if (isElectron) {
-    log('Iniciando verificación de migraciones (Modo Producción)...', 'info');
+    log('Iniciando verificación de esquema (Modo Producción)...', 'info');
 
     try {
-      // Intentar motor nativo de migraciones
+      // 1. PRE-PARCHEO: Asegurar que TODAS las columnas existan ANTES de que Prisma intente
+      // copiar datos. Si una tabla antigua no tiene una columna, el SQLite INSERT INTO SELECT fallaría.
+      await runEsquemaRepairs(prisma);
+
+      // 2. Intentar motor nativo de migraciones (Para DDL Completo)
       const nativeOk = await runNativeMigrations(prisma);
 
       if (!nativeOk) {
-        // Fallback: repairTable + repairCreateTable (menos potente pero seguro)
-        log('Usando repairTable como fallback de migración...', 'warn');
-
-        // ── Tablas existentes: añadir columnas faltantes ──
-
-        await repairTable(prisma, 'institucion', [
-          { name: 'horario_salida',          type: 'TEXT' },
-          { name: 'direccion',               type: 'TEXT' },
-          { name: 'pais',                    type: 'TEXT' },
-          { name: 'departamento',            type: 'TEXT' },
-          { name: 'municipio',               type: 'TEXT' },
-          { name: 'email',                   type: 'TEXT' },
-          { name: 'telefono',                type: 'TEXT' },
-          { name: 'ciclo_escolar',           type: 'INTEGER DEFAULT 2026' },
-          { name: 'carnet_counter_global',   type: 'INTEGER DEFAULT 0' },
-          { name: 'carnet_counter_personal', type: 'INTEGER DEFAULT 0' },
-          { name: 'carnet_counter_alumnos',  type: 'INTEGER DEFAULT 0' },
-          { name: 'master_recovery_key',     type: 'TEXT' }
-        ]);
-
-        await repairTable(prisma, 'alumnos', [
-          { name: 'sexo',            type: 'TEXT' },
-          { name: 'seccion',         type: 'TEXT' },
-          { name: 'carrera',         type: 'TEXT' },
-          { name: 'especialidad',    type: 'TEXT' },
-          { name: 'anio_ingreso',    type: 'INTEGER' },
-          { name: 'anio_graduacion', type: 'INTEGER' },
-          { name: 'nivel_actual',    type: 'TEXT' },
-          { name: 'motivo_baja',     type: 'TEXT' },
-          { name: 'fecha_baja',      type: 'DATETIME' },
-          { name: 'foto_path',       type: 'TEXT' }
-        ]);
-
-        await repairTable(prisma, 'personal', [
-          { name: 'sexo',       type: 'TEXT' },
-          { name: 'cargo',      type: 'TEXT' },
-          { name: 'grado_guia', type: 'TEXT' },
-          { name: 'foto_path',  type: 'TEXT' },
-          { name: 'curso',      type: 'TEXT' }
-        ]);
-
-        await repairTable(prisma, 'usuarios', [
-          { name: 'nombres',   type: 'TEXT' },
-          { name: 'apellidos', type: 'TEXT' },
-          { name: 'sexo',      type: 'TEXT' },
-          { name: 'foto_path', type: 'TEXT' },
-          { name: 'cargo',     type: 'TEXT' },
-          { name: 'jornada',   type: 'TEXT' }
-        ]);
-
-        await repairTable(prisma, 'codigos_qr', [
-          { name: 'png_path', type: 'TEXT' },
-          { name: 'vigente',  type: 'BOOLEAN DEFAULT 1' }
-        ]);
-
-        // ── Tablas nuevas: crear si no existen ──
-
-        await repairCreateTable(prisma, 'excusas', `
-          CREATE TABLE IF NOT EXISTS "excusas" (
-            "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-            "alumno_id" INTEGER,
-            "personal_id" INTEGER,
-            "motivo" TEXT NOT NULL,
-            "descripcion" TEXT,
-            "estado" TEXT NOT NULL DEFAULT 'pendiente',
-            "fecha" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            "fecha_ausencia" DATETIME,
-            "documento_url" TEXT,
-            "observaciones" TEXT,
-            "creado_en" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            "actualizado_en" DATETIME NOT NULL,
-            CONSTRAINT "excusas_alumno_id_fkey" FOREIGN KEY ("alumno_id") REFERENCES "alumnos" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
-            CONSTRAINT "excusas_personal_id_fkey" FOREIGN KEY ("personal_id") REFERENCES "personal" ("id") ON DELETE CASCADE ON UPDATE CASCADE
-          )
-        `);
-
-        await repairCreateTable(prisma, 'historial_academico', `
-          CREATE TABLE IF NOT EXISTS "historial_academico" (
-            "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-            "alumno_id" INTEGER NOT NULL,
-            "anio_escolar" INTEGER NOT NULL,
-            "grado_cursado" TEXT NOT NULL,
-            "nivel" TEXT NOT NULL,
-            "carrera" TEXT,
-            "promovido" BOOLEAN NOT NULL DEFAULT true,
-            "observaciones" TEXT,
-            "creado_en" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            CONSTRAINT "historial_academico_alumno_id_fkey" FOREIGN KEY ("alumno_id") REFERENCES "alumnos" ("id") ON DELETE CASCADE ON UPDATE CASCADE
-          )
-        `);
-
-        await repairCreateTable(prisma, 'equipos', `
-          CREATE TABLE IF NOT EXISTS "equipos" (
-            "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-            "nombre" TEXT,
-            "hostname" TEXT,
-            "ip" TEXT NOT NULL,
-            "os" TEXT,
-            "mac_address" TEXT,
-            "aprobado" BOOLEAN NOT NULL DEFAULT false,
-            "clave_seguridad" TEXT NOT NULL,
-            "ultima_conexion" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            "creado_en" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            "actualizado_en" DATETIME NOT NULL
-          )
-        `);
-
-        log('repairTable/repairCreateTable completado.', 'success');
+        log('Advertencia: El directorio de migraciones no está disponible o falló.', 'warn');
       }
     } catch (err) {
-      log(`Error crítico en migraciones de producción: ${err.message}`, 'error');
+      log(`Error crítico en inicialización de DB en producción: ${err.message}`, 'error');
       // NO matar el proceso — la app puede funcionar parcialmente
     }
 
