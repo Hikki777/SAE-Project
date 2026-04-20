@@ -46,7 +46,7 @@
 
 1. **Descargar instalador:**
    - Ir a [Releases en GitHub](https://github.com/Hikki777/SAE-Project/releases)
-   - Descargar la última versión `SAE-Setup-1.0.8.exe`
+   - Descargar la última versión `SAE-Setup-1.1.2.exe`
 
 2. **Ejecutar instalador:**
    - Doble click en el archivo descargado
