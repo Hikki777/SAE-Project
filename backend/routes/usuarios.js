@@ -55,12 +55,12 @@ router.get('/', async (req, res) => {
       select: {
         id: true,
         email: true,
+        username: true,
         nombres: true,
         apellidos: true,
         cargo: true,
         jornada: true,
         foto_path: true,
-        sexo: true,
         rol: true,
         activo: true,
         creado_en: true
@@ -86,22 +86,24 @@ router.post('/', upload.single('foto'), async (req, res) => {
       return res.status(403).json({ error: 'No autorizado. Solo administradores pueden crear usuarios.' });
     }
 
-    const { email, password, nombres, apellidos, cargo, jornada, sexo, rol } = req.body;
+    const { email, username, password, nombres, apellidos, cargo, jornada, rol } = req.body;
 
-    if (!email || !password) {
-      return res.status(400).json({ error: 'Email y contraseña son obligatorios' });
+    if ((!email && !username) || !password) {
+      return res.status(400).json({ error: 'Se requiere al menos un identificador (Email o Usuario) y una contraseña' });
     }
 
     if (rol && !['admin', 'operador'].includes(rol)) {
       return res.status(400).json({ error: 'El rol debe ser estrictamente "admin" o "operador"' });
     }
 
-    // Verificar si ya existe
-    const existente = await prisma.usuario.findUnique({ where: { email } });
-    if (existente) {
-      // Si se subió una foto pero el usuario ya existe, multer ya la guardó. 
-      // Podríamos borrarla aquí, pero por simplicidad la dejamos o confiamos en limpiezas periódicas.
-      return res.status(400).json({ error: 'El email ya está registrado' });
+    // Verificar si ya existe por email o por username
+    if (email) {
+      const existenteEmail = await prisma.usuario.findUnique({ where: { email } });
+      if (existenteEmail) return res.status(400).json({ error: 'El email ya está registrado' });
+    }
+    if (username) {
+      const existenteUsername = await prisma.usuario.findUnique({ where: { username } });
+      if (existenteUsername) return res.status(400).json({ error: 'El nombre de usuario ya está registrado' });
     }
 
     // Hashear contraseña
@@ -113,13 +115,13 @@ router.post('/', upload.single('foto'), async (req, res) => {
 
     const usuario = await prisma.usuario.create({
       data: {
-        email,
+        email: email || null,
+        username: username || null,
         hash_pass,
         nombres,
         apellidos,
         cargo,
         jornada,
-        sexo: sexo || null,
         foto_path,
         rol: rol || 'operador',
         activo: true
@@ -127,9 +129,9 @@ router.post('/', upload.single('foto'), async (req, res) => {
       select: {
         id: true,
         email: true,
+        username: true,
         nombres: true,
         apellidos: true,
-        sexo: true,
         rol: true,
         activo: true,
         foto_path: true
@@ -195,7 +197,7 @@ router.put('/:id', upload.single('foto'), async (req, res) => {
     }
 
     const id = parseInt(req.params.id);
-    const { email, password, nombres, apellidos, cargo, jornada, sexo, rol, activo } = req.body;
+    const { email, username, password, nombres, apellidos, cargo, jornada, rol, activo } = req.body;
 
     if (rol && !['admin', 'operador'].includes(rol)) {
       return res.status(400).json({ error: 'El rol debe ser estrictamente "admin" o "operador"' });
@@ -204,6 +206,21 @@ router.put('/:id', upload.single('foto'), async (req, res) => {
     const existingUser = await prisma.usuario.findUnique({ where: { id } });
     if (!existingUser) {
       return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    // Validar identificador único si cambia
+    if (email && email !== existingUser.email) {
+      const checkEmail = await prisma.usuario.findUnique({ where: { email } });
+      if (checkEmail) return res.status(400).json({ error: 'El email ya está en uso' });
+    }
+    if (username && username !== existingUser.username) {
+      const checkUser = await prisma.usuario.findUnique({ where: { username } });
+      if (checkUser) return res.status(400).json({ error: 'El nombre de usuario ya está en uso' });
+    }
+
+    // Garantizar que no se quede sin identificador
+    if (!email && !username && !existingUser.email && !existingUser.username) {
+       return res.status(400).json({ error: 'El usuario debe tener al menos un Email o un Nombre de Usuario' });
     }
 
     // Protección de último admin en caso de intentar pasarlo a operador o desactivarlo
@@ -219,12 +236,12 @@ router.put('/:id', upload.single('foto'), async (req, res) => {
 
     // Preparar objeto de datos
     const updateData = {
-      email,
+      email: email !== undefined ? (email || null) : undefined,
+      username: username !== undefined ? (username || null) : undefined,
       nombres,
       apellidos,
       cargo,
       jornada,
-      ...(sexo !== undefined && { sexo }),
       rol,
       activo: activo !== undefined ? (activo === 'true' || activo === true) : undefined
     };
@@ -250,8 +267,8 @@ router.put('/:id', upload.single('foto'), async (req, res) => {
       where: { id },
       data: updateData,
       select: {
-        id: true, email: true, nombres: true, apellidos: true,
-        sexo: true, rol: true, activo: true, foto_path: true, cargo: true
+        id: true, email: true, username: true, nombres: true, apellidos: true,
+        rol: true, activo: true, foto_path: true, cargo: true
       }
     });
 

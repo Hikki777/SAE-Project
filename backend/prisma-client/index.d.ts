@@ -7474,10 +7474,10 @@ export namespace Prisma {
 
   export type UsuarioMinAggregateOutputType = {
     id: number | null
+    username: string | null
     email: string | null
     nombres: string | null
     apellidos: string | null
-    sexo: string | null
     foto_path: string | null
     cargo: string | null
     jornada: string | null
@@ -7490,10 +7490,10 @@ export namespace Prisma {
 
   export type UsuarioMaxAggregateOutputType = {
     id: number | null
+    username: string | null
     email: string | null
     nombres: string | null
     apellidos: string | null
-    sexo: string | null
     foto_path: string | null
     cargo: string | null
     jornada: string | null
@@ -7506,10 +7506,10 @@ export namespace Prisma {
 
   export type UsuarioCountAggregateOutputType = {
     id: number
+    username: number
     email: number
     nombres: number
     apellidos: number
-    sexo: number
     foto_path: number
     cargo: number
     jornada: number
@@ -7532,10 +7532,10 @@ export namespace Prisma {
 
   export type UsuarioMinAggregateInputType = {
     id?: true
+    username?: true
     email?: true
     nombres?: true
     apellidos?: true
-    sexo?: true
     foto_path?: true
     cargo?: true
     jornada?: true
@@ -7548,10 +7548,10 @@ export namespace Prisma {
 
   export type UsuarioMaxAggregateInputType = {
     id?: true
+    username?: true
     email?: true
     nombres?: true
     apellidos?: true
-    sexo?: true
     foto_path?: true
     cargo?: true
     jornada?: true
@@ -7564,10 +7564,10 @@ export namespace Prisma {
 
   export type UsuarioCountAggregateInputType = {
     id?: true
+    username?: true
     email?: true
     nombres?: true
     apellidos?: true
-    sexo?: true
     foto_path?: true
     cargo?: true
     jornada?: true
@@ -7667,10 +7667,10 @@ export namespace Prisma {
 
   export type UsuarioGroupByOutputType = {
     id: number
-    email: string
+    username: string | null
+    email: string | null
     nombres: string | null
     apellidos: string | null
-    sexo: string | null
     foto_path: string | null
     cargo: string | null
     jornada: string | null
@@ -7702,10 +7702,10 @@ export namespace Prisma {
 
   export type UsuarioSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
+    username?: boolean
     email?: boolean
     nombres?: boolean
     apellidos?: boolean
-    sexo?: boolean
     foto_path?: boolean
     cargo?: boolean
     jornada?: boolean
@@ -7720,10 +7720,10 @@ export namespace Prisma {
 
   export type UsuarioSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
+    username?: boolean
     email?: boolean
     nombres?: boolean
     apellidos?: boolean
-    sexo?: boolean
     foto_path?: boolean
     cargo?: boolean
     jornada?: boolean
@@ -7736,10 +7736,10 @@ export namespace Prisma {
 
   export type UsuarioSelectScalar = {
     id?: boolean
+    username?: boolean
     email?: boolean
     nombres?: boolean
     apellidos?: boolean
-    sexo?: boolean
     foto_path?: boolean
     cargo?: boolean
     jornada?: boolean
@@ -7763,10 +7763,10 @@ export namespace Prisma {
     }
     scalars: $Extensions.GetPayloadResult<{
       id: number
-      email: string
+      username: string | null
+      email: string | null
       nombres: string | null
       apellidos: string | null
-      sexo: string | null
       foto_path: string | null
       cargo: string | null
       jornada: string | null
@@ -8170,10 +8170,10 @@ export namespace Prisma {
    */ 
   interface UsuarioFieldRefs {
     readonly id: FieldRef<"Usuario", 'Int'>
+    readonly username: FieldRef<"Usuario", 'String'>
     readonly email: FieldRef<"Usuario", 'String'>
     readonly nombres: FieldRef<"Usuario", 'String'>
     readonly apellidos: FieldRef<"Usuario", 'String'>
-    readonly sexo: FieldRef<"Usuario", 'String'>
     readonly foto_path: FieldRef<"Usuario", 'String'>
     readonly cargo: FieldRef<"Usuario", 'String'>
     readonly jornada: FieldRef<"Usuario", 'String'>
@@ -13690,10 +13690,10 @@ export namespace Prisma {
 
   export const UsuarioScalarFieldEnum: {
     id: 'id',
+    username: 'username',
     email: 'email',
     nombres: 'nombres',
     apellidos: 'apellidos',
-    sexo: 'sexo',
     foto_path: 'foto_path',
     cargo: 'cargo',
     jornada: 'jornada',
@@ -14392,10 +14392,10 @@ export namespace Prisma {
     OR?: UsuarioWhereInput[]
     NOT?: UsuarioWhereInput | UsuarioWhereInput[]
     id?: IntFilter<"Usuario"> | number
-    email?: StringFilter<"Usuario"> | string
+    username?: StringNullableFilter<"Usuario"> | string | null
+    email?: StringNullableFilter<"Usuario"> | string | null
     nombres?: StringNullableFilter<"Usuario"> | string | null
     apellidos?: StringNullableFilter<"Usuario"> | string | null
-    sexo?: StringNullableFilter<"Usuario"> | string | null
     foto_path?: StringNullableFilter<"Usuario"> | string | null
     cargo?: StringNullableFilter<"Usuario"> | string | null
     jornada?: StringNullableFilter<"Usuario"> | string | null
@@ -14409,10 +14409,10 @@ export namespace Prisma {
 
   export type UsuarioOrderByWithRelationInput = {
     id?: SortOrder
-    email?: SortOrder
+    username?: SortOrderInput | SortOrder
+    email?: SortOrderInput | SortOrder
     nombres?: SortOrderInput | SortOrder
     apellidos?: SortOrderInput | SortOrder
-    sexo?: SortOrderInput | SortOrder
     foto_path?: SortOrderInput | SortOrder
     cargo?: SortOrderInput | SortOrder
     jornada?: SortOrderInput | SortOrder
@@ -14426,13 +14426,13 @@ export namespace Prisma {
 
   export type UsuarioWhereUniqueInput = Prisma.AtLeast<{
     id?: number
+    username?: string
     email?: string
     AND?: UsuarioWhereInput | UsuarioWhereInput[]
     OR?: UsuarioWhereInput[]
     NOT?: UsuarioWhereInput | UsuarioWhereInput[]
     nombres?: StringNullableFilter<"Usuario"> | string | null
     apellidos?: StringNullableFilter<"Usuario"> | string | null
-    sexo?: StringNullableFilter<"Usuario"> | string | null
     foto_path?: StringNullableFilter<"Usuario"> | string | null
     cargo?: StringNullableFilter<"Usuario"> | string | null
     jornada?: StringNullableFilter<"Usuario"> | string | null
@@ -14442,14 +14442,14 @@ export namespace Prisma {
     creado_en?: DateTimeFilter<"Usuario"> | Date | string
     actualizado_en?: DateTimeFilter<"Usuario"> | Date | string
     auditorias?: AuditoriaListRelationFilter
-  }, "id" | "email">
+  }, "id" | "username" | "email">
 
   export type UsuarioOrderByWithAggregationInput = {
     id?: SortOrder
-    email?: SortOrder
+    username?: SortOrderInput | SortOrder
+    email?: SortOrderInput | SortOrder
     nombres?: SortOrderInput | SortOrder
     apellidos?: SortOrderInput | SortOrder
-    sexo?: SortOrderInput | SortOrder
     foto_path?: SortOrderInput | SortOrder
     cargo?: SortOrderInput | SortOrder
     jornada?: SortOrderInput | SortOrder
@@ -14470,10 +14470,10 @@ export namespace Prisma {
     OR?: UsuarioScalarWhereWithAggregatesInput[]
     NOT?: UsuarioScalarWhereWithAggregatesInput | UsuarioScalarWhereWithAggregatesInput[]
     id?: IntWithAggregatesFilter<"Usuario"> | number
-    email?: StringWithAggregatesFilter<"Usuario"> | string
+    username?: StringNullableWithAggregatesFilter<"Usuario"> | string | null
+    email?: StringNullableWithAggregatesFilter<"Usuario"> | string | null
     nombres?: StringNullableWithAggregatesFilter<"Usuario"> | string | null
     apellidos?: StringNullableWithAggregatesFilter<"Usuario"> | string | null
-    sexo?: StringNullableWithAggregatesFilter<"Usuario"> | string | null
     foto_path?: StringNullableWithAggregatesFilter<"Usuario"> | string | null
     cargo?: StringNullableWithAggregatesFilter<"Usuario"> | string | null
     jornada?: StringNullableWithAggregatesFilter<"Usuario"> | string | null
@@ -15497,10 +15497,10 @@ export namespace Prisma {
   }
 
   export type UsuarioCreateInput = {
-    email: string
+    username?: string | null
+    email?: string | null
     nombres?: string | null
     apellidos?: string | null
-    sexo?: string | null
     foto_path?: string | null
     cargo?: string | null
     jornada?: string | null
@@ -15514,10 +15514,10 @@ export namespace Prisma {
 
   export type UsuarioUncheckedCreateInput = {
     id?: number
-    email: string
+    username?: string | null
+    email?: string | null
     nombres?: string | null
     apellidos?: string | null
-    sexo?: string | null
     foto_path?: string | null
     cargo?: string | null
     jornada?: string | null
@@ -15530,10 +15530,10 @@ export namespace Prisma {
   }
 
   export type UsuarioUpdateInput = {
-    email?: StringFieldUpdateOperationsInput | string
+    username?: NullableStringFieldUpdateOperationsInput | string | null
+    email?: NullableStringFieldUpdateOperationsInput | string | null
     nombres?: NullableStringFieldUpdateOperationsInput | string | null
     apellidos?: NullableStringFieldUpdateOperationsInput | string | null
-    sexo?: NullableStringFieldUpdateOperationsInput | string | null
     foto_path?: NullableStringFieldUpdateOperationsInput | string | null
     cargo?: NullableStringFieldUpdateOperationsInput | string | null
     jornada?: NullableStringFieldUpdateOperationsInput | string | null
@@ -15547,10 +15547,10 @@ export namespace Prisma {
 
   export type UsuarioUncheckedUpdateInput = {
     id?: IntFieldUpdateOperationsInput | number
-    email?: StringFieldUpdateOperationsInput | string
+    username?: NullableStringFieldUpdateOperationsInput | string | null
+    email?: NullableStringFieldUpdateOperationsInput | string | null
     nombres?: NullableStringFieldUpdateOperationsInput | string | null
     apellidos?: NullableStringFieldUpdateOperationsInput | string | null
-    sexo?: NullableStringFieldUpdateOperationsInput | string | null
     foto_path?: NullableStringFieldUpdateOperationsInput | string | null
     cargo?: NullableStringFieldUpdateOperationsInput | string | null
     jornada?: NullableStringFieldUpdateOperationsInput | string | null
@@ -15564,10 +15564,10 @@ export namespace Prisma {
 
   export type UsuarioCreateManyInput = {
     id?: number
-    email: string
+    username?: string | null
+    email?: string | null
     nombres?: string | null
     apellidos?: string | null
-    sexo?: string | null
     foto_path?: string | null
     cargo?: string | null
     jornada?: string | null
@@ -15579,10 +15579,10 @@ export namespace Prisma {
   }
 
   export type UsuarioUpdateManyMutationInput = {
-    email?: StringFieldUpdateOperationsInput | string
+    username?: NullableStringFieldUpdateOperationsInput | string | null
+    email?: NullableStringFieldUpdateOperationsInput | string | null
     nombres?: NullableStringFieldUpdateOperationsInput | string | null
     apellidos?: NullableStringFieldUpdateOperationsInput | string | null
-    sexo?: NullableStringFieldUpdateOperationsInput | string | null
     foto_path?: NullableStringFieldUpdateOperationsInput | string | null
     cargo?: NullableStringFieldUpdateOperationsInput | string | null
     jornada?: NullableStringFieldUpdateOperationsInput | string | null
@@ -15595,10 +15595,10 @@ export namespace Prisma {
 
   export type UsuarioUncheckedUpdateManyInput = {
     id?: IntFieldUpdateOperationsInput | number
-    email?: StringFieldUpdateOperationsInput | string
+    username?: NullableStringFieldUpdateOperationsInput | string | null
+    email?: NullableStringFieldUpdateOperationsInput | string | null
     nombres?: NullableStringFieldUpdateOperationsInput | string | null
     apellidos?: NullableStringFieldUpdateOperationsInput | string | null
-    sexo?: NullableStringFieldUpdateOperationsInput | string | null
     foto_path?: NullableStringFieldUpdateOperationsInput | string | null
     cargo?: NullableStringFieldUpdateOperationsInput | string | null
     jornada?: NullableStringFieldUpdateOperationsInput | string | null
@@ -16599,10 +16599,10 @@ export namespace Prisma {
 
   export type UsuarioCountOrderByAggregateInput = {
     id?: SortOrder
+    username?: SortOrder
     email?: SortOrder
     nombres?: SortOrder
     apellidos?: SortOrder
-    sexo?: SortOrder
     foto_path?: SortOrder
     cargo?: SortOrder
     jornada?: SortOrder
@@ -16619,10 +16619,10 @@ export namespace Prisma {
 
   export type UsuarioMaxOrderByAggregateInput = {
     id?: SortOrder
+    username?: SortOrder
     email?: SortOrder
     nombres?: SortOrder
     apellidos?: SortOrder
-    sexo?: SortOrder
     foto_path?: SortOrder
     cargo?: SortOrder
     jornada?: SortOrder
@@ -16635,10 +16635,10 @@ export namespace Prisma {
 
   export type UsuarioMinOrderByAggregateInput = {
     id?: SortOrder
+    username?: SortOrder
     email?: SortOrder
     nombres?: SortOrder
     apellidos?: SortOrder
-    sexo?: SortOrder
     foto_path?: SortOrder
     cargo?: SortOrder
     jornada?: SortOrder
@@ -18462,10 +18462,10 @@ export namespace Prisma {
   }
 
   export type UsuarioCreateWithoutAuditoriasInput = {
-    email: string
+    username?: string | null
+    email?: string | null
     nombres?: string | null
     apellidos?: string | null
-    sexo?: string | null
     foto_path?: string | null
     cargo?: string | null
     jornada?: string | null
@@ -18478,10 +18478,10 @@ export namespace Prisma {
 
   export type UsuarioUncheckedCreateWithoutAuditoriasInput = {
     id?: number
-    email: string
+    username?: string | null
+    email?: string | null
     nombres?: string | null
     apellidos?: string | null
-    sexo?: string | null
     foto_path?: string | null
     cargo?: string | null
     jornada?: string | null
@@ -18509,10 +18509,10 @@ export namespace Prisma {
   }
 
   export type UsuarioUpdateWithoutAuditoriasInput = {
-    email?: StringFieldUpdateOperationsInput | string
+    username?: NullableStringFieldUpdateOperationsInput | string | null
+    email?: NullableStringFieldUpdateOperationsInput | string | null
     nombres?: NullableStringFieldUpdateOperationsInput | string | null
     apellidos?: NullableStringFieldUpdateOperationsInput | string | null
-    sexo?: NullableStringFieldUpdateOperationsInput | string | null
     foto_path?: NullableStringFieldUpdateOperationsInput | string | null
     cargo?: NullableStringFieldUpdateOperationsInput | string | null
     jornada?: NullableStringFieldUpdateOperationsInput | string | null
@@ -18525,10 +18525,10 @@ export namespace Prisma {
 
   export type UsuarioUncheckedUpdateWithoutAuditoriasInput = {
     id?: IntFieldUpdateOperationsInput | number
-    email?: StringFieldUpdateOperationsInput | string
+    username?: NullableStringFieldUpdateOperationsInput | string | null
+    email?: NullableStringFieldUpdateOperationsInput | string | null
     nombres?: NullableStringFieldUpdateOperationsInput | string | null
     apellidos?: NullableStringFieldUpdateOperationsInput | string | null
-    sexo?: NullableStringFieldUpdateOperationsInput | string | null
     foto_path?: NullableStringFieldUpdateOperationsInput | string | null
     cargo?: NullableStringFieldUpdateOperationsInput | string | null
     jornada?: NullableStringFieldUpdateOperationsInput | string | null

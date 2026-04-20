@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.1.3] - 2026-04-20
+### ✨ Refactorización del Sistema de Usuarios y Modernización de UI
+- **[Autenticación]** Sistema de acceso flexible (Dual Login).
+  - Nuevo: Soporte para nombres de usuario (`username`) como alternativa única al correo electrónico.
+  - Flexibilidad: El campo `email` ahora es opcional en la creación y edición de usuarios.
+  - Limpieza: Eliminado el campo `sexo` del modelo `Usuario`, centralizando la identidad de acceso en credenciales y cargo.
+  - Seguridad: Ajustado el requisito técnico de contraseña a un mínimo de 6 caracteres.
+- **[Interfaz]** Pulido visual y consistencia de marca.
+  - **Sidebar**: Corregido el botón de cerrar sesión; el icono ahora es visible siempre, incluso con la barra contraída.
+  - **Versión Dinámica**: Eliminadas las referencias hardcodeadas a la versión. El sistema ahora muestra automáticamente la versión definida en `package.json` en el Dashboard (Header), Panel de Configuración y Acerca De.
+- **[Estabilidad]** Correcciones de flujo crítico.
+  - **Setup Wizard**: Unificado el formulario de administrador inicial con los campos profesionales (Cargo, Jornada) del resto del sistema.
+  - **Hotfix**: Corregido error de referencia en el componente de login que impedía el acceso tras los cambios estructurales.
+  - **Integridad**: Garantizada la persistencia de datos de género en los modelos de **Alumnos** y **Personal**, donde siguen siendo necesarios para fines académicos.
+
+
 ## [1.1.2] - 2026-04-13
 ### ✨ Mejoras de Estabilidad y UX (Pulido Final)
 - **[Backups]** Estabilización definitiva del proceso de restauración de archivos binarios v2.0.

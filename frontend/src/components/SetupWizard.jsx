@@ -39,10 +39,10 @@ export default function SetupWizard({ onComplete }) {
     admin_nombres: '',
     admin_apellidos: '',
     admin_email: '',
+    admin_username: '',
     admin_password: '',
     admin_password_confirm: '',
     admin_cargo: '',
-    admin_sexo: '', // Agregado para GenderAvatar
     admin_jornada: '',
     // Logo y Foto (Files)
     logo_base64: null, // Legacy check for preview
@@ -58,7 +58,7 @@ export default function SetupWizard({ onComplete }) {
   
   // Estado para múltiples directores
   const [directores, setDirectores] = useState([
-    { nombres: '', apellidos: '', cargo: 'Director General', sexo: 'Masculino', jornada: 'Matutina', foto_file: null, foto_preview: null }
+    { nombres: '', apellidos: '', cargo: 'Director General', jornada: 'Matutina', foto_file: null, foto_preview: null }
   ]);
 
   const [showWebcam, setShowWebcam] = useState(false);
@@ -319,11 +319,19 @@ export default function SetupWizard({ onComplete }) {
     e.preventDefault();
     console.log('handleSubmit called', formData);
     
-    // Validar formato de email
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.admin_email)) {
-      toast.error('El formato del email no es válido');
+    // Validar identificador (al menos uno requerido)
+    if (!formData.admin_email && !formData.admin_username) {
+      toast.error('Se requiere al menos un identificador (Correo o Nombre de Usuario)');
       return;
+    }
+
+    // Validar formato de email si se proporciona
+    if (formData.admin_email) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.admin_email)) {
+        toast.error('El formato del email no es válido');
+        return;
+      }
     }
     
     // Validar contraseñas coinciden
@@ -333,8 +341,8 @@ export default function SetupWizard({ onComplete }) {
     }
 
     // Validar longitud mínima
-    if (formData.admin_password.length < 8) {
-      toast.error('La contraseña debe tener al menos 8 caracteres');
+    if (formData.admin_password.length < 6) {
+      toast.error('La contraseña debe tener al menos 6 caracteres');
       return;
     }
     
@@ -464,7 +472,7 @@ export default function SetupWizard({ onComplete }) {
               </div>
             </div>
             <div className="text-xs text-blue-300 mt-8">
-              SAE - Sistema de Administración Educativa v1.1.3
+              SAE - Sistema de Administración Educativa v{__APP_VERSION__}
             </div>
           </div>
 
@@ -1039,7 +1047,7 @@ export default function SetupWizard({ onComplete }) {
                           name="admin_cargo"
                           value={formData.admin_cargo}
                           onChange={handleChange}
-                          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 appearance-none bg-white text-gray-900"
+                          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 appearance-none bg-white text-gray-900 font-medium"
                           required
                         >
                           <option value="">Seleccione...</option>
@@ -1055,29 +1063,29 @@ export default function SetupWizard({ onComplete }) {
                           <option value="Subdirectora">Subdirectora</option>
                           <option value="Subdirector Técnico">Subdirector Técnico</option>
                           <option value="Subdirectora Técnica">Subdirectora Técnica</option>
+                          <option value="Docente">Docente</option>
                           <option value="Secretaria">Secretaria</option>
                           <option value="Secretario">Secretario</option>
-                          <option value="Secretaria General">Secretaria General</option>
-                          <option value="Secretario General">Secretario General</option>
+                          <option value="Operativo">Operativo</option>
+                          <option value="Auxiliar">Auxiliar</option>
                         </select>
                       </div>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-900 mb-1">Sexo</label>
+                      <label className="block text-sm font-medium text-gray-900 mb-1">Nombre de Usuario</label>
                       <div className="relative">
-                        <Users className="absolute left-3 top-3 text-gray-400" size={18} />
-                        <select
-                          name="admin_sexo"
-                          value={formData.admin_sexo}
+                        <LogIn className="absolute left-3 top-3 text-gray-400" size={18} />
+                        <input
+                          type="text"
+                          name="admin_username"
+                          value={formData.admin_username}
                           onChange={handleChange}
-                          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 appearance-none bg-white text-gray-900"
-                          required
-                        >
-                          <option value="">Seleccione...</option>
-                          <option value="Masculino">Masculino</option>
-                          <option value="Femenino">Femenino</option>
-                        </select>
+                          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white text-gray-900 font-medium"
+                          placeholder="admin_acceso"
+                          required={!formData.admin_email}
+                        />
                       </div>
+                      <p className="text-[10px] text-gray-500 mt-0.5">Identificador único para entrar al sistema</p>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-900 mb-1">Jornada</label>
@@ -1111,7 +1119,7 @@ export default function SetupWizard({ onComplete }) {
                           {formData.admin_foto_preview ? (
                             <img src={formData.admin_foto_preview} alt="Preview" className="w-full h-full object-cover" />
                           ) : (
-                            <GenderAvatar sexo={formData.admin_sexo} size={35} />
+                            <div className="text-gray-300"><User size={35} /></div>
                           )}
                         </div>
                         <div className="flex gap-2">
@@ -1147,7 +1155,7 @@ export default function SetupWizard({ onComplete }) {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-900 mb-1">Email del Administrador</label>
+                    <label className="block text-sm font-medium text-gray-900 mb-1">Email (Opcional)</label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-3 text-gray-400" size={18} />
                       <input
@@ -1160,8 +1168,8 @@ export default function SetupWizard({ onComplete }) {
                             ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
                             : 'border-gray-300'
                         }`}
-                        placeholder="admin@colegio.edu"
-                        required
+                        placeholder="admin@ejemplo.com"
+                        required={!formData.admin_username}
                       />
                     </div>
                     {formData.admin_email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.admin_email) && (
@@ -1184,7 +1192,7 @@ export default function SetupWizard({ onComplete }) {
                         className="w-full pl-10 pr-12 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
                         placeholder="••••••••"
                         required
-                        minLength={8}
+                        minLength={6}
                       />
                       <button
                         type="button"
@@ -1193,7 +1201,7 @@ export default function SetupWizard({ onComplete }) {
                       >
                         {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                       </button>
-                      <p className="text-xs text-gray-500 mt-1">Mínimo 8 caracteres (mayúsculas, minúsculas, símbolos y números)</p>
+                      <p className="text-xs text-gray-500 mt-1">Mínimo 6 caracteres (mayúsculas o números recomendados)</p>
                     </div>
                     <PasswordStrengthIndicator password={formData.admin_password} />
                   </div>
@@ -1234,7 +1242,7 @@ export default function SetupWizard({ onComplete }) {
                     <button
                       type="button"
                       onClick={() => setStep(3)}
-                      disabled={!formData.admin_email || !formData.admin_password || formData.admin_password !== formData.admin_password_confirm}
+                      disabled={(!formData.admin_email && !formData.admin_username) || !formData.admin_password || formData.admin_password !== formData.admin_password_confirm}
                       className="w-2/3 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
                     >
                       Siguiente
@@ -1339,7 +1347,7 @@ export default function SetupWizard({ onComplete }) {
                                 />
                               ) : (
                                 <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center border-2 border-purple-300">
-                                  <GenderAvatar sexo={director.sexo} size={30} />
+                                  <User size={30} className="text-purple-600" />
                                 </div>
                               )}
                               <div className="flex-1">
@@ -1388,7 +1396,7 @@ export default function SetupWizard({ onComplete }) {
                           />
                         ) : (
                           <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center border-2 border-green-300">
-                            <GenderAvatar sexo={formData.admin_sexo} size={30} />
+                            <User size={30} className="text-green-600" />
                           </div>
                         )}
                         <div className="flex-1">
@@ -1398,14 +1406,16 @@ export default function SetupWizard({ onComplete }) {
                           <p className="text-sm text-green-700 font-medium">
                             {formData.admin_cargo}
                           </p>
-                          {formData.admin_jornada && (
+                          {formData.admin_username && (
                             <p className="text-xs text-gray-600 mt-1">
-                              Jornada: {formData.admin_jornada}
+                              Usuario: <span className="font-bold">{formData.admin_username}</span>
                             </p>
                           )}
-                          <p className="text-xs text-gray-600 mt-1">
-                            Email: {formData.admin_email}
-                          </p>
+                          {formData.admin_email && (
+                            <p className="text-xs text-gray-600 mt-1">
+                              Email: {formData.admin_email}
+                            </p>
+                          )}
                         </div>
                       </div>
                     </div>

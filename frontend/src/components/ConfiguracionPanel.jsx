@@ -727,9 +727,9 @@ const UsuarioSettings = ({ usuarios, loadingUsers, showUserModal, setShowUserMod
                     <div className="relative group/avatar cursor-pointer" onClick={() => onCameraClick(user.id)}>
                       <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center overflow-hidden border border-gray-300 dark:border-gray-600">
                         {user.foto_path ? (
-                          <UserPhoto fotoPath={user.foto_path} nombres={user.nombres} sexo={user.sexo} size="sm" />
+                          <UserPhoto fotoPath={user.foto_path} nombres={user.nombres} size="sm" />
                         ) : (
-                          <GenderAvatar sexo={user.sexo} size={24} />
+                          <User size={24} className="text-gray-400" />
                         )}
                       </div>
                       <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover/avatar:opacity-100 transition-opacity">
@@ -738,7 +738,8 @@ const UsuarioSettings = ({ usuarios, loadingUsers, showUserModal, setShowUserMod
                     </div>
                     <div>
                       <div className="font-medium text-gray-900 dark:text-gray-100">{user.nombres} {user.apellidos}</div>
-                      <div className="text-xs text-gray-500">{user.email}</div>
+                      <div className="text-xs text-blue-600 dark:text-blue-400 font-bold">{user.username || 'Sin Usuario'}</div>
+                      <div className="text-[10px] text-gray-500">{user.email || 'Sin Email'}</div>
                     </div>
                   </div>
                 </td>
@@ -1498,7 +1499,7 @@ const SistemaSettings = ({ currentUser }) => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4">
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Versión</p>
-            <p className="text-xl font-bold text-gray-900 dark:text-gray-100">SAE v1.1.1</p>
+            <p className="text-xl font-bold text-gray-900 dark:text-gray-100">SAE v{__APP_VERSION__}</p>
           </div>
 
           <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4">
@@ -2024,13 +2025,13 @@ export default function ConfiguracionPanel() {
   const [editingUserId, setEditingUserId] = useState(null);
   const [newUser, setNewUser] = useState({
     email: '',
+    username: '',
     password: '',
     nombres: '',
     apellidos: '',
     cargo: '',
     jornada: '',
     rol: 'operador',
-    sexo: 'Masculino',
     foto_file: null,
     foto_preview: null
   });
@@ -2200,13 +2201,13 @@ export default function ConfiguracionPanel() {
     try {
       const formData = new FormData();
       formData.append('email', newUser.email);
+      formData.append('username', newUser.username);
       formData.append('password', newUser.password);
       formData.append('nombres', newUser.nombres);
       formData.append('apellidos', newUser.apellidos);
       formData.append('cargo', newUser.cargo);
       formData.append('jornada', newUser.jornada);
       formData.append('rol', newUser.rol);
-      formData.append('sexo', newUser.sexo);
       
       if (newUser.foto_file) {
         formData.append('foto', newUser.foto_file);
@@ -2234,7 +2235,7 @@ export default function ConfiguracionPanel() {
       formData.append('cargo', newUser.cargo);
       formData.append('jornada', newUser.jornada);
       formData.append('rol', newUser.rol);
-      formData.append('sexo', newUser.sexo);
+      formData.append('username', newUser.username);
       formData.append('activo', newUser.activo);
 
       if (newUser.foto_file) {
@@ -2664,24 +2665,39 @@ export default function ConfiguracionPanel() {
                   />
                 </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium mb-1 dark:text-gray-300">Email</label>
-                <input
-                  type="email"
-                  value={newUser.email}
-                  onChange={e => setNewUser({...newUser, email: e.target.value})}
-                  className="w-full px-3 py-1.5 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white text-sm"
-                  placeholder="correo@ejemplo.com"
-                />
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium mb-1 dark:text-gray-300">Nombre de Usuario</label>
+                  <input
+                    type="text"
+                    value={newUser.username}
+                    onChange={e => setNewUser({...newUser, username: e.target.value})}
+                    className="w-full px-3 py-1.5 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white text-sm"
+                    placeholder="usuario123"
+                    required={!newUser.email}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1 dark:text-gray-300">Email (Opcional)</label>
+                  <input
+                    type="email"
+                    value={newUser.email}
+                    onChange={e => setNewUser({...newUser, email: e.target.value})}
+                    className="w-full px-3 py-1.5 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white text-sm"
+                    placeholder="correo@ejemplo.com"
+                    required={!newUser.username}
+                  />
+                </div>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1 dark:text-gray-300">Contraseña</label>
+                <label className="block text-sm font-medium mb-1 dark:text-gray-300">Contraseña {isEditingUser && "(Dejar vacío para mantener)"}</label>
                 <input
                   type="password"
                   value={newUser.password}
                   onChange={e => setNewUser({...newUser, password: e.target.value})}
                   className="w-full px-3 py-1.5 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white text-sm"
                   placeholder="••••••••"
+                  minLength={6}
                 />
               </div>
               <div className="grid grid-cols-2 gap-3">
@@ -2743,17 +2759,6 @@ export default function ConfiguracionPanel() {
                   <option value="admin">Administrador (Total)</option>
                 </select>
               </div>
-              <div>
-                <label className="block text-sm font-medium mb-1 dark:text-gray-300">Género</label>
-                <select
-                  value={newUser.sexo}
-                  onChange={e => setNewUser({...newUser, sexo: e.target.value})}
-                  className="w-full px-3 py-1.5 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white text-sm"
-                >
-                  <option value="Masculino">Masculino</option>
-                  <option value="Femenino">Femenino</option>
-                </select>
-              </div>
             </div>
 
             <div className="p-5 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 flex justify-end gap-3">
@@ -2763,9 +2768,9 @@ export default function ConfiguracionPanel() {
               >
                 Cancelar
               </button>
-              <button
-                onClick={handleCreateUser}
-                disabled={!newUser.email || (!isEditingUser && !newUser.password)}
+               <button
+                onClick={isEditingUser ? handleUpdateUser : handleCreateUser}
+                disabled={(!newUser.email && !newUser.username) || (!isEditingUser && !newUser.password)}
                 className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg disabled:opacity-50"
               >
                 {isEditingUser ? 'Guardar Cambios' : 'Crear Usuario'}

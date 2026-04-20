@@ -15,7 +15,7 @@ const playSound = (type) => {
 };
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -33,16 +33,14 @@ export default function LoginPage() {
     e.preventDefault();
     setSubmitted(true);
     
-    if (!email || !password) return;
+    if (!identifier || !password) return;
 
     setLoading(true);
     setError(null);
     setSubmitted(true);
     
-    // Validar email
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      setError('Por favor ingresa un email válido');
+    if (!identifier) {
+      setError('Por favor ingresa tu correo o nombre de usuario');
       setLoading(false);
       setShowErrorModal(true);
       setTimeout(() => setShowErrorModal(false), 3000);
@@ -50,7 +48,7 @@ export default function LoginPage() {
     }
 
     try {
-      const { data } = await authAPI.login(email, password);
+      const { data } = await authAPI.login(identifier, password);
       if (data?.accessToken) {
         setLoggedInUser(data.user);
         playSound('success');
@@ -304,23 +302,24 @@ export default function LoginPage() {
         </div>
 
         <form onSubmit={handleLogin} className="space-y-5">
-          {/* Email Input */}
+          {/* Identifier Input (Email or Username) */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1.5 ml-1">Email</label>
+            <label className="block text-sm font-semibold text-gray-700 mb-1.5 ml-1">Correo o Usuario</label>
             <div className="relative group">
               <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none group-focus-within:text-blue-500 transition-colors">
                 <Mail size={18} className="text-gray-400 group-focus-within:text-inherit" />
               </div>
               <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className={`w-full pl-11 pr-4 py-3 bg-white border ${submitted && !email ? 'border-red-500 ring-4 ring-red-500/10' : 'border-gray-200'} rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-gray-900 placeholder-gray-400 shadow-sm`}
-                placeholder="usuario@dominio.com"
+                type="text"
+                value={identifier}
+                onChange={(e) => setIdentifier(e.target.value)}
+                className={`w-full pl-11 pr-4 py-3 bg-white border ${submitted && !identifier ? 'border-red-500 ring-4 ring-red-500/10' : 'border-gray-200'} rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-gray-900 placeholder-gray-400 shadow-sm font-medium`}
+                placeholder="Identificador de acceso"
+                autoComplete="username"
                 required
               />
             </div>
-            {submitted && !email && <p className="text-red-500 text-xs mt-1 ml-1 font-medium">Ingresa un correo válido</p>}
+            {submitted && !identifier && <p className="text-red-500 text-xs mt-1 ml-1 font-medium">Ingresa un usuario o correo</p>}
           </div>
 
           {/* Password Input */}

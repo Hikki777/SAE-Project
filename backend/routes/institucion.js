@@ -120,11 +120,12 @@ router.post(
   [
     // Validaciones (Nota: al usar multer, req.body se procesa después de los archivos)
     check('nombre').notEmpty().withMessage('El nombre es obligatorio'),
-    check('email').optional({ checkFalsy: true }).isEmail().withMessage('Email inválido'),
-    check('admin_email').isEmail().withMessage('Email de administrador inválido'),
+    check('email').optional({ checkFalsy: true }).isEmail().withMessage('Email institucional inválido'),
+    check('admin_email').optional({ checkFalsy: true }).isEmail().withMessage('Email de administrador inválido'),
+    check('admin_username').optional({ checkFalsy: true }).isLength({ min: 3 }).withMessage('El usuario debe tener al menos 3 caracteres'),
     check('admin_password')
-      .isLength({ min: 8 })
-      .withMessage('La contraseña debe tener al menos 8 caracteres'),
+      .isLength({ min: 6 })
+      .withMessage('La contraseña debe tener al menos 6 caracteres'),
     handleValidationErrors,
   ],
   async (req, res) => {
@@ -140,6 +141,7 @@ router.post(
         email, // Email institucional
         telefono,
         admin_email,
+        admin_username,
         admin_password,
         admin_nombres,
         admin_apellidos,
@@ -152,9 +154,9 @@ router.post(
       const debugBody = { ...req.body };
       logger.info({ body: debugBody, files: req.files }, '[DEBUG] Entering /init route');
 
-      if (!nombre || !admin_email || !admin_password) {
+      if (!nombre || (!admin_email && !admin_username) || !admin_password) {
         return res.status(400).json({
-          error: 'Faltan parámetros requeridos: nombre, admin_email, admin_password',
+          error: 'Faltan parámetros requeridos: nombre, identificador de admin (email/usuario) y contraseña',
         });
       }
 
@@ -220,9 +222,14 @@ router.post(
         // 2. Crear Admin
         const hash_pass = await bcrypt.hash(admin_password, 10);
 
-        // Upsert admin para evitar errores si se re-ejecuta
+        // Buscar si ya existe para hacer upsert correcto
+        let existingAdmin = null;
+        if (admin_email) existingAdmin = await tx.usuario.findUnique({ where: { email: admin_email } });
+        if (!existingAdmin && admin_username) existingAdmin = await tx.usuario.findUnique({ where: { username: admin_username } });
+
         const adminData = {
-          email: admin_email,
+          email: admin_email || null,
+          username: admin_username || null,
           hash_pass,
           nombres: admin_nombres,
           apellidos: admin_apellidos || 'Sistema',
@@ -230,14 +237,19 @@ router.post(
           jornada: admin_jornada || 'Matutina',
           rol: 'admin',
           activo: true,
-          foto_path: adminFotoPath, // Guardar foto si existe
+          foto_path: adminFotoPath,
         };
 
-        await tx.usuario.upsert({
-          where: { email: admin_email },
-          update: adminData,
-          create: adminData,
-        });
+        if (existingAdmin) {
+          await tx.usuario.update({
+            where: { id: existingAdmin.id },
+            data: adminData,
+          });
+        } else {
+          await tx.usuario.create({
+            data: adminData,
+          });
+        }
 
         // 3. Crear Directores (si existen)
         let directoresList = [];

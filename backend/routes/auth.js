@@ -11,30 +11,40 @@ const router = express.Router();
 // POST /api/auth/login - Con rate limiting y validación
 router.post('/login', loginLimiter, validarLogin, async (req, res) => {
   try {
-    const { email, password } = req.body;
-    if (!email || !password) {
-      return res.status(400).json({ error: 'Email y contraseña son requeridos' });
+    const { identifier, password } = req.body;
+    if (!identifier || !password) {
+      return res.status(400).json({ error: 'Identificador y contraseña son requeridos' });
     }
 
-    const user = await prisma.usuario.findUnique({ where: { email } });
+    // Buscar por email o por username
+    const user = await prisma.usuario.findFirst({ 
+      where: {
+        OR: [
+          { email: identifier },
+          { username: identifier }
+        ]
+      }
+    });
+
     if (!user || !user.activo) {
       return res.status(401).json({ error: 'Credenciales inválidas' });
     }
 
     const ok = await bcrypt.compare(password, user.hash_pass);
     if (!ok) {
-      logger.warn({ email, userId: user.id }, '[WARNING] Intento de login con contraseña incorrecta');
+      logger.warn({ identifier, userId: user.id }, '[WARNING] Intento de login con contraseña incorrecta');
       return res.status(401).json({ error: 'Credenciales inválidas' });
     }
 
     const token = signJWT(user);
-    logger.info({ userId: user.id, email, rol: user.rol }, '[OK] Login exitoso');
+    logger.info({ userId: user.id, identifier, rol: user.rol }, '[OK] Login exitoso');
     
     return res.json({
       accessToken: token,
       user: { 
         id: user.id, 
         email: user.email, 
+        username: user.username,
         rol: user.rol,
         nombres: user.nombres,
         apellidos: user.apellidos,
@@ -43,7 +53,7 @@ router.post('/login', loginLimiter, validarLogin, async (req, res) => {
       }
     });
   } catch (err) {
-    logger.error({ err, email: req.body.email }, '[ERROR] Error en login');
+    logger.error({ err, identifier: req.body.identifier }, '[ERROR] Error en login');
     return res.status(500).json({ error: 'Error iniciando sesión' });
   }
 });
@@ -56,6 +66,7 @@ router.get('/me', verifyJWT, async (req, res) => {
       select: { 
         id: true, 
         email: true, 
+        username: true,
         rol: true, 
         activo: true, 
         creado_en: true,
@@ -79,10 +90,10 @@ router.get('/me', verifyJWT, async (req, res) => {
 // POST /api/auth/reset-admin - Recuperación de administrador mediante Llave Maestra
 router.post('/reset-admin', async (req, res) => {
   try {
-    const { email, masterKey, newPassword } = req.body;
+    const { identifier, masterKey, newPassword } = req.body;
 
-    if (!email || !masterKey || !newPassword) {
-      return res.status(400).json({ error: 'Faltan datos requeridos (email, llave, nueva contraseña)' });
+    if (!identifier || !masterKey || !newPassword) {
+      return res.status(400).json({ error: 'Faltan datos requeridos (identificador, llave, nueva contraseña)' });
     }
 
     // 1. Verificar la Llave Maestra en la Institución
@@ -93,12 +104,20 @@ router.post('/reset-admin', async (req, res) => {
 
     const keyMatch = await bcrypt.compare(masterKey, institucion.master_recovery_key);
     if (!keyMatch) {
-      logger.warn({ email }, '[SECURITY] Intento de reset-admin con llave maestra incorrecta');
+      logger.warn({ identifier }, '[SECURITY] Intento de reset-admin con llave maestra incorrecta');
       return res.status(401).json({ error: 'Llave Maestra incorrecta' });
     }
 
     // 2. Verificar que el usuario sea Admin
-    const user = await prisma.usuario.findUnique({ where: { email } });
+    const user = await prisma.usuario.findFirst({ 
+      where: {
+        OR: [
+          { email: identifier },
+          { username: identifier }
+        ]
+      }
+    });
+
     if (!user) {
       return res.status(404).json({ error: 'Usuario no encontrado' });
     }
@@ -110,7 +129,7 @@ router.post('/reset-admin', async (req, res) => {
     // 3. Actualizar contraseña
     const hash = await bcrypt.hash(newPassword, 10);
     await prisma.usuario.update({
-      where: { email },
+      where: { id: user.id },
       data: { hash_pass: hash, activo: true }
     });
 

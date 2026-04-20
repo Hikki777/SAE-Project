@@ -400,6 +400,7 @@ function App() {
                   <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">
                     <h1 className="text-xs font-bold text-white dark:bg-clip-text dark:text-transparent dark:bg-gradient-to-r dark:from-blue-400 dark:to-emerald-400 truncate max-w-[200px] whitespace-normal leading-tight">
                       Sistema de Administración Educativa - SAE
+                      <span className="block text-[10px] opacity-70 mt-0.5">Versión {__APP_VERSION__}</span>
                     </h1>
                   </div>
                 </div>
@@ -471,7 +472,7 @@ function App() {
                   <div className="w-8 flex justify-center flex-shrink-0">
                     <LogOut size={20} />
                   </div>
-                  <span className="opacity-0 group-hover:opacity-100 transition-all duration-300 whitespace-nowrap delay-100 overflow-hidden w-0 group-hover:w-auto">
+                  <span className="opacity-0 group-hover:opacity-100 transition-all duration-300 whitespace-nowrap overflow-hidden w-0 group-hover:w-auto">
                     Cerrar Sesión
                   </span>
                 </button>

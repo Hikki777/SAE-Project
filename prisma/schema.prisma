@@ -129,10 +129,10 @@ model Asistencia {
 
 model Usuario {
   id             Int         @id @default(autoincrement())
-  email          String      @unique
+  username       String?     @unique
+  email          String?     @unique
   nombres        String?
   apellidos      String?
-  sexo           String?
   foto_path      String?
   cargo          String?
   jornada        String?

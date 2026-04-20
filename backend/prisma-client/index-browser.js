@@ -209,10 +209,10 @@ exports.Prisma.AsistenciaScalarFieldEnum = {
 
 exports.Prisma.UsuarioScalarFieldEnum = {
   id: 'id',
+  username: 'username',
   email: 'email',
   nombres: 'nombres',
   apellidos: 'apellidos',
-  sexo: 'sexo',
   foto_path: 'foto_path',
   cargo: 'cargo',
   jornada: 'jornada',

@@ -208,11 +208,9 @@ exports.validarActualizarDocente = [
  * Validaciones para Autenticación
  */
 exports.validarLogin = [
-  body('email')
+  body('identifier')
     .trim()
-    .notEmpty().withMessage('El email es requerido')
-    .isEmail().withMessage('Email inválido')
-    .normalizeEmail(),
+    .notEmpty().withMessage('El identificador (email o usuario) es requerido'),
   
   body('password')
     .notEmpty().withMessage('La contraseña es requerida')
@@ -223,15 +221,20 @@ exports.validarLogin = [
 
 exports.validarRegistroUsuario = [
   body('email')
+    .optional({ checkFalsy: true })
     .trim()
-    .notEmpty().withMessage('El email es requerido')
     .isEmail().withMessage('Email inválido')
     .normalizeEmail(),
+
+  body('username')
+    .optional({ checkFalsy: true })
+    .trim()
+    .isLength({ min: 3, max: 30 }).withMessage('El nombre de usuario debe tener entre 3 y 30 caracteres')
+    .matches(/^[a-zA-Z0-9._-]+$/).withMessage('El nombre de usuario solo puede contener letras, números, puntos, guiones y guiones bajos'),
   
   body('password')
     .notEmpty().withMessage('La contraseña es requerida')
-    .isLength({ min: 8 }).withMessage('La contraseña debe tener al menos 8 caracteres')
-    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/).withMessage('La contraseña debe contener mayúsculas, minúsculas y números'),
+    .isLength({ min: 6 }).withMessage('La contraseña debe tener al menos 6 caracteres'),
   
   body('rol')
     .optional()
@@ -321,14 +324,19 @@ exports.validarInicializarInstitucion = [
     .matches(/^data:image\/(png|jpeg|jpg);base64,/).withMessage('Logo debe ser base64 válido (PNG/JPEG)'),
   
   body('admin_email')
+    .optional({ checkFalsy: true })
     .trim()
-    .notEmpty().withMessage('El email del admin es requerido')
     .isEmail().withMessage('Email inválido')
     .normalizeEmail(),
+
+  body('admin_username')
+    .optional({ checkFalsy: true })
+    .trim()
+    .isLength({ min: 3, max: 30 }).withMessage('El nombre de usuario debe tener entre 3 y 30 caracteres'),
   
   body('admin_password')
     .notEmpty().withMessage('La contraseña del admin es requerida')
-    .isLength({ min: 8 }).withMessage('La contraseña debe tener al menos 8 caracteres'),
+    .isLength({ min: 6 }).withMessage('La contraseña debe tener al menos 6 caracteres'),
   
   body('horario_inicio')
     .optional()
