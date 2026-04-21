@@ -6,9 +6,11 @@ import {
   AlertTriangle,
   TrendingUp,
   Calendar,
+  Clock,
   Wifi,
   WifiOff,
   Briefcase,
+  Layers,
 } from "lucide-react";
 import {
   LineChart,
@@ -138,6 +140,15 @@ export default function Dashboard() {
   const [asistenciasStats, setAsistenciasStats] = useState(null);
   const [dashboardStats, setDashboardStats] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  // Reloj dinámico
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   // Estado de red local y cola
   const [isNetworkOnline, setIsNetworkOnline] = useState(navigator.onLine);
@@ -374,26 +385,24 @@ export default function Dashboard() {
                   </div>
                 )}
 
-                <div className="flex items-center text-sm text-blue-100/90 mt-4">
-                  <span className="mr-3">SAE v{__APP_VERSION__}</span>
+                <div className="flex flex-wrap items-center gap-3 mt-4 isolate">
+                  {/* Version Badge */}
+                  <span className="flex items-center gap-1.5 bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/10 text-sm text-blue-50 font-medium hover:bg-white/20 transition-all">
+                    <span className="opacity-70">🏷️</span>{" "}
+                    SAE v{__APP_VERSION__}
+                  </span>
 
-                  {/* --- PILL START --- */}
-                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/20 backdrop-blur-md shadow-lg transition-all hover:bg-white/20">
-                    {/* The green dot with pulse animation */}
-                    <span className="relative flex h-2.5 w-2.5">
-                      <span
-                        className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${isNetworkOnline ? "bg-emerald-400" : "bg-red-400"}`}
-                      ></span>
-                      <span
-                        className={`relative inline-flex rounded-full h-2.5 w-2.5 ${isNetworkOnline ? "bg-emerald-500" : "bg-red-500"}`}
-                      ></span>
+                  {/* Connectivity Badge */}
+                  <div className="flex items-center gap-2 bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/10 text-sm text-blue-50 font-medium hover:bg-white/20 transition-all">
+                    {/* Pulsing dot isolated */}
+                    <span className="relative flex shrink-0 h-2 w-2 transform-gpu">
+                      <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 transform-gpu ${isNetworkOnline ? "bg-emerald-400" : "bg-red-400"}`}></span>
+                      <span className={`relative inline-flex rounded-full h-2 w-2 ${isNetworkOnline ? "bg-emerald-500" : "bg-red-500"}`}></span>
                     </span>
-                    {/* The text */}
-                    <span className="font-medium text-xs text-white">
+                    <span className="text-white">
                       {isNetworkOnline ? "Sistema En Línea" : "Sin Conexión"}
                     </span>
                   </div>
-                  {/* --- PILL END --- */}
                 </div>
               </div>
             </div>
@@ -428,6 +437,52 @@ export default function Dashboard() {
           </div>
         </div>
       )}
+
+      {/* Dynamic Date and Time Card */}
+      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-gray-100 dark:border-slate-700 transition-all hover:shadow-xl group overflow-hidden relative">
+        {/* Decorative corner icon */}
+        <div className="absolute -right-6 -bottom-6 opacity-[0.03] dark:opacity-[0.05] group-hover:scale-110 transition-transform duration-500">
+          <Clock size={120} />
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 relative z-10">
+          {/* Left: Date */}
+          <div className="flex items-center gap-4 p-5 md:pr-10 md:justify-center">
+            <div className="bg-blue-50 dark:bg-blue-900/30 p-3 rounded-xl text-blue-600 dark:text-blue-400 shadow-inner">
+              <Calendar size={24} />
+            </div>
+            <div>
+              <p className="text-[10px] uppercase font-black tracking-[0.2em] text-blue-600 dark:text-blue-400 mb-0.5">Fecha Actual</p>
+              <h3 className="text-base md:text-lg font-bold text-slate-800 dark:text-slate-100 capitalize">
+                {currentTime.toLocaleDateString('es-ES', { 
+                  weekday: 'long', 
+                  day: 'numeric', 
+                  month: 'long', 
+                  year: 'numeric' 
+                })}
+              </h3>
+            </div>
+          </div>
+
+          {/* Right: Time */}
+          <div className="flex items-center gap-4 p-5 md:pl-10 md:justify-center border-t md:border-t-0 md:border-l border-gray-100 dark:border-slate-700 bg-slate-50/30 dark:bg-slate-900/10">
+            <div className="bg-slate-100 dark:bg-slate-700/50 p-3 rounded-xl text-slate-600 dark:text-slate-300 shadow-inner group-hover:rotate-12 transition-transform order-last md:order-first">
+              <Clock size={24} />
+            </div>
+            <div className="text-left md:text-right flex-1 md:flex-none">
+              <p className="text-[10px] uppercase font-black tracking-[0.2em] text-slate-400 dark:text-slate-500 mb-0.5">Hora del Sistema</p>
+              <h3 className="text-2xl md:text-3xl font-black text-slate-900 dark:text-white tracking-widest font-mono">
+                {currentTime.toLocaleTimeString('es-ES', { 
+                  hour: '2-digit', 
+                  minute: '2-digit', 
+                  second: '2-digit',
+                  hour12: true 
+                })}
+              </h3>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Sync Queue Warning (Only if pending) */}
       {isNetworkOnline && pendingSync > 0 && (

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import client from '../api/client';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
-import { School, User, Lock, Clock, CheckCircle, MapPin, Mail, Phone, LogOut, Upload, Edit2, Server, Wifi, Globe, Eye, EyeOff, Copy, Download, Users, Camera } from 'lucide-react';
+import { School, User, Lock, Clock, CheckCircle, MapPin, Mail, Phone, LogOut, LogIn, Upload, Edit2, Server, Wifi, Globe, Eye, EyeOff, Copy, Download, Users, Camera, Network, Info } from 'lucide-react';
 import ConnectionModal from './ConnectionModal';
 import PasswordStrengthIndicator from './PasswordStrengthIndicator';
 import GenderAvatar from './GenderAvatar';
@@ -514,106 +514,90 @@ export default function SetupWizard({ onComplete }) {
 
 
 
-                {/* Restaurar desde Backup */}
-                <div className="border-2 border-purple-100 rounded-xl p-6 bg-purple-50/30 opacity-60 cursor-not-allowed">
-                  <div className="flex items-center gap-4 mb-4">
-                    <div className="bg-purple-100 p-3 rounded-full text-purple-700">
-                      <Upload size={32} />
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="text-lg font-bold text-gray-900">Restaurar desde Backup</h3>
-                      <p className="text-gray-600 text-sm">
-                        Reinstala el sistema recuperando datos desde un archivo de respaldo (.bak)
-                      </p>
-                    </div>
+
+                {/* Conectar a Servidor Existente (Cliente) */}
+                <div className="border-2 border-green-100 rounded-2xl p-8 bg-gradient-to-br from-white to-green-50/30 shadow-sm hover:shadow-md transition-all group relative overflow-hidden">
+                  {/* Decoración de fondo */}
+                  <div className="absolute -right-4 -top-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                    <Wifi size={120} className="text-green-600" />
                   </div>
 
-                  <div className="mt-4 space-y-3">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-500 mb-2">
-                        Selecciona el archivo de backup
-                      </label>
-                      <input
-                        type="file"
-                        accept=".bak"
-                        disabled
-                        className="w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-gray-200 file:text-gray-500 cursor-not-allowed"
-                      />
-                      <p className="text-xs text-gray-400 mt-1">
-                        Solo archivos .bak generados por el sistema
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      disabled
-                      className="w-full bg-gray-300 text-gray-500 font-bold py-2 rounded-lg cursor-not-allowed"
-                    >
-                      Restaurar Sistema
-                    </button>
-                    <p className="text-xs text-amber-600 text-center font-medium">
-                      ⚠️ Función en desarrollo - Próximamente disponible
-                    </p>
-                  </div>
-                </div>
-
-
-
-                {/* Conectar a Servidor Existente */}
-                <div className="border-2 border-gray-200 rounded-xl p-6 hover:border-green-300 transition-colors">
-                  <div className="flex items-center gap-4 mb-4">
-                    <div className="bg-green-100 p-3 rounded-full text-green-700">
-                      <Wifi size={32} />
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-bold text-gray-900">Conectar a Existente (Cliente)</h3>
-                      <p className="text-gray-600 text-sm">
-                        Conecta este equipo a un servidor local en tu red.
-                      </p>
-                    </div>
-                  </div>
-
-                  <form onSubmit={handleConnect} className="mt-4 space-y-3">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-900 mb-1">URL del Servidor</label>
-                      <div className="relative">
-                        <Server className="absolute left-3 top-3 text-gray-400" size={18} />
-                        <input
-                          type="url"
-                          value={serverUrl}
-                          onChange={(e) => setServerUrl(e.target.value)}
-                          placeholder="http://192.168.1.100:58824"
-                          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white text-gray-900"
-                          required
-                        />
+                  <div className="relative z-10">
+                    <div className="flex items-center gap-5 mb-6">
+                      <div className="bg-green-100 p-4 rounded-2xl text-green-700 shadow-inner group-hover:bg-green-600 group-hover:text-white transition-all transform group-hover:rotate-6">
+                        <Wifi size={32} />
                       </div>
-                      <p className="text-xs text-gray-500 mt-1">
-                        Ingresa la URL del servidor local (ej. http://192.168.1.100:58824).
-                      </p>
+                      <div>
+                        <h3 className="text-xl font-black text-gray-900 tracking-tight">Conectar como Equipo Cliente</h3>
+                        <p className="text-gray-600 text-sm leading-relaxed">
+                          Sincroniza este dispositivo con un servidor central en tu red local.
+                        </p>
+                      </div>
                     </div>
-                    <button
-                      type="submit"
-                      disabled={connectionStatus === 'checking' || connectionStatus === 'success'}
-                      className={`w-full font-bold py-2 rounded-lg transition-all flex items-center justify-center gap-2 ${
-                        connectionStatus === 'success' 
-                          ? 'bg-green-500 text-white' 
-                          : 'bg-green-600 hover:bg-green-700 text-white'
-                      }`}
-                    >
-                      {connectionStatus === 'checking' ? (
-                        <>
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
-                          Conectando...
-                        </>
-                      ) : connectionStatus === 'success' ? (
-                        <>
-                          <CheckCircle size={18} />
-                          ¡Conectado!
-                        </>
-                      ) : (
-                        'Conectar'
-                      )}
-                    </button>
-                  </form>
+
+                    <div className="bg-white/60 backdrop-blur-sm border border-green-200/50 rounded-xl p-4 mb-6">
+                      <div className="flex items-start gap-3">
+                        <Info size={18} className="text-green-600 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <p className="text-xs font-bold text-green-800 uppercase tracking-wider mb-1">¿Dónde encuentro la URL?</p>
+                          <p className="text-xs text-gray-500 leading-relaxed">
+                            En el servidor principal, ve a <span className="font-semibold text-gray-700">Configuración > Red</span>. 
+                            Verás un código QR o la dirección IP que debes ingresar aquí.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <form onSubmit={handleConnect} className="space-y-4">
+                      <div>
+                        <label className="block text-xs font-bold text-gray-700 uppercase tracking-widest mb-2 ml-1">Dirección del Servidor</label>
+                        <div className="relative group/input">
+                          <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within/input:text-green-600 transition-colors">
+                            <Network size={20} />
+                          </div>
+                          <input
+                            type="url"
+                            value={serverUrl}
+                            onChange={(e) => setServerUrl(e.target.value)}
+                            placeholder="http://192.168.1.xxx:58824"
+                            className="w-full pl-12 pr-4 py-4 border-2 border-gray-100 rounded-2xl focus:ring-4 focus:ring-green-500/10 focus:border-green-500 bg-white text-gray-900 font-mono text-sm transition-all shadow-inner"
+                            required
+                          />
+                        </div>
+                        <div className="flex items-center gap-2 mt-2 ml-1">
+                          <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>
+                          <p className="text-[11px] text-gray-400">Ejemplo: http://192.168.1.50:58824</p>
+                        </div>
+                      </div>
+
+                      <button
+                        type="submit"
+                        disabled={connectionStatus === 'connecting' || connectionStatus === 'connected'}
+                        className={`w-full font-black py-4 rounded-2xl transition-all flex items-center justify-center gap-3 shadow-lg transform active:scale-95 ${
+                          connectionStatus === 'connected' 
+                            ? 'bg-green-500 text-white shadow-green-200' 
+                            : 'bg-green-600 hover:bg-green-700 text-white shadow-green-200 hover:shadow-xl'
+                        }`}
+                      >
+                        {connectionStatus === 'connecting' ? (
+                          <>
+                            <div className="animate-spin rounded-full h-5 w-5 border-2 border-white/30 border-t-white" />
+                            <span>Buscando Servidor...</span>
+                          </>
+                        ) : connectionStatus === 'connected' ? (
+                          <>
+                            <CheckCircle size={22} />
+                            <span>¡Conexión Exitosa!</span>
+                          </>
+                        ) : (
+                          <>
+                            <LogIn size={20} />
+                            <span>Vincular con Servidor</span>
+                          </>
+                        )}
+                      </button>
+                    </form>
+                  </div>
                 </div>
               </div>
             )}

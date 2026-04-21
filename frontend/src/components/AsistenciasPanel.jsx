@@ -169,6 +169,7 @@ export default function AsistenciasPanel() {
     // Verificar la hora con internet y prevenir fraudes o desincronización
     const verificarHoraSistema = async () => {
       const fechaLocal = new Date();
+      // Mostramos la local inicialmente por si fallan las APIs
       setHoraInternet(fechaLocal.toLocaleString('es-ES'));
 
       const intentarFetch = async (url, timeoutMs) => {
@@ -177,7 +178,12 @@ export default function AsistenciasPanel() {
         try {
           const response = await fetch(url, { signal: controller.signal });
           clearTimeout(timeoutId);
-          if (response.ok) return await response.json();
+          if (response.ok) {
+            // Intentamos obtener la hora del Header 'Date' (más confiable y siempre en UTC)
+            const serverDateHeader = response.headers.get('Date');
+            const data = await response.json();
+            return { data, serverDateHeader };
+          }
           return null;
         } catch (e) {
           clearTimeout(timeoutId);
@@ -186,33 +192,50 @@ export default function AsistenciasPanel() {
       };
 
       try {
-        // Intentar con API 1: WorldTimeAPI (IP based)
-        let data = await intentarFetch('https://worldtimeapi.org/api/ip', 5000);
+        // Intentar con API 1: Time.now (Nueva API recomendada)
+        let result = await intentarFetch('https://time.now/developer/api/ip', 5000);
         
-        // Si falla, intentar con API 2: TimeAPI (Stable fallback)
-        if (!data) {
-          data = await intentarFetch('https://www.timeapi.io/api/Time/current/zone?timeZone=UTC', 5000);
+        // Si falla, intentar con API 2: WorldTimeAPI (Fallback)
+        if (!result) {
+          result = await intentarFetch('https://worldtimeapi.org/api/ip', 5000);
         }
 
-        if (data) {
-          // Extraer fecha según la estructura de la API que respondió
-          const fechaIso = data.datetime || data.dateTime;
-          if (!fechaIso) return;
+        if (result) {
+          const { data, serverDateHeader } = result;
+          
+          // Prioridad 1: utc_datetime de la API (estándar Z)
+          // Prioridad 2: datetime de la API
+          // Prioridad 3: Header 'Date' del servidor (Siempre UTC)
+          const fechaIso = data.utc_datetime || data.datetime || data.dateTime;
+          
+          let fechaInternet;
+          if (fechaIso) {
+            // Normalizar: Si no termina en Z ni tiene offset (+/-), forzar Z para que sea UTC
+            const normalizedIso = (fechaIso.includes('Z') || /[\+\-]\d{2}:\d{2}$/.test(fechaIso)) 
+              ? fechaIso 
+              : fechaIso + 'Z';
+            fechaInternet = new Date(normalizedIso);
+          } else if (serverDateHeader) {
+            fechaInternet = new Date(serverDateHeader);
+          }
 
-          const fechaInternet = new Date(fechaIso);
+          if (!fechaInternet || isNaN(fechaInternet.getTime())) return;
+
           setHoraInternet(fechaInternet.toLocaleString('es-ES'));
 
-          // Comparar si la diferencia de hora es mayor a 5 minutos
+          // Comparar diferencia en milisegundos (ambos son ahora objetos Date válidos en UTC/Local sincronizados)
           const diffMinutos = Math.abs((fechaInternet.getTime() - fechaLocal.getTime()) / 60000);
+          
           if (diffMinutos > 5) {
+            // Usar una clave única para el toast para evitar duplicados visuales
             toast.error(
               '⚠️ La hora de esta computadora es incorrecta. Por favor ajusta el reloj del sistema para evitar errores en registros.', 
-              { duration: 8000 }
+              { duration: 8000, id: 'time-sync-error' }
             );
           }
         }
       } catch (error) {
-        // Silencioso: Fallback a hora local ya seteado al inicio
+        // Silencioso: Fallback a hora local ya seteado
       }
     };
 
