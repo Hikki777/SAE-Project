@@ -541,7 +541,7 @@ export default function SetupWizard({ onComplete }) {
                         <div>
                           <p className="text-xs font-bold text-green-800 uppercase tracking-wider mb-1">¿Dónde encuentro la URL?</p>
                           <p className="text-xs text-gray-500 leading-relaxed">
-                            En el servidor principal, ve a <span className="font-semibold text-gray-700">Configuración > Red</span>. 
+                            En el servidor principal, ve a <span className="font-semibold text-gray-700">Configuración &gt; Red</span>. 
                             Verás un código QR o la dirección IP que debes ingresar aquí.
                           </p>
                         </div>

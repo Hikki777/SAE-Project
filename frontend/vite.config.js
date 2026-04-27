@@ -73,7 +73,7 @@ export default defineConfig({
   build: {
     sourcemap: false,
     reportCompressedSize: false,
-    chunkSizeWarningLimit: 1000, // Aumentado
+    chunkSizeWarningLimit: 3500, // Aumentado para silenciar warning de vendor chunk grande
     rollupOptions: {
       output: {
         // manualChunks eliminado para dejar que Vite maneje las dependencias correctamente

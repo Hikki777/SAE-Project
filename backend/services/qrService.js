@@ -44,11 +44,45 @@ async function obtenerImagenBuffer(fuente) {
 }
 
 /**
- * Generar QR con logo centrado y subir al almacenamiento
+ * Crear buffer SVG con texto (carnet)
+ * Usado para texto debajo del QR
  */
-async function generarQrConLogo(token, logoFuente, filename, size = 600) {
+async function crearTextoCarnet(carnet, width = 600) {
+  const textSize = Math.max(24, Math.floor(width / 20)); // Escalar texto según QR
+  const padding = 20;
+  const height = textSize + padding * 2;
+  
+  const svg = `
+    <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+      <rect width="${width}" height="${height}" fill="white"/>
+      <text 
+        x="${width / 2}" 
+        y="${height / 2 + textSize / 3}" 
+        font-family="Arial, sans-serif" 
+        font-size="${textSize}" 
+        font-weight="bold"
+        text-anchor="middle" 
+        fill="black"
+      >
+        ${carnet || 'Carnet'}
+      </text>
+    </svg>
+  `;
+  
+  return Buffer.from(svg);
+}
+
+/**
+ * Generar QR con logo centrado y carnet debajo
+ * @param {string} token - Token para el QR
+ * @param {string} logoFuente - Logo (Base64, URL o ruta)
+ * @param {string} filename - Nombre del archivo
+ * @param {string} carnet - Número de carnet a mostrar debajo
+ * @param {number} size - Tamaño del QR (default 600)
+ */
+async function generarQrConLogo(token, logoFuente, filename, carnet = '', size = 600) {
   try {
-    // Generar QR
+    // 1. Generar QR
     const qrBuffer = await QRCode.toBuffer(token, {
       errorCorrectionLevel: 'H',
       type: 'png',
@@ -58,10 +92,10 @@ async function generarQrConLogo(token, logoFuente, filename, size = 600) {
 
     const logoBuffer = await obtenerImagenBuffer(logoFuente);
     
-    let finalBuffer = qrBuffer;
+    let qrFinal = qrBuffer;
 
+    // 2. Agregar logo si existe
     if (logoBuffer) {
-      // Redimensionar logo al ~20% del tamaño del QR
       const logoSize = Math.round(size * 0.20);
       const logoResized = await sharp(logoBuffer)
         .resize(logoSize, logoSize, {
@@ -70,8 +104,7 @@ async function generarQrConLogo(token, logoFuente, filename, size = 600) {
         })
         .toBuffer();
 
-      // Composición: QR + logo centrado
-      finalBuffer = await sharp(qrBuffer)
+      qrFinal = await sharp(qrBuffer)
         .composite([
           {
             input: logoResized,
@@ -82,14 +115,34 @@ async function generarQrConLogo(token, logoFuente, filename, size = 600) {
         .toBuffer();
     }
 
-    // Subir imagen
+    // 3. Agregar carnet debajo si existe
+    let finalBuffer = qrFinal;
+    if (carnet && carnet.trim()) {
+      const carnetText = await crearTextoCarnet(carnet.toUpperCase(), size);
+      
+      finalBuffer = await sharp(qrFinal)
+        .extend({
+          bottom: 80, // Espacio para el texto + padding
+          background: { r: 255, g: 255, b: 255 }
+        })
+        .composite([
+          {
+            input: carnetText,
+            gravity: 'south'
+          }
+        ])
+        .png()
+        .toBuffer();
+    }
+
+    // 4. Subir imagen
     const publicId = path.parse(filename).name;
     const result = await imageService.uploadBuffer(finalBuffer, 'qrs', publicId);
 
-    logger.debug({ url: result.secure_url }, '[OK] QR generado y subido');
+    logger.debug({ url: result.secure_url, carnet }, '[OK] QR generado con carnet');
     return result.secure_url;
   } catch (error) {
-    logger.error({ err: error, filename }, '[ERROR] Error generando QR');
+    logger.error({ err: error, filename, carnet }, '[ERROR] Error generando QR con carnet');
     return null;
   }
 }
@@ -143,9 +196,9 @@ async function generarQrParaPersona(tipo, id) {
         });
     }
 
-    // 4. Generar Imagen QR
+    // 4. Generar Imagen QR con carnet incluido
     const filename = `${tipo}-${persona.carnet.replace(/\s+/g, '_')}.png`;
-    const qrUrl = await generarQrConLogo(codigoQr.token, logoFuente, filename);
+    const qrUrl = await generarQrConLogo(codigoQr.token, logoFuente, filename, persona.carnet);
 
     if (qrUrl) {
         await prisma.codigoQr.update({
@@ -201,6 +254,7 @@ async function guardarLogo(base64Data, filename = 'logo.png') {
 
 module.exports = {
   generarQrConLogo,
+  crearTextoCarnet,
   generarQrParaPersona,
   obtenerRutasQr,
   guardarLogo

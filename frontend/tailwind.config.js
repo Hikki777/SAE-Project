@@ -37,6 +37,7 @@ export default {
         },
       },
       fontFamily: {
+        sans: ['Outfit', 'sans-serif'],
         mono: [
           'Hack Nerd Font Mono',
           'ui-monospace',

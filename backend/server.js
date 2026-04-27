@@ -15,8 +15,12 @@ const saeDataDir = process.env.SAE_DATA_DIR; // En Electron, = %APPDATA%\SAE
 const isProduction = process.env.NODE_ENV === 'production';
 const isElectron = !!process.env.RESOURCES_PATH || !!process.env.ELECTRON_RUN_AS_NODE;
 
+// NOTA: Los console.log de esta sección de bootstrap son intencionales.
+// El logger Pino se inicializa en la línea 140. Antes de eso, console.log
+// es la única forma de emitir mensajes al stdout/Electron.
 console.log(`[INIT] Entorno detectado: ${isElectron ? 'Electron (Production)' : 'Development'}`);
 console.log(`[INIT] SAE_DATA_DIR: ${saeDataDir || 'N/A'}`);
+
 
 // EN ELECTRON: SOLO usar SAE_DATA_DIR\.env (ignorar todos los demás)
 // EN DESARROLLO: buscar en múltiples ubicaciones
@@ -496,13 +500,13 @@ iniciar().catch((err) => {
 
 // Manejar salida limpia
 process.on('SIGINT', async () => {
-  console.log('\n\n[Server] Received SIGINT, closing gracefully...');
+  logger.info('[Server] SIGINT recibido — cerrando servidor de forma segura...');
   await prisma.$disconnect();
   process.exit(0);
 });
 
 process.on('SIGTERM', async () => {
-  console.log('\n\n[Server] Received SIGTERM, closing gracefully...');
+  logger.info('[Server] SIGTERM recibido — cerrando servidor de forma segura...');
   await prisma.$disconnect();
   process.exit(0);
 });

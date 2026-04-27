@@ -6,10 +6,56 @@ const http = require("http");
 const fs = require("fs-extra");
 const os = require("os");
 
+// SetupStateService — detecta primera ejecución y controla el SetupWizard
+// Se importa aquí para que los handlers IPC estén disponibles antes de whenReady
+let SetupStateService = null;
+try {
+  SetupStateService = require("./setupStateLoader");
+} catch (_) {
+  // En desarrollo, cargamos directamente
+  try { SetupStateService = require("../backend/services/setupStateService"); } catch (__) {}
+}
+
 let mainWindow;
 let backendProcess = null;
 const DEFAULT_FALLBACK_PORT = 5000;
 const isDev = !app.isPackaged;
+
+// ─────────────────────────────────────────────
+//  Handlers IPC — Setup Wizard
+//  Se registran antes de whenReady para que estén listos desde el inicio
+// ─────────────────────────────────────────────
+ipcMain.handle('setup:should-show', async () => {
+  if (!SetupStateService) return false;
+  try {
+    return await SetupStateService.shouldShowSetupWizard();
+  } catch (err) {
+    console.error('[IPC] Error en setup:should-show:', err.message);
+    return false;
+  }
+});
+
+ipcMain.handle('setup:complete', async () => {
+  if (!SetupStateService) return { success: false, error: 'Service unavailable' };
+  try {
+    await SetupStateService.markSetupComplete();
+    return { success: true };
+  } catch (err) {
+    console.error('[IPC] Error en setup:complete:', err.message);
+    return { success: false, error: err.message };
+  }
+});
+
+ipcMain.handle('setup:get-state', async () => {
+  if (!SetupStateService) return null;
+  try {
+    return await SetupStateService.getSetupState();
+  } catch (err) {
+    console.error('[IPC] Error en setup:get-state:', err.message);
+    return null;
+  }
+});
+
 
 // ─────────────────────────────────────────────
 //  Configuración Global de Electron

@@ -258,28 +258,51 @@ router.put('/:id', invalidateCacheMiddleware('/api/docentes'), (req, res, next) 
 router.delete('/:id', invalidateCacheMiddleware('/api/docentes'), async (req, res) => {
   try {
     const { id } = req.params;
+    const docenteId = parseInt(id);
 
     const docente = await prisma.personal.findUnique({
-      where: { id: parseInt(id) }
+      where: { id: docenteId }
     });
 
     if (!docente) {
       return res.status(404).json({ error: 'Docente no encontrado' });
     }
 
-    // Nota: Las fotos se mantienen en almacenamiento para historial
+    // ─── Validación Referencial ───────────────────────────────────────────
+    // Verificar si el personal tiene registros de asistencia asociados.
+    // Si los tiene, impedir el borrado para preservar la integridad de los datos.
+    const [asistenciasCount, excusasCount] = await Promise.all([
+      prisma.asistencia.count({ where: { personal_id: docenteId } }),
+      prisma.excusa.count({ where: { personal_id: docenteId } }),
+    ]);
+
+    if (asistenciasCount > 0 || excusasCount > 0) {
+      logger.warn(
+        { docenteId, asistencias: asistenciasCount, excusas: excusasCount },
+        '[WARN] Intento de eliminar personal con registros asociados — bloqueado'
+      );
+      return res.status(409).json({
+        error: 'No se puede eliminar este registro porque tiene datos históricos asociados.',
+        detalle: `Este personal tiene ${asistenciasCount} registro(s) de asistencia y ${excusasCount} excusa(s). Considere marcarlo como inactivo en su lugar.`,
+        sugerencia: 'inactivar',
+        conteos: { asistencias: asistenciasCount, excusas: excusasCount }
+      });
+    }
+    // ─────────────────────────────────────────────────────────────────────
 
     await prisma.personal.delete({
-      where: { id: parseInt(id) }
+      where: { id: docenteId }
     });
 
-    logger.info({ docenteId: id, nombres: docente.nombres, apellidos: docente.apellidos }, '[OK] Docente eliminado');
+    logger.info({ docenteId, nombres: docente.nombres, apellidos: docente.apellidos }, '[OK] Docente eliminado');
     res.json({ message: 'Docente eliminado correctamente' });
   } catch (error) {
     logger.error({ err: error, docenteId: req.params.id }, '[ERROR] Error al eliminar docente');
     res.status(500).json({ error: error.message });
   }
 });
+
+
 
 module.exports = router;
 

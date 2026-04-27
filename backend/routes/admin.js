@@ -31,21 +31,15 @@ router.post('/reset-factory', async (req, res) => {
     }
 
     // Verificar clave usando bcrypt.compare (ahora se almacena hasheada)
-    console.log('[DEBUG_RESET] Recibido:', masterKey);
-    console.log('[DEBUG_RESET] Stored Hash:', institucion.master_recovery_key);
+    logger.debug({ user: req.user.id }, '[DEBUG_RESET] Validando Clave Maestra de recuperación');
     
     const isValid = await bcrypt.compare(masterKey.trim(), institucion.master_recovery_key);
-    console.log('[DEBUG_RESET] Is Valid:', isValid);
+    logger.debug({ user: req.user.id, isValid }, '[DEBUG_RESET] Resultado de validación');
 
     if (!isValid) {
       logger.warn({ user: req.user.id }, '[WARNING] Intento de reset de fábrica con Clave Maestra incorrecta');
       return res.status(401).json({ 
-        error: 'Clave Maestra incorrecta',
-        debug: {
-          received: masterKey,
-          storedHashPrefix: institucion.master_recovery_key ? institucion.master_recovery_key.substring(0, 10) : 'NULL',
-          storedHashLength: institucion.master_recovery_key ? institucion.master_recovery_key.length : 0
-        }
+        error: 'Clave Maestra incorrecta. Verifique la clave generada durante el SetupWizard.'
       });
     }
 
@@ -73,6 +67,139 @@ router.post('/reset-factory', async (req, res) => {
 
   } catch (error) {
     logger.error({ err: error }, '[ERROR] Error en Factory Reset');
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * ─────────────────────────────────────────────────────────
+ * RUTAS DE INTEGRIDAD Y DIAGNÓSTICO DE BD
+ * ─────────────────────────────────────────────────────────
+ */
+
+const DbIntegrityValidator = require('../services/dbIntegrityValidator');
+const SetupStateService = require('../services/setupStateService');
+const MigrationManager = require('../migrations/migration-manager');
+
+/**
+ * GET /api/admin/db/integrity
+ * Validar integridad de la base de datos
+ */
+router.get('/db/integrity', async (req, res) => {
+  try {
+    logger.info({ user: req.user.email }, 'Iniciando validación de integridad');
+    const report = await DbIntegrityValidator.generateReport();
+    
+    res.json({
+      valid: report.valid,
+      summary: report.summary,
+      details: report.details,
+      stats: report.stats,
+      timestamp: report.timestamp
+    });
+  } catch (error) {
+    logger.error({ error: error.message }, 'Error en validación de integridad');
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * GET /api/admin/db/diagnostics
+ * Obtener diagnóstico completo del sistema
+ */
+router.get('/db/diagnostics', async (req, res) => {
+  try {
+    const setupDiag = await SetupStateService.getDiagnostics();
+    const migrations = MigrationManager.getMigrationHistory();
+    const integrityReport = await DbIntegrityValidator.generateReport();
+
+    res.json({
+      setup: setupDiag,
+      migrations: {
+        current_version: MigrationManager.getCurrentVersion(),
+        history: migrations,
+        available: MigrationManager.getAvailableMigrations()
+      },
+      integrity: integrityReport,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    logger.error({ error: error.message }, 'Error en diagnóstico');
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * POST /api/admin/db/validate-compatibility
+ * Validar compatibilidad antes de restaurar backup
+ */
+router.post('/db/validate-compatibility', async (req, res) => {
+  try {
+    const { backupVersion } = req.body;
+    
+    if (!backupVersion) {
+      return res.status(400).json({ error: 'backupVersion requerido' });
+    }
+
+    const currentVersion = MigrationManager.getCurrentVersion();
+    
+    // Verificar compatibilidad
+    const isCompatible = !backupVersion.startsWith('0.'); // Rechazar v0.x.x
+
+    res.json({
+      compatible: isCompatible,
+      currentVersion,
+      backupVersion,
+      message: isCompatible 
+        ? 'Backup compatible, puede restaurarse'
+        : 'Backup incompatible con esta versión',
+      action: isCompatible ? 'proceed' : 'reject'
+    });
+  } catch (error) {
+    logger.error({ error: error.message }, 'Error validando compatibilidad');
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * GET /api/admin/setup/state
+ * Obtener estado de setup
+ */
+router.get('/setup/state', async (req, res) => {
+  try {
+    const state = await SetupStateService.getSetupState();
+    const shouldShowWizard = await SetupStateService.shouldShowSetupWizard();
+
+    res.json({
+      ...state,
+      shouldShowWizard,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    logger.error({ error: error.message }, 'Error leyendo setup state');
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * POST /api/admin/setup/complete
+ * Marcar setup como completado
+ */
+router.post('/setup/complete', async (req, res) => {
+  try {
+    const { institucionData } = req.body;
+    
+    const updated = await SetupStateService.markSetupWizardCompleted(institucionData);
+    
+    logger.info({ user: req.user.email }, 'Setup wizard marcado como completado');
+
+    res.json({
+      success: true,
+      state: updated,
+      message: 'Setup completado exitosamente'
+    });
+  } catch (error) {
+    logger.error({ error: error.message }, 'Error completando setup');
     res.status(500).json({ error: error.message });
   }
 });

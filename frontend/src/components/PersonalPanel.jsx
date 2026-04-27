@@ -2,13 +2,16 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, Plus, Edit, Trash2, Download, Search, Filter, X, User, QrCode, Briefcase, Sun, CheckCircle, XCircle, Camera } from 'lucide-react';
+import { Users, Plus, Edit, Trash2, Download, Search, Filter, X, User, QrCode, Briefcase, Sun, CheckCircle, XCircle, Camera, AlertTriangle, ShieldAlert } from 'lucide-react';
 import WebcamCaptureModal from './WebcamCaptureModal';
 import toast, { Toaster } from 'react-hot-toast';
 import client, { API_URL, BASE_URL } from '../api/client';
 import { qrAPI } from '../api/endpoints';
 import GenderAvatar from './GenderAvatar';
 import { TableSkeleton } from './LoadingSpinner';
+import { Card } from './ui/Card';
+import { Button } from './ui/Button';
+import { PageHeader } from './ui/PageHeader';
 
 
 
@@ -25,6 +28,10 @@ export default function PersonalPanel() {
   const [showCursosModal, setShowCursosModal] = useState(false);
   const [selectedDocenteCursos, setSelectedDocenteCursos] = useState(null);
   const [editingPersonal, setEditingPersonal] = useState(null);
+  // Estado para modal de confirmación de eliminación
+  // null | { id, nombre, hasHistory, detalle, conteos }
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
   const [formData, setFormData] = useState({
     carnet: '',
     nombres: '',
@@ -119,8 +126,7 @@ export default function PersonalPanel() {
           const blob = new Blob([response.data], { type: 'image/png' });
           const url = window.URL.createObjectURL(blob);
           setPreviewQR(url);
-        } catch (error) {
-          console.error('Error loading QR:', error);
+        } catch {
           setPreviewQR(null);
         }
       } else {
@@ -144,10 +150,8 @@ export default function PersonalPanel() {
     setLoading(true);
     try {
       const response = await client.get('/docentes');
-      console.log('👨‍🏫 Respuesta de personal:', response.data);
       setPersonal(response.data.personal || []);
     } catch (error) {
-      console.error('Error fetching personal:', error);
       toast.error('Error al cargar personal: ' + (error.response?.data?.error || error.message));
     } finally {
       setLoading(false);
@@ -173,8 +177,8 @@ export default function PersonalPanel() {
       if (carnetMode === 'auto' && !editingPersonal) {
         setFormData(prev => ({ ...prev, carnet: response.data.carnet }));
       }
-    } catch (error) {
-      console.error('Error fetching next carnet:', error);
+    } catch {
+      // carnet sugerido no disponible — continuar silenciosamente
     }
   };
 
@@ -228,9 +232,8 @@ export default function PersonalPanel() {
           { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } }
         );
         toast.success('Carnet reasignado y QR regenerado', { id: toastId });
-      } catch (qrError) {
-        console.warn('Error regenerando QR:', qrError);
-        toast.success('Carnet reasignado (QR pendiente)', { id: toastId });
+      } catch {
+        toast.success('Carnet reasignado (QR pendiente de regenerar)', { id: toastId });
       }
 
       // 3. Actualizar el personal en edición
@@ -243,7 +246,6 @@ export default function PersonalPanel() {
       setCarnetValidation({ valid: true, error: null });
       fetchPersonal();
     } catch (error) {
-      console.error('Error reasignando carnet:', error);
       toast.error('Error: ' + (error.response?.data?.error || error.message), { id: toastId });
     } finally {
       setReasignandoCarnet(false);
@@ -351,18 +353,64 @@ export default function PersonalPanel() {
     setShowModal(true);
   };
 
-  const handleDelete = async (id, nombre) => {
-    if (!confirm(`¿Eliminar a ${nombre}?`)) return;
-    
+  // ── Flujo de eliminación con manejo de 409 ──────────────────────────────
+  const handleDeleteRequest = (miembro) => {
+    setDeleteConfirm({
+      id: miembro.id,
+      nombre: `${miembro.nombres} ${miembro.apellidos}`,
+      hasHistory: false,
+      detalle: null,
+      conteos: null,
+    });
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteConfirm) return;
+    setDeleteLoading(true);
     const toastId = toast.loading('Eliminando...');
     try {
-      await client.delete(`/docentes/${id}`);
-      toast.success('Personal eliminado', { id: toastId });
+      await client.delete(`/docentes/${deleteConfirm.id}`);
+      toast.success('Personal eliminado correctamente', { id: toastId });
+      setDeleteConfirm(null);
       fetchPersonal();
     } catch (error) {
-      toast.error('Error: ' + (error.response?.data?.error || error.message), { id: toastId });
+      const status = error.response?.status;
+      const data   = error.response?.data;
+
+      if (status === 409) {
+        // El backend informa que hay historial — cambiar modal a modo advertencia
+        toast.dismiss(toastId);
+        setDeleteConfirm(prev => ({
+          ...prev,
+          hasHistory: true,
+          detalle: data?.detalle ?? 'Este registro tiene datos históricos asociados.',
+          conteos: data?.conteos ?? null,
+        }));
+      } else {
+        toast.error('Error al eliminar: ' + (data?.error || error.message), { id: toastId });
+        setDeleteConfirm(null);
+      }
+    } finally {
+      setDeleteLoading(false);
     }
   };
+
+  const handleInactivarDesdeModal = async () => {
+    if (!deleteConfirm) return;
+    setDeleteLoading(true);
+    const toastId = toast.loading('Inactivando...');
+    try {
+      await client.put(`/docentes/${deleteConfirm.id}`, { estado: 'inactivo' });
+      toast.success(`${deleteConfirm.nombre} marcado como inactivo`, { id: toastId });
+      setDeleteConfirm(null);
+      fetchPersonal();
+    } catch (error) {
+      toast.error('Error al inactivar: ' + (error.response?.data?.error || error.message), { id: toastId });
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+  // ────────────────────────────────────────────────────────────────────────
 
   const handleViewCursos = (miembro) => {
     if (!miembro.curso) return;
@@ -406,8 +454,8 @@ export default function PersonalPanel() {
         try {
           const response = await qrAPI.download(miembro.codigos_qr[0].id);
           zip.file(`qr-${miembro.carnet}.png`, response.data);
-        } catch (error) {
-          console.error(`Error descargando QR de ${miembro.carnet}:`, error);
+        } catch {
+          // QR no disponible para este miembro — continuar con el siguiente
         }
       }
       
@@ -456,7 +504,6 @@ export default function PersonalPanel() {
       window.URL.revokeObjectURL(url);
       toast.success('Código QR descargado', { id: toastId });
     } catch (error) {
-      console.error('Error downloading QR:', error);
       toast.error('Error descargando QR: ' + error.message, { id: toastId });
     }
   };
@@ -486,16 +533,10 @@ export default function PersonalPanel() {
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
-      >
-        <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-3">
-          <Users className="text-success dark:text-success-light" size={32} />
-          Personal
-        </h2>
-        <button
+      <PageHeader title="Personal" icon={Users}>
+        <Button
+          variant="success"
+          icon={Plus}
           onClick={() => {
             setEditingPersonal(null);
             setFormData({
@@ -511,19 +552,17 @@ export default function PersonalPanel() {
             setCarnetMode('auto'); // Reset carnet mode
             setShowModal(true);
           }}
-          className="bg-success hover:bg-success-dark dark:bg-success-light dark:hover:bg-success text-white font-bold py-2.5 px-5 rounded-lg flex items-center justify-center gap-2 transition-colors shadow-lg hover:shadow-xl"
         >
-          <Plus size={20} />
           <span className="hidden sm:inline">Nuevo miembro</span>
           <span className="sm:hidden">Nuevo</span>
-        </button>
-      </motion.div>
+        </Button>
+      </PageHeader>
 
       {/* Filtros */}
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="bg-white dark:bg-gray-800 rounded-xl shadow-md dark:shadow-gray-900/50 p-4 border border-gray-200 dark:border-gray-700"
+      <Card
+        animate={false}
+        noPadding
+        className="p-4"
       >
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-4">
           <div className="col-span-1 sm:col-span-2 lg:col-span-1">
@@ -634,13 +673,12 @@ export default function PersonalPanel() {
             </div>
           </div>
         </div>
-      </motion.div>
+      </Card>
 
       {/* Tabla de personal */}
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="bg-white dark:bg-gray-800 rounded-xl shadow-lg dark:shadow-gray-900/50 overflow-hidden border border-gray-200 dark:border-gray-700"
+      <Card
+        animate={false}
+        noPadding
       >
         {loading ? (
           <TableSkeleton rows={5} columns={7} />
@@ -767,7 +805,7 @@ export default function PersonalPanel() {
                             <Edit size={18} />
                           </button>
                           <button
-                            onClick={() => handleDelete(miembro.id, `${miembro.nombres} ${miembro.apellidos}`)}
+                            onClick={() => handleDeleteRequest(miembro)}
                             className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition"
                             title="Eliminar"
                           >
@@ -867,7 +905,7 @@ export default function PersonalPanel() {
                       Editar
                     </button>
                     <button
-                      onClick={() => handleDelete(miembro.id, `${miembro.nombres} ${miembro.apellidos}`)}
+                      onClick={() => handleDeleteRequest(miembro)}
                       className="bg-red-600 hover:bg-red-700 text-white text-sm py-2 px-3 rounded-lg flex items-center justify-center gap-2 transition"
                     >
                       <Trash2 size={16} />
@@ -879,7 +917,7 @@ export default function PersonalPanel() {
             </div>
           </>
         )}
-      </motion.div>
+      </Card>
 
       {/* Modal */}
       {showModal && createPortal(
@@ -1647,6 +1685,145 @@ export default function PersonalPanel() {
         </div>,
         document.body
       )}
+
+      {/* ── Modal de Confirmación de Eliminación ─────────────────────────── */}
+      <AnimatePresence>
+        {deleteConfirm && createPortal(
+          <motion.div
+            key="delete-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+            style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}
+            onClick={(e) => { if (e.target === e.currentTarget && !deleteLoading) setDeleteConfirm(null); }}
+          >
+            <motion.div
+              key="delete-modal"
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full overflow-hidden"
+            >
+              {!deleteConfirm.hasHistory ? (
+                /* ── Estado 1: Confirmación estándar ─────────────────────── */
+                <>
+                  <div className="p-6">
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className="p-3 bg-red-100 dark:bg-red-900/30 rounded-full flex-shrink-0">
+                        <Trash2 className="text-red-600 dark:text-red-400" size={24} />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                          ¿Eliminar personal?
+                        </h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                          Esta acción no se puede deshacer.
+                        </p>
+                      </div>
+                    </div>
+                    <p className="text-gray-700 dark:text-gray-300">
+                      ¿Estás seguro de que deseas eliminar a{' '}
+                      <strong className="text-gray-900 dark:text-gray-100">{deleteConfirm.nombre}</strong>
+                      {' '}del sistema?
+                    </p>
+                  </div>
+                  <div className="px-6 py-4 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-200 dark:border-gray-700 flex gap-3 justify-end">
+                    <button
+                      onClick={() => setDeleteConfirm(null)}
+                      disabled={deleteLoading}
+                      className="px-5 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 font-semibold transition disabled:opacity-50"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      onClick={handleDeleteConfirm}
+                      disabled={deleteLoading}
+                      className="px-5 py-2.5 rounded-lg bg-red-600 hover:bg-red-700 text-white font-semibold transition flex items-center gap-2 disabled:opacity-50"
+                    >
+                      {deleteLoading ? (
+                        <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        <Trash2 size={16} />
+                      )}
+                      Eliminar
+                    </button>
+                  </div>
+                </>
+              ) : (
+                /* ── Estado 2: 409 — tiene historial ─────────────────────── */
+                <>
+                  <div className="p-6">
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className="p-3 bg-amber-100 dark:bg-amber-900/30 rounded-full flex-shrink-0">
+                        <ShieldAlert className="text-amber-600 dark:text-amber-400" size={24} />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                          No se puede eliminar
+                        </h3>
+                        <p className="text-sm text-amber-600 dark:text-amber-400 font-medium">
+                          Tiene datos históricos asociados
+                        </p>
+                      </div>
+                    </div>
+
+                    <p className="text-gray-700 dark:text-gray-300 mb-4">
+                      <strong className="text-gray-900 dark:text-gray-100">{deleteConfirm.nombre}</strong>{' '}
+                      {deleteConfirm.detalle}
+                    </p>
+
+                    {deleteConfirm.conteos && (
+                      <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/40 rounded-xl p-4 mb-4 space-y-1.5">
+                        <div className="flex items-center gap-2 text-sm text-amber-800 dark:text-amber-300">
+                          <AlertTriangle size={14} />
+                          <span>
+                            <strong>{deleteConfirm.conteos.asistencias}</strong> registro(s) de asistencia
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-amber-800 dark:text-amber-300">
+                          <AlertTriangle size={14} />
+                          <span>
+                            <strong>{deleteConfirm.conteos.excusas}</strong> excusa(s)
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      💡 Se recomienda <strong>inactivar</strong> el registro para preservar
+                      el historial y mantener la integridad de los datos.
+                    </p>
+                  </div>
+                  <div className="px-6 py-4 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-200 dark:border-gray-700 flex gap-3 justify-end">
+                    <button
+                      onClick={() => setDeleteConfirm(null)}
+                      disabled={deleteLoading}
+                      className="px-5 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 font-semibold transition disabled:opacity-50"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      onClick={handleInactivarDesdeModal}
+                      disabled={deleteLoading}
+                      className="px-5 py-2.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white font-semibold transition flex items-center gap-2 disabled:opacity-50"
+                    >
+                      {deleteLoading ? (
+                        <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        <XCircle size={16} />
+                      )}
+                      Inactivar en su lugar
+                    </button>
+                  </div>
+                </>
+              )}
+            </motion.div>
+          </motion.div>,
+          document.body
+        )}
+      </AnimatePresence>
     </div>
   );
 }

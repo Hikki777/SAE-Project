@@ -526,7 +526,13 @@ function App() {
                   path="/setup"
                   element={
                     !isInitialized ? (
-                      <SetupWizard onComplete={() => setIsInitialized(true)} />
+                      <SetupWizard onComplete={async () => {
+                        // Notificar a Electron (si está disponible) que el setup fue completado
+                        if (window.electronAPI?.completeSetup) {
+                          try { await window.electronAPI.completeSetup(); } catch (_) {}
+                        }
+                        setIsInitialized(true);
+                      }} />
                     ) : (
                       <Navigate to="/login" />
                     )

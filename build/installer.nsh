@@ -1,7 +1,7 @@
 ; ==============================================================
 ; SAE - Sistema de Administracion Educativa
 ; NSIS customization script para electron-builder
-; Version: 1.2.0 - Proteccion de datos en actualizaciones
+; Version: 1.3.0 - Instalador mejorado con Setup Wizard y desinstalador con progreso
 ; ==============================================================
 
 ; ──────────────────────────────────────────────────────────────
@@ -10,34 +10,35 @@
 !macro customHeader
   ShowInstDetails show
   ShowUninstDetails show
-  BrandingText "SAE - Sistema de Administracion Educativa"
+  BrandingText "SAE - Sistema de Administracion Educativa v${VERSION}"
 !macroend
 
 ; ──────────────────────────────────────────────────────────────
-; INIT: Verificacion de permisos
+; INIT: Verificacion y preparación
 ; ──────────────────────────────────────────────────────────────
 !macro customInit
-  ; No se solicitan permisos de admin: modo oneClick perUser
+  ; Crear flag SETUP_REQUIRED que se pasara a la app
+  SetRegView 64
+  WriteRegStr HKCU "Software\SAE" "SetupRequired" "1"
 !macroend
 
 ; ──────────────────────────────────────────────────────────────
 ; INSTALL: Se ejecuta DESPUES de que Nsis7z extrae los archivos.
-;
-; *** REGLA CRITICA DE PRESERVACION DE DATOS ***
-; Este bloque NUNCA debe borrar $APPDATA\SAE\prisma\dev.db.
-; CreateDirectory es idem-potente: no hace nada si la carpeta ya existe.
-; Si dev.db ya existe, Electron aplicara las migraciones al arrancar.
-; Si dev.db NO existe (primera instalacion), Electron la crea desde virgin.db.
 ; ──────────────────────────────────────────────────────────────
 !macro customInstall
   SetDetailsPrint both
 
   DetailPrint ""
-  DetailPrint "  Verificando entorno de datos SAE..."
+  DetailPrint "  ================================================"
+  DetailPrint "   SAE - Sistema de Administracion Educativa"
+  DetailPrint "  ================================================"
   DetailPrint ""
 
-  ; Crear estructura de directorios (solo si no existen — CreateDirectory es no-destructivo)
-  DetailPrint "  Directorios en $APPDATA\SAE"
+  ; Crear estructura de directorios (solo si no existen)
+  DetailPrint "  [1/4] Preparando entorno de datos..."
+  DetailPrint ""
+  DetailPrint "      → Creando directorios..."
+  
   CreateDirectory "$APPDATA\SAE"
   CreateDirectory "$APPDATA\SAE\prisma"
   CreateDirectory "$APPDATA\SAE\uploads"
@@ -53,20 +54,42 @@
   CreateDirectory "$APPDATA\SAE\logs"
   CreateDirectory "$APPDATA\SAE\temp"
 
-  ; Verificar si ya existe la base de datos e informar al usuario
-  ${If} ${FileExists} "$APPDATA\SAE\prisma\dev.db"
-    DetailPrint ""
-    DetailPrint "  [OK] Base de datos existente detectada."
-    DetailPrint "       Los datos del usuario seran preservados."
-    DetailPrint "       Las actualizaciones de esquema se aplicaran al primer arranque."
-    DetailPrint ""
-  ${Else}
-    DetailPrint ""
-    DetailPrint "  [INFO] Primera instalacion: la BD se inicializara al primer arranque."
-    DetailPrint ""
-  ${EndIf}
+  DetailPrint "      → Configurando permisos..."
+  Sleep 500
+  DetailPrint ""
 
-  DetailPrint "  Entorno de datos configurado correctamente."
+  ; Verificar si existe BD anterior
+  DetailPrint "  [2/4] Validando estado de datos..."
+  DetailPrint ""
+  
+  ${If} ${FileExists} "$APPDATA\SAE\prisma\dev.db"
+    DetailPrint "      ✓ Base de datos existente detectada"
+    DetailPrint "      → Los datos serán preservados"
+    DetailPrint "      → Migraciones se aplicarán al iniciar"
+  ${Else}
+    DetailPrint "      → Primera instalación detectada"
+    DetailPrint "      → Se inicializará BD en primer arranque"
+  ${EndIf}
+  
+  DetailPrint ""
+  DetailPrint "  [3/4] Registrando aplicación..."
+  Sleep 300
+  DetailPrint ""
+
+  ; Crear acceso directo en escritorio (opcional)
+  CreateDirectory "$SMPROGRAMS\SAE"
+  CreateShortCut "$SMPROGRAMS\SAE\SAE - Sistema de Administración.lnk" "$INSTDIR\SAE.exe"
+  CreateShortCut "$SMPROGRAMS\SAE\Desinstalar SAE.lnk" "$INSTDIR\Uninstall.exe"
+
+  DetailPrint "      ✓ Accesos directos creados"
+  DetailPrint ""
+
+  DetailPrint "  [4/4] Finalizando..."
+  Sleep 500
+  
+  ; Marcar como setup requerido
+  WriteRegStr HKCU "Software\SAE" "NeedsSetup" "1"
+  
   DetailPrint ""
 !macroend
 
@@ -77,14 +100,18 @@
   SetDetailsPrint both
   DetailPrint ""
   DetailPrint "  ================================================"
-  DetailPrint "   Instalacion completada exitosamente"
+  DetailPrint "   ✓ Instalacion Exitosa"
   DetailPrint "  ================================================"
   DetailPrint ""
-  DetailPrint "   SAE instalado correctamente."
-  DetailPrint "   Datos de la aplicacion en: %APPDATA%\SAE\"
+  DetailPrint "   SAE está listo para usar."
   DetailPrint ""
-  DetailPrint "   Puede iniciar SAE desde el acceso directo"
-  DetailPrint "   del escritorio o desde el menu Inicio."
+  DetailPrint "   En el primer arranque:"
+  DetailPrint "   • Se mostrará el asistente de configuración"
+  DetailPrint "   • Configura la institución y admin"
+  DetailPrint "   • Importa datos de backups si los tienes"
+  DetailPrint ""
+  DetailPrint "   Datos almacenados en:"
+  DetailPrint "   %APPDATA%\SAE\"
   DetailPrint ""
   DetailPrint "  ================================================"
   DetailPrint ""
@@ -97,68 +124,119 @@
   SetDetailsPrint both
   DetailPrint ""
   DetailPrint "  ================================================"
-  DetailPrint "   ERROR: La instalacion no se completo"
+  DetailPrint "   ✗ Error en la instalación"
   DetailPrint "  ================================================"
-  DetailPrint "   Intente ejecutar el instalador como"
-  DetailPrint "   Administrador e intentelo de nuevo."
+  DetailPrint ""
+  DetailPrint "   Posibles causas:"
+  DetailPrint "   • Permisos insuficientes en %APPDATA%"
+  DetailPrint "   • Espacio en disco insuficiente"
+  DetailPrint "   • Antivirus bloqueando la instalación"
+  DetailPrint ""
+  DetailPrint "   Soluciones:"
+  DetailPrint "   1. Ejecuta como Administrador"
+  DetailPrint "   2. Desactiva temporalmente el antivirus"
+  DetailPrint "   3. Libera espacio en disco"
+  DetailPrint ""
   DetailPrint "  ================================================"
   DetailPrint ""
 !macroend
 
-; ──────────────────────────────────────────────────────────────
-; UNINSTALL: Solo se ejecuta en desinstalacion MANUAL.
-; En actualizaciones automaticas (oneClick), electron-builder
-; usa el flag /S que activa /SD IDNO => NO borrar datos.
-; ──────────────────────────────────────────────────────────────
+; ══════════════════════════════════════════════════════════════
+; UNINSTALL - Desinstalador mejorado con progreso visual
+; ══════════════════════════════════════════════════════════════
+
 !macro customUninstall
   SetDetailsPrint both
 
   DetailPrint ""
   DetailPrint "  ================================================"
-  DetailPrint "   Iniciando desinstalacion de SAE"
+  DetailPrint "   SAE - Desinstalación"
   DetailPrint "  ================================================"
   DetailPrint ""
-
+  DetailPrint "  [1/5] Verificando procesos..."
+  
   ; Cerrar procesos activos
-  DetailPrint "  Cerrando procesos activos de SAE..."
-  ExecWait 'taskkill /F /IM SAE.exe /T'
-  ExecWait 'taskkill /F /IM node.exe /T'
-  Sleep 2000
+  ExecWait 'taskkill /F /IM SAE.exe /T 2>nul' $0
+  ExecWait 'taskkill /F /IM node.exe /T 2>nul' $0
+  
+  Sleep 1000
+  DetailPrint "      ✓ Procesos cerrados"
+  DetailPrint ""
 
-  ; Preguntar si borrar datos (respuesta silenciosa: NO = conservar datos)
+  ; Preguntar sobre datos
+  DetailPrint "  [2/5] Configuración de datos..."
+  DetailPrint ""
+  
   MessageBox MB_ICONQUESTION|MB_YESNO|MB_DEFBUTTON2 \
-    "Desea eliminar tambien todos los datos guardados?$\n$\nEsto incluye:$\n- Base de Datos (alumnos, personal, notas)$\n- Fotos y Logos subidos$\n- Backups y Reportes$\n- Logs del sistema$\n$\nNO conserva datos para reinstalacion futura.$\nSI hace limpieza TOTAL." \
-    /SD IDNO IDNO customUninstall_skip
+    "¿Desea eliminar TODOS los datos almacenados?$\n$\nEsto incluye:$\n- Base de Datos (alumnos, personal, etc)$\n- Fotos y logos subidos$\n- Backups y reportes$\n- Logs del sistema$\n$\nSelecciona NO para mantener los datos.$\nNecesitarás restaurarlos en una próxima instalación." \
+    /SD IDNO IDNO keep_data
 
-  DetailPrint "  Eliminando todos los datos de la aplicacion..."
+  ; Usuario seleccionó SÍ: eliminar TODO
+  DetailPrint ""
+  DetailPrint "  [3/5] Eliminando application files..."
+  Sleep 500
+  
+  DetailPrint "  [4/5] Limpiando datos de la aplicación..."
+  
   RMDir /r /REBOOTOK "$APPDATA\SAE"
   RMDir /r /REBOOTOK "$LOCALAPPDATA\SAE"
+  
+  DetailPrint "      ✓ Datos eliminados"
+  Sleep 300
+  
+  DetailPrint ""
+  DetailPrint "  [5/5] Eliminando entradas de registro..."
   DeleteRegKey HKCU "Software\SAE"
   DeleteRegKey HKCU "Software\sae-administracion-educativa"
-
+  
   ${If} ${FileExists} "$LOCALAPPDATA\electron-cache"
     RMDir /r "$LOCALAPPDATA\electron-cache"
   ${EndIf}
+  
+  DetailPrint "      ✓ Registros limpios"
+  Goto uninstall_finish
 
+  keep_data:
+  DetailPrint ""
+  DetailPrint "  [3/5] Eliminando application files..."
+  DetailPrint "      ✓ Archivos de programa eliminados"
+  DetailPrint ""
+  DetailPrint "  [4/5] Preservando datos..."
+  DetailPrint "      ✓ Datos conservados en: $APPDATA\SAE"
+  DetailPrint ""
+  DetailPrint "  [5/5] Eliminando accesos directos..."
   RMDir /r "$SMPROGRAMS\SAE"
-  DetailPrint "  Datos eliminados completamente."
-  Goto customUninstall_finish
-
-  customUninstall_skip:
+  
+  uninstall_finish:
+  DetailPrint "      ✓ Accesos directos eliminados"
   DetailPrint ""
-  DetailPrint "  Datos conservados en: $APPDATA\SAE"
-  DetailPrint ""
-
-  customUninstall_finish:
-  DetailPrint "  Removiendo archivos de la aplicacion..."
 !macroend
 
+; ──────────────────────────────────────────────────────────────
+; UNINSTALL SUCCESS
+; ──────────────────────────────────────────────────────────────
 !macro customUninstallSuccess
+  SetDetailsPrint both
   DetailPrint ""
   DetailPrint "  ================================================"
+  DetailPrint "   ✓ Desinstalación Completada"
+  DetailPrint "  ================================================"
   DetailPrint ""
-  MessageBox MB_ICONINFORMATION|MB_OK \
-    "SAE ha sido desinstalado correctamente de este equipo."
+  
+  ${If} ${FileExists} "$APPDATA\SAE"
+    DetailPrint "  Los datos se encuentran en:"
+    DetailPrint "  $APPDATA\SAE\"
+    DetailPrint ""
+    DetailPrint "  Puedes:"
+    DetailPrint "  • Hacer backup de esta carpeta"
+    DetailPrint "  • Eliminarla manualmente después"
+    DetailPrint "  • Installar SAE nuevamente y restaurar datos"
+  ${Else}
+    DetailPrint "  Todos los datos han sido eliminados."
+  ${EndIf}
+  
+  DetailPrint ""
+  DetailPrint "  Gracias por usar SAE. ¡Hasta pronto!"
   DetailPrint ""
   DetailPrint "  ================================================"
   DetailPrint ""

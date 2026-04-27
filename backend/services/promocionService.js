@@ -25,7 +25,7 @@ const migracionService = {
     const regla = config.reglasPromocion[gradoActual];
     
     if (!regla) {
-      console.warn(`[migracionService] ⚠️ No se encontró regla de promoción para el grado: "${gradoActual}" ${carrera ? `en la carrera: "${carrera}"` : ''}`);
+      logger.warn({ grado: gradoActual, carrera }, '[migracionService] No se encontró regla de promoción para el grado');
       return null;
     }
     

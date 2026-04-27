@@ -7,7 +7,10 @@ import toast from 'react-hot-toast';
 import CardAusente from './CardAusente';
 import ModalJustificacionRapida from './ModalJustificacionRapida';
 import client, { API_URL, BASE_URL } from '../api/client';
-import './RevisionRapida.css';
+import { Card } from './ui/Card';
+import { Button } from './ui/Button';
+import { PageHeader } from './ui/PageHeader';
+import { Badge } from './ui/Badge';
 
 export default function RevisionRapidaView({ fecha, onVolver }) {
   const [pendientes, setPendientes] = useState([]);
@@ -112,17 +115,22 @@ export default function RevisionRapidaView({ fecha, onVolver }) {
   }
 
   return (
-    <div className="revision-rapida-container">
-      {/* Confetti Effect */}
+    <div className="flex flex-col h-full bg-gray-50/30 dark:bg-gray-900/10 p-2 sm:p-6 rounded-3xl relative">
+      {/* Confetti Effect using absolute divs since CSS is gone */}
       {mostrarConfetti && (
-        <div className="confetti-container">
+        <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
           {[...Array(50)].map((_, i) => (
-            <div
+            <motion.div
               key={i}
-              className="confetti"
+              initial={{ y: -50, x: Math.random() * window.innerWidth, rotate: 0 }}
+              animate={{ 
+                y: window.innerHeight + 50, 
+                rotate: 360,
+                x: Math.random() * window.innerWidth 
+              }}
+              transition={{ duration: 2 + Math.random() * 2, ease: "linear" }}
+              className="absolute w-3 h-3 rounded-sm"
               style={{
-                left: `${Math.random() * 100}%`,
-                animationDelay: `${Math.random() * 0.5}s`,
                 backgroundColor: ['#3B82F6', '#10B981', '#F59E0B', '#EF4444'][Math.floor(Math.random() * 4)]
               }}
             />
@@ -131,82 +139,74 @@ export default function RevisionRapidaView({ fecha, onVolver }) {
       )}
 
       {/* Header */}
-      <div className="revision-header">
-        <div className="header-top">
-          <div className="header-left">
-            <AlertCircle className="text-blue-600" size={32} />
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                Revisión de Ausencias - {new Date(fecha).toLocaleDateString('es-ES', { 
-                  day: 'numeric', 
-                  month: 'long', 
-                  year: 'numeric' 
-                })}
-              </h2>
-              <p className="text-gray-600 dark:text-gray-400">
-                ⚠️ {totalAusentes} persona{totalAusentes !== 1 ? 's' : ''} no marcaron asistencia hoy
-              </p>
-            </div>
-          </div>
-          <div className="header-actions">
-            <button
-              onClick={onVolver}
-              className="btn-secondary flex items-center gap-2"
-            >
-              <ArrowLeft size={18} />
-              Volver a Asistencias
-            </button>
-            <button
-              onClick={handleOmitirRevision}
-              className="btn-outline flex items-center gap-2"
-            >
-              <SkipForward size={18} />
-              Omitir Revisión
-            </button>
-          </div>
-        </div>
+      <PageHeader 
+        title={
+          <span className="flex items-center gap-2">
+            Revisión Rápida
+            <span className="text-gray-400 font-medium text-lg hidden sm:inline-block">
+              {new Date(fecha).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}
+            </span>
+          </span>
+        }
+        icon={AlertCircle}
+      >
+        <Button variant="secondary" onClick={onVolver} icon={ArrowLeft} className="w-full sm:w-auto">
+          Volver
+        </Button>
+        <Button variant="outline" onClick={handleOmitirRevision} icon={SkipForward} className="w-full sm:w-auto">
+          Omitir Todo
+        </Button>
+      </PageHeader>
 
-        {/* Barra de Progreso */}
-        <div className="progress-section">
-          <div className="progress-info">
-            <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-              Progreso: {revisados.length} de {totalAusentes} revisados
-            </span>
-            <span className="text-sm font-bold text-blue-600">
-              {progreso}%
-            </span>
-          </div>
-          <div className="progress-bar-container">
-            <motion.div
-              className="progress-bar-fill"
-              initial={{ width: 0 }}
-              animate={{ width: `${progreso}%` }}
-              transition={{ duration: 0.5, ease: 'easeOut' }}
-            />
-          </div>
-        </div>
+      <div className="flex items-center gap-2 bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300 px-4 py-3 rounded-xl font-medium mb-6 animate-pulse border border-blue-100 dark:border-blue-800">
+        <AlertCircle size={20} />
+        ⚠️ {totalAusentes} persona{totalAusentes !== 1 ? 's' : ''} no marcaron asistencia hoy
       </div>
 
+      {/* Progress Card */}
+      <Card className="mb-6 p-4 sm:p-5">
+        <div className="flex justify-between items-center mb-2">
+          <span className="text-sm font-bold text-gray-700 dark:text-gray-300">
+            Progreso: {revisados.length} de {totalAusentes} revisados
+          </span>
+          <span className="text-sm font-black text-blue-600 dark:text-blue-400">
+            {progreso}%
+          </span>
+        </div>
+        <div className="h-3 w-full bg-blue-100 dark:bg-gray-800 rounded-full overflow-hidden">
+          <motion.div
+            className="h-full bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full shadow-inner"
+            initial={{ width: 0 }}
+            animate={{ width: `${progreso}%` }}
+            transition={{ duration: 0.5, ease: 'easeOut' }}
+          />
+        </div>
+      </Card>
+
       {/* Grid Kanban */}
-      <div className="kanban-grid">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start pb-8">
         {/* Columna Pendientes */}
-        <div className="kanban-column">
-          <div className="column-header pendientes">
-            <AlertCircle size={20} />
-            <h3>PENDIENTES DE REVISAR ({pendientes.length})</h3>
+        <Card className="flex flex-col max-h-[800px] border-amber-200/50 dark:border-amber-900/30 overflow-hidden p-0 shadow-lg" noPadding animate={false}>
+          {/* Header */}
+          <div className="flex items-center justify-between p-4 bg-amber-50/80 dark:bg-amber-900/20 border-b border-amber-100 dark:border-amber-900/50">
+            <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400">
+              <AlertCircle size={20} className="fill-amber-100 dark:fill-amber-900" />
+              <h3 className="font-bold uppercase tracking-wide">Pendientes</h3>
+            </div>
+            <Badge variant="warning">{pendientes.length}</Badge>
           </div>
-          <div className="cards-container">
+          
+          {/* Listado */}
+          <div className="overflow-y-auto flex-1 p-4 bg-gray-50/30 dark:bg-black/10 space-y-4" style={{ minHeight: '300px' }}>
             <AnimatePresence>
               {pendientes.length === 0 ? (
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  className="empty-state-small"
+                  className="flex flex-col items-center justify-center p-12 text-center h-full"
                 >
-                  <CheckCircle2 size={48} className="text-green-500" />
-                  <p className="text-gray-600 dark:text-gray-400">
-                    ¡Todos revisados!
-                  </p>
+                  <CheckCircle2 size={48} className="text-green-500 mb-4 opacity-50" />
+                  <p className="text-gray-500 dark:text-gray-400 font-medium">¡Todos revisados!</p>
                 </motion.div>
               ) : (
                 pendientes.map((persona) => (
@@ -220,26 +220,30 @@ export default function RevisionRapidaView({ fecha, onVolver }) {
               )}
             </AnimatePresence>
           </div>
-        </div>
+        </Card>
 
         {/* Columna Revisados */}
-        <div className="kanban-column">
-          <div className="column-header revisados">
-            <CheckCircle2 size={20} />
-            <h3>✅ REVISADOS ({revisados.length})</h3>
+        <Card className="flex flex-col max-h-[800px] border-emerald-200/50 dark:border-emerald-900/30 overflow-hidden p-0 shadow-lg" noPadding animate={false}>
+          {/* Header */}
+          <div className="flex items-center justify-between p-4 bg-emerald-50/80 dark:bg-emerald-900/20 border-b border-emerald-100 dark:border-emerald-900/50">
+            <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400">
+              <CheckCircle2 size={20} className="fill-emerald-100 dark:fill-emerald-900" />
+              <h3 className="font-bold uppercase tracking-wide">Revisados</h3>
+            </div>
+            <Badge variant="success">{revisados.length}</Badge>
           </div>
-          <div className="cards-container">
+          
+          {/* Listado */}
+          <div className="overflow-y-auto flex-1 p-4 bg-gray-50/30 dark:bg-black/10 space-y-4" style={{ minHeight: '300px' }}>
             <AnimatePresence>
               {revisados.length === 0 ? (
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  className="empty-state-small"
+                  className="flex flex-col items-center justify-center p-12 text-center h-full"
                 >
-                  <GenderAvatar size={48} className="text-gray-300" />
-                  <p className="text-gray-400 dark:text-gray-500">
-                    Se llenarán conforme se procesen
-                  </p>
+                  <GenderAvatar size={48} className="text-gray-300 dark:text-gray-700 mb-4" />
+                  <p className="text-gray-400 dark:text-gray-500 font-medium">Se llenarán conforme se procesen</p>
                 </motion.div>
               ) : (
                 revisados.map((persona) => {
@@ -279,13 +283,13 @@ export default function RevisionRapidaView({ fecha, onVolver }) {
                   return (
                     <motion.div
                       key={persona.id}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: 20 }}
-                      className="card-revisado"
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.9 }}
+                      className="bg-white dark:bg-gray-800 p-4 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm flex items-center justify-between"
                     >
-                      <div className="card-header">
-                        <div className="persona-avatar-small w-10 h-10 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700 flex-shrink-0 relative">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-100 dark:bg-gray-700 relative shadow-sm">
                           {fotoUrl ? (
                             <>
                               <img 
@@ -298,39 +302,41 @@ export default function RevisionRapidaView({ fecha, onVolver }) {
                                 }}
                               />
                                 {persona.sexo ? (
-                                  <GenderAvatar sexo={persona.sexo} size={40} />
+                                  <GenderAvatar sexo={persona.sexo} size={48} />
                                 ) : (
-                                  persona.tipo === 'alumno' ? '👨‍🎓' : '👨‍🏫'
+                                  <div className="flex items-center justify-center w-full h-full">{persona.tipo === 'alumno' ? '👨‍🎓' : '👨‍🏫'}</div>
                                 )}
                             </>
                           ) : (
-                            <GenderAvatar sexo={persona.sexo} size={40} />
+                            <GenderAvatar sexo={persona.sexo} size={48} />
                           )}
                         </div>
-                        <div className="badge-estado">
+                        <div>
+                           <h4 className="font-bold text-gray-900 dark:text-gray-100 text-sm">
+                             {persona.nombres} {persona.apellidos}
+                           </h4>
+                           <p className="text-xs text-gray-500 dark:text-gray-400">
+                             {persona.tipo === 'alumno' 
+                               ? `${persona.grado} ${persona.seccion || ''}` 
+                               : persona.cargo}
+                           </p>
+                           <p className="text-xs text-gray-400 font-mono mt-0.5">{persona.carnet}</p>
+                        </div>
+                      </div>
+                      <div>
                         {persona.estadoRevision === 'justificado' ? (
-                          <span className="badge badge-success">✅ Justificado</span>
+                          <Badge variant="success" className="px-3">✅ Justificado</Badge>
                         ) : (
-                          <span className="badge badge-info">⏭️ Omitido</span>
+                          <Badge variant="info" className="px-3 text-gray-600 bg-gray-100 dark:bg-gray-700">⏭️ Omitido</Badge>
                         )}
                       </div>
-                    </div>
-                    <h4 className="persona-nombre">
-                      {persona.nombres} {persona.apellidos}
-                    </h4>
-                    <p className="persona-detalle">
-                      {persona.tipo === 'alumno' 
-                        ? `${persona.grado} ${persona.seccion || ''}` 
-                        : persona.cargo}
-                    </p>
-                    <p className="persona-carnet">{persona.carnet}</p>
-                  </motion.div>
-                );
-              })
-            )}
+                    </motion.div>
+                  );
+                })
+              )}
             </AnimatePresence>
           </div>
-        </div>
+        </Card>
       </div>
 
       {/* Modal de Justificación */}
@@ -346,42 +352,46 @@ export default function RevisionRapidaView({ fecha, onVolver }) {
       {/* Modal Confirmar Omitir Revisión */}
       {showConfirmOmitir && createPortal(
         <AnimatePresence>
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[10001] p-4">
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-md flex items-center justify-center z-[10001] p-4">
             <motion.div
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9 }}
-              className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 max-w-md w-full overflow-hidden"
+              className="max-w-md w-full"
             >
-              {/* Franja colorida superior */}
-              <div className="h-1.5 bg-gradient-to-r from-orange-400 via-amber-400 to-yellow-400" />
-              <div className="p-6">
-                <div className="flex items-start gap-4 mb-5">
-                  <div className="flex-shrink-0 w-12 h-12 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center">
-                    <SkipForward size={24} className="text-orange-500" />
+              <Card noPadding className="overflow-hidden">
+                {/* Franja colorida superior */}
+                <div className="h-1.5 bg-gradient-to-r from-orange-400 via-amber-400 to-yellow-400" />
+                <div className="p-6">
+                  <div className="flex items-start gap-4 mb-5">
+                    <div className="flex-shrink-0 w-12 h-12 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center">
+                      <SkipForward size={24} className="text-orange-500" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">¿Omitir revisión?</h3>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                        Podrás justificar las ausencias después desde el panel tradicional de justificaciones.
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">¿Omitir revisión?</h3>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                      Podrás justificar las ausencias después desde el panel tradicional de justificaciones.
-                    </p>
+                  <div className="flex gap-3 mt-8">
+                    <Button
+                      variant="secondary"
+                      onClick={() => setShowConfirmOmitir(false)}
+                      className="flex-1"
+                    >
+                      Cancelar
+                    </Button>
+                    <Button
+                      variant="warning"
+                      onClick={() => { setShowConfirmOmitir(false); onVolver(); }}
+                      className="flex-1"
+                    >
+                      Sí, omitir
+                    </Button>
                   </div>
                 </div>
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => setShowConfirmOmitir(false)}
-                    className="flex-1 px-4 py-2.5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-xl font-semibold transition"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    onClick={() => { setShowConfirmOmitir(false); onVolver(); }}
-                    className="flex-1 px-4 py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-semibold transition"
-                  >
-                    Sí, omitir
-                  </button>
-                </div>
-              </div>
+              </Card>
             </motion.div>
           </div>
         </AnimatePresence>,
