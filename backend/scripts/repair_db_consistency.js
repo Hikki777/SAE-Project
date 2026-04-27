@@ -14,7 +14,7 @@ async function repairDataConsistency(prismaInstance = null) {
       'f': 'Femenino'
     };
 
-    const tables = ['alumno', 'personal', 'usuario'];
+    const tables = ['alumno', 'personal'];
     
     for (const table of tables) {
       console.log(`Checking genders in table: ${table}...`);

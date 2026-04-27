@@ -421,6 +421,19 @@ router.get('/ausentes', async (req, res) => {
       }
     });
 
+    if (asistenciasDelDia.length === 0) {
+      // Nadie ha asistido aún en el día, se asume que no ha iniciado la toma de asistencia.
+      return res.json({
+        fecha: fechaInicio.toISOString().split('T')[0],
+        total: 0,
+        ausentes: [],
+        stats: {
+          alumnos: 0,
+          personal: 0
+        }
+      });
+    }
+
     // Crear sets de IDs que SÍ asistieron
     const alumnosQueAsistieron = new Set(
       asistenciasDelDia

@@ -1055,14 +1055,16 @@ export default function AlumnosPanel() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Sección</label>
-                  <input
-                    type="text"
-                    maxLength={2}
+                  <select
                     value={formData.seccion}
-                    onChange={(e) => setFormData({ ...formData, seccion: e.target.value.toUpperCase() })}
-                    className="w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-primary-500 focus:border-transparent text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 uppercase text-center font-bold"
-                    placeholder="A"
-                  />
+                    onChange={(e) => setFormData({ ...formData, seccion: e.target.value })}
+                    className="w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-primary-500 focus:border-transparent text-gray-900 dark:text-gray-100 uppercase font-bold"
+                  >
+                    <option value="">-</option>
+                    {Array.from({ length: 26 }, (_, i) => String.fromCharCode(65 + i)).map(letra => (
+                      <option key={letra} value={letra}>{letra}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
 

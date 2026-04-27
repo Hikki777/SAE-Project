@@ -495,7 +495,7 @@ export default function Dashboard() {
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         {/* 1. TARJETA ESTADO (Verde) */}
-        <div className="bg-white/70 dark:bg-gray-900/60 backdrop-blur-xl shadow-md border-y border-r border-white/50 dark:border-gray-800/50 rounded-xl p-5 transition-transform hover:scale-[1.02] border-l-4 border-emerald-500 flex items-center justify-between transition-transform hover:scale-[1.02]">
+        <div className="bg-white/70 dark:bg-gray-900/60 backdrop-blur-xl shadow-md border-y border-r border-white/50 dark:border-gray-800/50 rounded-xl p-5 transition-transform hover:scale-[1.02] border-l-4 border-emerald-500 flex items-center justify-between">
           <div>
             <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
               Estado BD
@@ -510,7 +510,7 @@ export default function Dashboard() {
         </div>
 
         {/* 2. TARJETA ALUMNOS (Azul) */}
-        <div className="bg-white/70 dark:bg-gray-900/60 backdrop-blur-xl shadow-md border-y border-r border-white/50 dark:border-gray-800/50 rounded-xl p-5 transition-transform hover:scale-[1.02] border-l-4 border-blue-500 flex items-center justify-between transition-transform hover:scale-[1.02]">
+        <div className="bg-white/70 dark:bg-gray-900/60 backdrop-blur-xl shadow-md border-y border-r border-white/50 dark:border-gray-800/50 rounded-xl p-5 transition-transform hover:scale-[1.02] border-l-4 border-blue-500 flex items-center justify-between">
           <div>
             <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
               Alumnos
@@ -525,7 +525,7 @@ export default function Dashboard() {
         </div>
 
         {/* 3. TARJETA PERSONAL (Naranja) */}
-        <div className="bg-white/70 dark:bg-gray-900/60 backdrop-blur-xl shadow-md border-y border-r border-white/50 dark:border-gray-800/50 rounded-xl p-5 transition-transform hover:scale-[1.02] border-l-4 border-orange-400 flex items-center justify-between transition-transform hover:scale-[1.02]">
+        <div className="bg-white/70 dark:bg-gray-900/60 backdrop-blur-xl shadow-md border-y border-r border-white/50 dark:border-gray-800/50 rounded-xl p-5 transition-transform hover:scale-[1.02] border-l-4 border-orange-400 flex items-center justify-between">
           <div>
             <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
               Personal
@@ -540,7 +540,7 @@ export default function Dashboard() {
         </div>
 
         {/* 4. TARJETA QR (Cian/Turquesa) */}
-        <div className="bg-white/70 dark:bg-gray-900/60 backdrop-blur-xl shadow-md border-y border-r border-white/50 dark:border-gray-800/50 rounded-xl p-5 transition-transform hover:scale-[1.02] border-l-4 border-cyan-400 flex items-center justify-between transition-transform hover:scale-[1.02]">
+        <div className="bg-white/70 dark:bg-gray-900/60 backdrop-blur-xl shadow-md border-y border-r border-white/50 dark:border-gray-800/50 rounded-xl p-5 transition-transform hover:scale-[1.02] border-l-4 border-cyan-400 flex items-center justify-between">
           <div>
             <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
               QR Generados
