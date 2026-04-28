@@ -30,12 +30,10 @@ async function obtenerImagenBuffer(fuente) {
     }
 
     // 3. Archivo Local
-    // Asumimos que es una ruta relativa a uploads si no es absoluta
     const rutaLocal = path.isAbsolute(fuente) ? fuente : path.join(UPLOADS_DIR, fuente);
     if (await fs.pathExists(rutaLocal)) {
       return await fs.readFile(rutaLocal);
     }
-    
     return null;
   } catch (error) {
     logger.error({ err: error, fuente }, 'Error obteniendo buffer de imagen');
@@ -48,8 +46,8 @@ async function obtenerImagenBuffer(fuente) {
  * Usado para texto debajo del QR
  */
 async function crearTextoCarnet(carnet, width = 600) {
-  const textSize = Math.max(24, Math.floor(width / 20)); // Escalar texto según QR
-  const padding = 20;
+  const textSize = Math.max(24, Math.floor(width / 20));
+  const padding = 2; // Relleno mínimo
   const height = textSize + padding * 2;
   
   const svg = `
@@ -82,57 +80,80 @@ async function crearTextoCarnet(carnet, width = 600) {
  */
 async function generarQrConLogo(token, logoFuente, filename, carnet = '', size = 600) {
   try {
-    // 1. Generar QR
-    const qrBuffer = await QRCode.toBuffer(token, {
+    console.log(`[QR-DEBUG] Iniciando para carnet: ${carnet}, token: ${token}`);
+    
+    // 1. Generar QR como SVG
+    console.log('[QR-DEBUG] Generando SVG...');
+    const qrSvg = await QRCode.toString(token, {
       errorCorrectionLevel: 'H',
-      type: 'png',
+      type: 'svg',
       width: size,
-      margin: 2
+      margin: 1
     });
-
+    console.log('[QR-DEBUG] SVG generado (longitud):', qrSvg.length);
+    
+    // Convertir SVG a Buffer PNG usando Sharp
+    console.log('[QR-DEBUG] Convirtiendo SVG a Buffer PNG con Sharp...');
+    const qrBuffer = await sharp(Buffer.from(qrSvg))
+      .png()
+      .toBuffer();
+    console.log('[QR-DEBUG] Buffer PNG generado (size):', qrBuffer.length);
+      
+    console.log('[QR-DEBUG] Obteniendo logo...');
     const logoBuffer = await obtenerImagenBuffer(logoFuente);
+    console.log('[QR-DEBUG] Logo buffer:', logoBuffer ? 'SI' : 'NO');
     
     let qrFinal = qrBuffer;
 
     // 2. Agregar logo si existe
     if (logoBuffer) {
-      const logoSize = Math.round(size * 0.20);
-      const logoResized = await sharp(logoBuffer)
-        .resize(logoSize, logoSize, {
-          fit: 'contain',
-          background: { r: 255, g: 255, b: 255, alpha: 0 }
-        })
-        .toBuffer();
+      try {
+        const logoSize = Math.round(size * 0.20);
+        
+        // Pre-procesar logo para asegurar que no sea gigante
+        const logoResized = await sharp(logoBuffer)
+          .resize(logoSize, logoSize, {
+            fit: 'contain',
+            background: { r: 255, g: 255, b: 255, alpha: 1 } // Fondo blanco sólido para que resalte
+          })
+          .toBuffer();
 
-      qrFinal = await sharp(qrBuffer)
-        .composite([
-          {
-            input: logoResized,
-            gravity: 'center'
-          }
-        ])
-        .png()
-        .toBuffer();
+        qrFinal = await sharp(qrBuffer)
+          .composite([
+            {
+              input: logoResized,
+              gravity: 'center'
+            }
+          ])
+          .png()
+          .toBuffer();
+        console.log('[QR-DEBUG] Logo compuesto OK');
+      } catch (sharpError) {
+        console.error('[QR-DEBUG] Error Sharp Logo:', sharpError.message);
+        // Fallback al QR básico si el logo falla
+      }
     }
 
-    // 3. Agregar carnet debajo si existe
     let finalBuffer = qrFinal;
     if (carnet && carnet.trim()) {
+      console.log('[QR-DEBUG] Agregando carnet debajo...');
       const carnetText = await crearTextoCarnet(carnet.toUpperCase(), size);
       
       finalBuffer = await sharp(qrFinal)
         .extend({
-          bottom: 80, // Espacio para el texto + padding
+          bottom: 50, // El alto del texto ahora es menor (~35-40px)
           background: { r: 255, g: 255, b: 255 }
         })
         .composite([
           {
             input: carnetText,
-            gravity: 'south'
+            top: size, // Pegado al ras del QR
+            left: 0
           }
         ])
         .png()
         .toBuffer();
+      console.log('[QR-DEBUG] Carnet agregado OK');
     }
 
     // 4. Subir imagen
@@ -143,7 +164,7 @@ async function generarQrConLogo(token, logoFuente, filename, carnet = '', size =
     return result.secure_url;
   } catch (error) {
     logger.error({ err: error, filename, carnet }, '[ERROR] Error generando QR con carnet');
-    return null;
+    throw error;
   }
 }
 
@@ -212,11 +233,48 @@ async function generarQrParaPersona(tipo, id) {
 
   } catch (error) {
     logger.error({ err: error, tipo, id }, '[ERROR] Error en generarQrParaPersona');
-    return null; // No fallar la creación de persona si falla el QR
+    return null; // En este caso sí devolvemos null para no romper el flujo principal de creación
   }
 }
 
-// ... mantener funciones anteriores si es necesario ...
+/**
+ * Regenerar un código QR existente
+ */
+async function regenerarQr(qrId) {
+  try {
+    const codigoQr = await prisma.codigoQr.findUnique({
+      where: { id: parseInt(qrId) },
+      include: {
+        alumno: true,
+        personal: true
+      }
+    });
+
+    if (!codigoQr) throw new Error('Código QR no encontrado');
+
+    const persona = codigoQr.alumno || codigoQr.personal;
+    if (!persona) throw new Error('Persona asociada no encontrada');
+
+    // Obtener Institución y Logo
+    const institucion = await prisma.institucion.findFirst();
+    const logoFuente = institucion?.logo_path || institucion?.logo_base64;
+
+    const filename = `${codigoQr.persona_tipo}-${persona.carnet.replace(/\s+/g, '_')}.png`;
+    const qrUrl = await generarQrConLogo(codigoQr.token, logoFuente, filename, persona.carnet);
+
+    if (qrUrl) {
+      await prisma.codigoQr.update({
+        where: { id: codigoQr.id },
+        data: { png_path: qrUrl, generado_en: new Date() }
+      });
+    }
+
+    return qrUrl;
+  } catch (error) {
+    logger.error({ err: error, qrId }, '[ERROR] Error en regenerarQr');
+    throw error;
+  }
+}
 
 /**
  * Generar ruta/nombre de archivo para QR
@@ -256,6 +314,7 @@ module.exports = {
   generarQrConLogo,
   crearTextoCarnet,
   generarQrParaPersona,
+  regenerarQr,
   obtenerRutasQr,
   guardarLogo
 };

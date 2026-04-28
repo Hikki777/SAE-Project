@@ -15,13 +15,17 @@ const uploadBuffer = async (buffer, folder, filename) => {
     const folderPath = path.join(UPLOADS_DIR, folder);
     await fs.ensureDir(folderPath);
     
-    // Asegurar extensión .png
     const finalFilename = filename.endsWith('.png') ? filename : `${filename}.png`;
     const filepath = path.join(folderPath, finalFilename);
     const relativePath = `${folder}/${finalFilename}`;
     
-    await fs.writeFile(filepath, buffer);
-    logger.debug({ filepath }, '[FILE] Archivo guardado localmente');
+    // Normalizar con Sharp (esto también valida que sea una imagen válida)
+    const processedBuffer = await require('sharp')(buffer)
+      .png()
+      .toBuffer();
+
+    await fs.writeFile(filepath, processedBuffer);
+    logger.debug({ filepath }, '[FILE] Archivo guardado y normalizado localmente');
     
     return {
       secure_url: relativePath, // Mantener compatibilidad de nombre

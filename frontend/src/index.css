@@ -42,13 +42,13 @@ html.dark {
   @apply text-text-primary;
 }
 
-/* FIX: Forzar visibilidad de inputs de tiempo en todos los navegadores/modos */
+/* FIX: Forzar visibilidad de inputs de tiempo en todos los navegadores/modos (Tema Oscuro) */
 input[type="time"] {
-  color-scheme: light !important;
-  color: #111827 !important; /* text-gray-900 */
+  color-scheme: dark !important;
+  color: #ffffff !important;
 }
 input[type="time"]::-webkit-calendar-picker-indicator {
-  filter: invert(0) !important; /* Icono oscuro */
+  filter: invert(1) !important; /* Icono claro */
   cursor: pointer;
 }
 input[type="time"]::-webkit-datetime-edit,
@@ -57,7 +57,7 @@ input[type="time"]::-webkit-datetime-edit-text,
 input[type="time"]::-webkit-datetime-edit-hour-field,
 input[type="time"]::-webkit-datetime-edit-minute-field,
 input[type="time"]::-webkit-datetime-edit-ampm-field {
-  color: #111827 !important;
+  color: #ffffff !important;
   opacity: 1 !important;
 }
 

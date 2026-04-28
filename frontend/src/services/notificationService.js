@@ -32,6 +32,9 @@ class NotificationService {
    * Verificar equipos pendientes
    */
   async checkPendingEquipment(onUpdate) {
+    // Si no hay token, no intentar peticiones (evita 401 innecesarios)
+    if (!localStorage.getItem('token')) return;
+
     try {
       const response = await client.get('/equipos/pending-count');
       const { count } = response.data;

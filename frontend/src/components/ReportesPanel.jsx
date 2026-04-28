@@ -263,30 +263,41 @@ export default function ReportesPanel({ initialTab = 'asistencias' }) {
   const tabs = [
     { id: 'asistencias', label: 'Reportes de Asistencia', icon: FileText },
     { id: 'justificaciones', label: 'Justificaciones', icon: FileCheck },
-    { id: 'documentos', label: 'Documentos Oficiales', icon: Award },
-    { id: 'carnets', label: 'Carnets', icon: CreditCard }
+    { id: 'documentos', label: 'Documentos Oficiales', icon: Award, enDesarrollo: true },
+    { id: 'carnets', label: 'Carnets', icon: CreditCard, enDesarrollo: true }
   ];
 
   return (
-    <div className="flex h-full">
+    <div className="flex h-full gap-8">
       {/* Sidebar */}
-      <div className="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 p-4">
-        <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4">Reportes y Documentos</h2>
-        <nav className="space-y-2">
+      <div className="w-64 flex-shrink-0">
+        <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4 px-2">Reportes y Documentos</h2>
+        <nav className="space-y-1">
           {tabs.map((tab) => {
             const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
             return (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
-                  activeTab === tab.id
-                    ? 'bg-blue-600 text-white shadow-lg'
-                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                onClick={() => !tab.enDesarrollo && setActiveTab(tab.id)}
+                disabled={tab.enDesarrollo}
+                className={`w-full flex items-center justify-between px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200 ${
+                  isActive
+                    ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/40 dark:text-blue-200'
+                    : tab.enDesarrollo
+                      ? 'opacity-60 cursor-not-allowed text-gray-400 grayscale'
+                      : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50'
                 }`}
               >
-                <Icon size={20} />
-                <span className="font-medium text-sm">{tab.label}</span>
+                <div className="flex items-center gap-3">
+                  <Icon size={20} className={isActive ? 'text-blue-600 dark:text-blue-300' : 'text-gray-400'} />
+                  <span>{tab.label}</span>
+                </div>
+                {tab.enDesarrollo && (
+                  <span className="text-[10px] bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">
+                    Beta
+                  </span>
+                )}
               </button>
             );
           })}
@@ -488,164 +499,39 @@ export default function ReportesPanel({ initialTab = 'asistencias' }) {
 
         {/* TAB 2: DOCUMENTOS OFICIALES */}
         {activeTab === 'documentos' && (
-          <div className="space-y-6">
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <Award className="text-blue-600 w-5 h-5" />
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Documento Oficial</h2>
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    <Users className="inline w-4 h-4 mr-1" />Estudiante
-                  </label>
-                  <select
-                    value={alumnoSeleccionado}
-                    onChange={(e) => setAlumnoSeleccionado(e.target.value)}
-                    className="w-full bg-white dark:bg-gray-900/50 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">-- Selecciona un estudiante --</option>
-                    {alumnos.map(a => (
-                      <option key={a.id} value={a.id}>
-                        {a.nombres} {a.apellidos} — {a.carnet}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Tipo de Documento</label>
-                  <div className="flex gap-4">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input type="radio" checked={tipoDocumento === 'constancia'} onChange={() => setTipoDocumento('constancia')} className="text-blue-600" />
-                      <span className="text-gray-700 dark:text-gray-300">Constancia de Inscripción</span>
-                    </label>
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input type="radio" checked={tipoDocumento === 'carta'} onChange={() => setTipoDocumento('carta')} className="text-blue-600" />
-                      <span className="text-gray-700 dark:text-gray-300">Carta de Conducta</span>
-                    </label>
-                  </div>
-                </div>
-
-                <button
-                  onClick={handleGenerarDocumento}
-                  disabled={generandoDoc || !alumnoSeleccionado}
-                  className={`flex items-center justify-center gap-3 px-6 py-4 rounded-lg transition w-full ${
-                    generandoDoc || !alumnoSeleccionado
-                      ? 'bg-gray-300 cursor-not-allowed text-gray-500'
-                      : 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:scale-105'
-                  }`}
-                >
-                  {generandoDoc ? (
-                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  ) : (
-                    <FileText className="w-5 h-5" />
-                  )}
-                  <div className="text-left">
-                    <div className="font-semibold">{generandoDoc ? 'Generando...' : 'Generar Documento PDF'}</div>
-                    <div className="text-sm opacity-90">El documento se descargará automáticamente</div>
-                  </div>
-                </button>
-              </div>
+          <div className="flex flex-col items-center justify-center py-20 text-center">
+            <div className="w-20 h-20 bg-blue-50 dark:bg-blue-900/20 rounded-full flex items-center justify-center mb-4">
+              <Award size={40} className="text-blue-600 dark:text-blue-400" />
             </div>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">Generación de Documentos</h2>
+            <p className="text-gray-600 dark:text-gray-400 max-w-md">
+              Esta función está actualmente en desarrollo. Próximamente podrás generar constancias de inscripción, cartas de conducta y otros documentos oficiales directamente desde aquí.
+            </p>
+            <button 
+              onClick={() => setActiveTab('asistencias')}
+              className="mt-6 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+            >
+              Volver a Reportes
+            </button>
           </div>
         )}
 
         {/* TAB 3: CARNETS */}
         {activeTab === 'carnets' && (
-          <div className="space-y-6">
-            {/* Carnet de Alumno */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <CreditCard className="text-blue-600 w-5 h-5" />
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Carnet de Alumno</h2>
-              </div>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    <Users className="inline w-4 h-4 mr-1" />Selecciona un Alumno
-                  </label>
-                  <select
-                    value={alumnoCarnet}
-                    onChange={(e) => setAlumnoCarnet(e.target.value)}
-                    className="w-full bg-white dark:bg-gray-900/50 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">-- Selecciona un alumno --</option>
-                    {alumnos.filter(a => a.estado === 'activo').map(a => (
-                      <option key={a.id} value={a.id}>
-                        {a.nombres} {a.apellidos} — {a.grado} — {a.carnet}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <button
-                  onClick={handleGenerarCarnetAlumno}
-                  disabled={generandoCarnet || !alumnoCarnet}
-                  className={`flex items-center justify-center gap-3 px-6 py-4 rounded-lg transition w-full ${
-                    generandoCarnet || !alumnoCarnet
-                      ? 'bg-gray-300 cursor-not-allowed text-gray-500'
-                      : 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:scale-105'
-                  }`}
-                >
-                  {generandoCarnet ? (
-                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  ) : (
-                    <CreditCard className="w-5 h-5" />
-                  )}
-                  <div className="text-left">
-                    <div className="font-semibold">{generandoCarnet ? 'Generando...' : 'Generar Carnet de Alumno'}</div>
-                    <div className="text-sm opacity-90">Incluye foto, QR y datos académicos</div>
-                  </div>
-                </button>
-              </div>
+          <div className="flex flex-col items-center justify-center py-20 text-center">
+            <div className="w-20 h-20 bg-green-50 dark:bg-green-900/20 rounded-full flex items-center justify-center mb-4">
+              <CreditCard size={40} className="text-green-600 dark:text-green-400" />
             </div>
-
-            {/* Carnet de Personal */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <User className="text-green-600 w-5 h-5" />
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Carnet de Personal</h2>
-              </div>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    <User className="inline w-4 h-4 mr-1" />Selecciona un Miembro del Personal
-                  </label>
-                  <select
-                    value={personalCarnet}
-                    onChange={(e) => setPersonalCarnet(e.target.value)}
-                    className="w-full bg-white dark:bg-gray-900/50 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">-- Selecciona un miembro del personal --</option>
-                    {personal.map(p => (
-                      <option key={p.id} value={p.id}>
-                        {p.nombres} {p.apellidos} — {p.cargo || 'Personal'}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <button
-                  onClick={handleGenerarCarnetPersonal}
-                  disabled={generandoCarnet || !personalCarnet}
-                  className={`flex items-center justify-center gap-3 px-6 py-4 rounded-lg transition w-full ${
-                    generandoCarnet || !personalCarnet
-                      ? 'bg-gray-300 cursor-not-allowed text-gray-500'
-                      : 'bg-green-600 hover:bg-green-700 text-white shadow-lg hover:scale-105'
-                  }`}
-                >
-                  {generandoCarnet ? (
-                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  ) : (
-                    <User className="w-5 h-5" />
-                  )}
-                  <div className="text-left">
-                    <div className="font-semibold">{generandoCarnet ? 'Generando...' : 'Generar Carnet de Personal'}</div>
-                    <div className="text-sm opacity-90">Incluye foto, QR y datos del cargo</div>
-                  </div>
-                </button>
-              </div>
-            </div>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">Diseñador de Carnets</h2>
+            <p className="text-gray-600 dark:text-gray-400 max-w-md">
+              Estamos trabajando en un potente diseñador de carnets institucionales con plantillas personalizables y generación masiva.
+            </p>
+            <button 
+              onClick={() => setActiveTab('asistencias')}
+              className="mt-6 px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
+            >
+              Volver a Reportes
+            </button>
           </div>
         )}
       </div>

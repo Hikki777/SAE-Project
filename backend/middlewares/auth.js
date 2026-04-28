@@ -10,6 +10,11 @@ function extractToken(req) {
 }
 
 function verifyJWT(req, res, next) {
+  // Log para depuración de tokens ausentes
+  if (!req.headers.authorization) {
+    console.warn(`[AUTH] Token ausente en petición: ${req.method} ${req.url}`);
+  }
+
   const token = extractToken(req);
   if (!token) {
     return res.status(401).json({ error: 'No autorizado: token ausente' });

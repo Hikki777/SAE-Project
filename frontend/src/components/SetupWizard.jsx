@@ -1,8 +1,10 @@
+/* global __APP_VERSION__ */
 import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import client from '../api/client';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
-import { School, User, Lock, Clock, CheckCircle, MapPin, Mail, Phone, LogOut, LogIn, Upload, Edit2, Server, Wifi, Globe, Eye, EyeOff, Copy, Download, Users, Camera, Network, Info } from 'lucide-react';
+import { School, User, Lock, Clock, CheckCircle, MapPin, Mail, Phone, LogOut, LogIn, Upload, Edit2, Server, Wifi, Globe, Eye, EyeOff, Copy, Download, Users, Camera, Network, Info, AlertCircle } from 'lucide-react';
 import ConnectionModal from './ConnectionModal';
 import PasswordStrengthIndicator from './PasswordStrengthIndicator';
 import GenderAvatar from './GenderAvatar';
@@ -11,6 +13,7 @@ import WebcamCaptureModal from './WebcamCaptureModal';
 export default function SetupWizard({ onComplete }) {
   const navigate = useNavigate();
   const [step, setStep] = useState(0); // 0: Mode Selection
+  const [mode, setMode] = useState(null); // 'server' or 'client'
   const [loading, setLoading] = useState(false);
   const [serverUrl, setServerUrl] = useState('');
   const [connectionStatus, setConnectionStatus] = useState(null); // null, 'connecting', 'synchronizing', 'connected', 'error'
@@ -422,7 +425,7 @@ export default function SetupWizard({ onComplete }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-transparent overflow-auto text-text-primary bg-grid-pattern">
+    <div className="fixed inset-0 bg-transparent overflow-auto text-text-primary bg-grid-pattern dark">
       {/* Fondo decorativo (Technological Texture) */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
         <div className="absolute top-0 left-0 w-[500px] h-[500px] bg-accent/5 rounded-full mix-blend-screen filter blur-[100px] animate-blob"></div>
@@ -487,6 +490,14 @@ export default function SetupWizard({ onComplete }) {
                step === 4 ? '¡Completado!' : ''}
             </h2>
 
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={step}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.3 }}
+              >
             {/* PASO 0: Selección de Modo */}
             {step === 0 && (
               <div className="space-y-2">
@@ -495,16 +506,25 @@ export default function SetupWizard({ onComplete }) {
                 </p>
 
                 {/* Nueva Instalación */}
-                <div 
-                  onClick={() => setStep(1)}
-                  className="border-2 border-white/10 hover:border-blue-500 rounded-xl p-6 cursor-pointer transition-all hover:bg-blue-50 group"
+                <div
+                  onClick={() => {
+                    setMode('server');
+                    setStep(1);
+                  }}
+                  className={`border-2 rounded-xl p-6 cursor-pointer transition-all group backdrop-blur-xl relative overflow-hidden ${
+                    mode === 'server' 
+                    ? 'border-accent bg-accent/5 shadow-glow' 
+                    : 'border-white/10 bg-white/5 hover:border-white/30 hover:bg-white/10'
+                  }`}
                 >
-                  <div className="flex items-center gap-4">
-                    <div className="bg-blue-100 p-3 rounded-full group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                  <div className="flex items-center gap-4 relative z-10">
+                    <div className={`p-3 rounded-xl transition-all ${
+                      mode === 'server' ? 'bg-accent text-[#020617]' : 'bg-white/10 text-white group-hover:bg-accent group-hover:text-[#020617]'
+                    }`}>
                       <School size={32} />
                     </div>
                     <div className="flex-1">
-                      <h3 className="text-lg font-bold text-text-primary">Nueva Instalación (Servidor)</h3>
+                      <h3 className={`text-lg font-bold transition-colors ${mode === 'server' ? 'text-accent' : 'text-text-primary group-hover:text-accent'}`}>Nueva Instalación (Servidor)</h3>
                       <p className="text-text-secondary text-sm">
                         Configura este equipo como el servidor principal. Aquí se guardarán todos los datos.
                       </p>
@@ -512,36 +532,42 @@ export default function SetupWizard({ onComplete }) {
                   </div>
                 </div>
 
-
-
-
                 {/* Conectar a Servidor Existente (Cliente) */}
-                <div className="border-2 border-green-100 rounded-2xl p-8 bg-gradient-to-br from-white to-green-50/30 shadow-sm hover:shadow-md transition-all group relative overflow-hidden">
+                <div 
+                  className={`border-2 rounded-2xl p-8 backdrop-blur-xl transition-all group relative overflow-hidden ${
+                    mode === 'client' 
+                    ? 'border-emerald-500/50 bg-emerald-500/5 shadow-[0_0_20px_rgba(16,185,129,0.15)]' 
+                    : 'border-white/10 bg-white/5 hover:border-emerald-500/30'
+                  }`}
+                  onClick={() => setMode('client')}
+                >
                   {/* Decoración de fondo */}
                   <div className="absolute -right-4 -top-4 opacity-5 group-hover:opacity-10 transition-opacity">
-                    <Wifi size={120} className="text-green-600" />
+                    <Wifi size={120} className="text-emerald-500" />
                   </div>
 
                   <div className="relative z-10">
                     <div className="flex items-center gap-5 mb-6">
-                      <div className="bg-green-100 p-4 rounded-2xl text-green-700 shadow-inner group-hover:bg-green-600 group-hover:text-white transition-all transform group-hover:rotate-6">
+                      <div className={`p-4 rounded-2xl shadow-inner transition-all transform group-hover:rotate-6 ${
+                        mode === 'client' ? 'bg-emerald-500 text-[#020617]' : 'bg-white/10 text-emerald-500 group-hover:bg-emerald-500 group-hover:text-[#020617]'
+                      }`}>
                         <Wifi size={32} />
                       </div>
                       <div>
-                        <h3 className="text-xl font-black text-text-primary tracking-tight">Conectar como Equipo Cliente</h3>
+                        <h3 className={`text-xl font-black tracking-tight transition-colors ${mode === 'client' ? 'text-emerald-400' : 'text-text-primary group-hover:text-emerald-400'}`}>Conectar como Equipo Cliente</h3>
                         <p className="text-text-secondary text-sm leading-relaxed">
                           Sincroniza este dispositivo con un servidor central en tu red local.
                         </p>
                       </div>
                     </div>
 
-                    <div className="bg-bg-primary/50/60 backdrop-blur-sm border border-green-200/50 rounded-xl p-4 mb-6">
+                    <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-xl p-4 mb-6">
                       <div className="flex items-start gap-3">
-                        <Info size={18} className="text-green-600 mt-0.5 flex-shrink-0" />
+                        <Info size={18} className="text-emerald-400 mt-0.5 flex-shrink-0" />
                         <div>
-                          <p className="text-xs font-bold text-green-800 uppercase tracking-wider mb-1">¿Dónde encuentro la URL?</p>
-                          <p className="text-xs text-text-muted leading-relaxed">
-                            En el servidor principal, ve a <span className="font-semibold text-text-primary">Configuración &gt; Red</span>. 
+                          <p className="text-xs font-bold text-emerald-400 uppercase tracking-wider mb-1">¿Dónde encuentro la URL?</p>
+                          <p className="text-xs text-white/70 leading-relaxed">
+                            En el servidor principal, ve a <span className="font-semibold text-white">Configuración &gt; Red</span>. 
                             Verás un código QR o la dirección IP que debes ingresar aquí.
                           </p>
                         </div>
@@ -552,7 +578,7 @@ export default function SetupWizard({ onComplete }) {
                       <div>
                         <label className="block text-xs font-bold text-text-primary uppercase tracking-widest mb-2 ml-1">Dirección del Servidor</label>
                         <div className="relative group/input">
-                          <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within/input:text-green-600 transition-colors">
+                          <div className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30 group-focus-within/input:text-emerald-400 transition-colors">
                             <Network size={20} />
                           </div>
                           <input
@@ -560,13 +586,13 @@ export default function SetupWizard({ onComplete }) {
                             value={serverUrl}
                             onChange={(e) => setServerUrl(e.target.value)}
                             placeholder="http://192.168.1.xxx:58824"
-                            className="w-full pl-12 pr-4 py-4 border-2 border-gray-100 rounded-2xl focus:ring-4 focus:ring-green-500/10 focus:border-green-500 bg-bg-primary/50 text-text-primary font-mono text-sm transition-all shadow-inner"
+                            className="w-full pl-12 pr-4 py-4 border border-white/10 rounded-2xl focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 bg-[#020617]/50 text-emerald-400 font-mono text-sm transition-all"
                             required
                           />
                         </div>
                         <div className="flex items-center gap-2 mt-2 ml-1">
-                          <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>
-                          <p className="text-[11px] text-gray-400">Ejemplo: http://192.168.1.50:58824</p>
+                          <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
+                          <p className="text-[11px] text-text-muted">Ejemplo: http://192.168.1.50:58824</p>
                         </div>
                       </div>
 
@@ -575,8 +601,8 @@ export default function SetupWizard({ onComplete }) {
                         disabled={connectionStatus === 'connecting' || connectionStatus === 'connected'}
                         className={`w-full font-black py-4 rounded-2xl transition-all flex items-center justify-center gap-3 shadow-lg transform active:scale-95 ${
                           connectionStatus === 'connected' 
-                            ? 'bg-green-500 text-white shadow-green-200' 
-                            : 'bg-green-600 hover:bg-green-700 text-white shadow-green-200 hover:shadow-xl'
+                            ? 'bg-emerald-500 text-[#020617] shadow-emerald-500/20' 
+                            : 'bg-emerald-600 hover:bg-emerald-500 text-white hover:text-[#020617] shadow-emerald-500/10 hover:shadow-emerald-500/30'
                         }`}
                       >
                         {connectionStatus === 'connecting' ? (
@@ -616,7 +642,7 @@ export default function SetupWizard({ onComplete }) {
                         name="nombre"
                         value={formData.nombre}
                         onChange={handleChange}
-                        className="w-full pl-10 pr-4 py-2 border border-white/10 rounded-lg focus:ring-2 focus:ring-accent focus:border-accent bg-bg-primary/50 text-text-primary"
+                        className="w-full pl-10 pr-4 py-2 border border-white/10 rounded-lg focus:ring-2 focus:ring-accent focus:border-accent bg-[#020617] text-text-primary"
                         placeholder="Ej: Colegio San José"
                         required
                       />
@@ -632,7 +658,7 @@ export default function SetupWizard({ onComplete }) {
                         name="direccion"
                         value={formData.direccion}
                         onChange={handleChange}
-                        className="w-full pl-10 pr-4 py-2 border border-white/10 rounded-lg focus:ring-2 focus:ring-accent focus:border-accent bg-bg-primary/50 text-text-primary"
+                        className="w-full pl-10 pr-4 py-2 border border-white/10 rounded-lg focus:ring-2 focus:ring-accent focus:border-accent bg-[#020617] text-text-primary"
                         placeholder="Ej: 4ta Calle 10-20 Zona 1"
                       />
                     </div>
@@ -642,18 +668,18 @@ export default function SetupWizard({ onComplete }) {
                   <div>
                     <label className="block text-sm font-medium text-text-primary mb-1">País</label>
                     <div className="relative">
-                      <Globe className="absolute left-3 top-3 text-gray-400" size={18} />
+                      <Globe className="absolute left-3 top-3 text-white/30" size={18} />
                       <input
                         type="text"
                         name="pais"
                         value={formData.pais}
                         onChange={handleChange}
-                        className="w-full pl-10 pr-4 py-2 border border-white/10 rounded-lg focus:ring-2 focus:ring-accent focus:border-accent bg-bg-tertiary text-text-primary"
+                        className="w-full pl-10 pr-4 py-2 border border-white/10 rounded-lg bg-white/5 text-white/50 cursor-default"
                         placeholder="Guatemala"
                         readOnly
                       />
                     </div>
-                    <p className="text-xs text-text-muted mt-1">País configurado por defecto</p>
+                    <p className="text-xs text-white/30 mt-1">País configurado por defecto</p>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
@@ -666,7 +692,7 @@ export default function SetupWizard({ onComplete }) {
                           name="departamento"
                           value={formData.departamento}
                           onChange={handleChange}
-                          className="w-full pl-10 pr-4 py-2 border border-white/10 rounded-lg focus:ring-2 focus:ring-accent focus:border-accent bg-bg-primary/50 text-text-primary"
+                          className="w-full pl-10 pr-4 py-2 border border-white/10 rounded-lg focus:ring-2 focus:ring-accent focus:border-accent bg-[#020617] text-text-primary"
                           placeholder="Ej: Guatemala"
                         />
                       </div>
@@ -680,7 +706,7 @@ export default function SetupWizard({ onComplete }) {
                           name="municipio"
                           value={formData.municipio}
                           onChange={handleChange}
-                          className="w-full pl-10 pr-4 py-2 border border-white/10 rounded-lg focus:ring-2 focus:ring-accent focus:border-accent bg-bg-primary/50 text-text-primary"
+                          className="w-full pl-10 pr-4 py-2 border border-white/10 rounded-lg focus:ring-2 focus:ring-accent focus:border-accent bg-[#020617] text-text-primary"
                           placeholder="Ej: Guatemala"
                         />
                       </div>
@@ -697,7 +723,7 @@ export default function SetupWizard({ onComplete }) {
                           name="email"
                           value={formData.email}
                           onChange={handleChange}
-                          className="w-full pl-10 pr-4 py-2 border border-white/10 rounded-lg focus:ring-2 focus:ring-accent focus:border-accent bg-bg-primary/50 text-text-primary"
+                          className="w-full pl-10 pr-4 py-2 border border-white/10 rounded-lg focus:ring-2 focus:ring-accent focus:border-accent bg-[#020617] text-text-primary"
                           placeholder="contacto@colegio.edu"
                         />
                       </div>
@@ -711,7 +737,7 @@ export default function SetupWizard({ onComplete }) {
                           name="telefono"
                           value={formData.telefono}
                           onChange={handleChange}
-                          className="w-full pl-10 pr-4 py-2 border border-white/10 rounded-lg focus:ring-2 focus:ring-accent focus:border-accent bg-bg-primary/50 text-text-primary"
+                          className="w-full pl-10 pr-4 py-2 border border-white/10 rounded-lg focus:ring-2 focus:ring-accent focus:border-accent bg-[#020617] text-text-primary"
                           placeholder="+502 5555 5555"
                         />
                       </div>
@@ -727,8 +753,7 @@ export default function SetupWizard({ onComplete }) {
                           name="horario_inicio"
                           value={formData.horario_inicio}
                           onChange={handleChange}
-                          className="w-full pl-10 pr-2 py-2 border border-white/10 rounded-lg focus:ring-2 focus:ring-accent focus:border-accent bg-bg-primary/50 text-text-primary"
-                          style={{ colorScheme: 'light' }}
+                          className="w-full pl-10 pr-2 py-2 border border-white/10 rounded-lg focus:ring-2 focus:ring-accent focus:border-accent bg-[#020617] text-text-primary"
                           required
                         />
                       </div>
@@ -742,8 +767,7 @@ export default function SetupWizard({ onComplete }) {
                           name="horario_salida"
                           value={formData.horario_salida}
                           onChange={handleChange}
-                          className="w-full pl-10 pr-2 py-2 border border-white/10 rounded-lg focus:ring-2 focus:ring-accent focus:border-accent bg-bg-primary/50 text-text-primary"
-                          style={{ colorScheme: 'light' }}
+                          className="w-full pl-10 pr-2 py-2 border border-white/10 rounded-lg focus:ring-2 focus:ring-accent focus:border-accent bg-[#020617] text-text-primary"
                           required
                         />
                       </div>
@@ -757,7 +781,7 @@ export default function SetupWizard({ onComplete }) {
                           name="margen_puntualidad_min"
                           value={formData.margen_puntualidad_min}
                           onChange={handleChange}
-                          className="w-full pl-10 pr-2 py-2 border border-white/10 rounded-lg focus:ring-2 focus:ring-accent focus:border-accent bg-bg-primary/50 text-text-primary"
+                          className="w-full pl-10 pr-2 py-2 border border-white/10 rounded-lg focus:ring-2 focus:ring-accent focus:border-accent bg-[#020617] text-text-primary"
                           min="0"
                           required
                         />
@@ -767,7 +791,7 @@ export default function SetupWizard({ onComplete }) {
 
                   <div>
                     <label className="block text-sm font-medium text-text-primary mb-1">Logo Institucional</label>
-                    <div className="border-2 border-dashed border-white/10 rounded-xl p-6 text-center hover:bg-blue-50 hover:border-blue-400 transition-all cursor-pointer relative group">
+                    <div className="border-2 border-dashed border-white/10 rounded-xl p-6 text-center hover:bg-accent/5 hover:border-accent/50 transition-all cursor-pointer relative group backdrop-blur-sm bg-white/5">
                       <input
                         type="file"
                         accept="image/*"
@@ -779,16 +803,16 @@ export default function SetupWizard({ onComplete }) {
                         <div className="relative">
                           <img src={logoPreview} alt="Preview" className="h-24 mx-auto object-contain drop-shadow-md" />
                           <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all rounded-lg">
-                             <p className="text-transparent group-hover:text-white font-medium text-sm">Cambiar Logo</p>
+                             <p className="text-transparent group-hover:text-accent font-medium text-sm">Cambiar Logo</p>
                           </div>
                         </div>
                       ) : (
-                        <div className="flex flex-col items-center text-text-muted group-hover:text-blue-600 transition-colors">
-                          <div className="bg-bg-tertiary p-3 rounded-full mb-3 group-hover:bg-blue-100 transition-colors">
+                        <div className="flex flex-col items-center text-white/50 group-hover:text-accent transition-colors">
+                          <div className="bg-white/10 p-3 rounded-full mb-3 group-hover:bg-accent/10 transition-colors">
                               <Upload size={24} />
                           </div>
-                          <p className="font-medium">Haz clic para subir el logo</p>
-                          <p className="text-xs mt-1 text-gray-400">Soporta PNG, JPG</p>
+                          <p className="font-bold text-sm tracking-wide">Haz clic para subir el logo</p>
+                          <p className="text-[10px] mt-1 text-white/30 font-medium">Soporta PNG, JPG</p>
                         </div>
                       )}
                     </div>
@@ -803,7 +827,7 @@ export default function SetupWizard({ onComplete }) {
                          name="ciclo_escolar"
                          value={formData.ciclo_escolar}
                          onChange={handleChange}
-                         className="w-full pl-10 pr-4 py-2 border border-white/10 rounded-lg focus:ring-2 focus:ring-accent focus:border-accent bg-bg-primary/50 text-text-primary"
+                         className="w-full pl-10 pr-4 py-2 border border-white/10 rounded-lg focus:ring-2 focus:ring-accent focus:border-accent bg-[#020617] text-text-primary"
                          min="2020"
                          max="2100"
                          required
@@ -820,7 +844,7 @@ export default function SetupWizard({ onComplete }) {
                         type="button"
                         onClick={addDirector}
                         disabled={directores.length >= 5}
-                        className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="bg-accent/10 hover:bg-accent/20 text-accent border border-accent/30 px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-glow-sm"
                       >
                         <User size={16} />
                         Agregar Director
@@ -833,7 +857,7 @@ export default function SetupWizard({ onComplete }) {
 
                     <div className="space-y-4">
                       {directores.map((director, index) => (
-                        <div key={index} className="bg-bg-tertiary border border-white/10 rounded-lg p-4">
+                        <div key={index} className="bg-white/5 border border-white/10 rounded-xl p-6 backdrop-blur-sm shadow-xl">
                           <div className="flex items-center justify-between mb-3">
                             <span className="text-sm font-semibold text-text-primary">Director {index + 1}</span>
                             {directores.length > 1 && (
@@ -853,7 +877,7 @@ export default function SetupWizard({ onComplete }) {
                                 type="text"
                                 value={director.nombres}
                                 onChange={(e) => updateDirector(index, 'nombres', e.target.value)}
-                                className="w-full px-3 py-2 border border-white/10 rounded-lg focus:ring-2 focus:ring-accent bg-bg-primary/50 text-text-primary text-sm"
+                                className="w-full px-3 py-2 border border-white/10 rounded-lg focus:ring-2 focus:ring-accent bg-[#020617] text-text-primary text-sm"
                                 placeholder="Ej: Juan Carlos"
                               />
                             </div>
@@ -863,60 +887,60 @@ export default function SetupWizard({ onComplete }) {
                                 type="text"
                                 value={director.apellidos}
                                 onChange={(e) => updateDirector(index, 'apellidos', e.target.value)}
-                                className="w-full px-3 py-2 border border-white/10 rounded-lg focus:ring-2 focus:ring-accent bg-bg-primary/50 text-text-primary text-sm"
+                                className="w-full px-3 py-2 border border-white/10 rounded-lg focus:ring-2 focus:ring-accent bg-[#020617] text-text-primary text-sm"
                                 placeholder="Ej: Pérez López"
                               />
                             </div>
                             <div className="col-span-2">
-                              <label className="block text-xs font-medium text-text-primary mb-1">Cargo</label>
+                              <label className="block text-xs font-medium text-text-primary mb-1 uppercase tracking-widest">Cargo</label>
                               <select
                                 value={director.cargo}
                                 onChange={(e) => updateDirector(index, 'cargo', e.target.value)}
-                                className="w-full px-3 py-2 border border-white/10 rounded-lg focus:ring-2 focus:ring-accent bg-bg-primary/50 text-text-primary text-sm"
+                                className="w-full px-3 py-2 border border-white/10 rounded-lg focus:ring-2 focus:ring-accent bg-[#020617] text-text-primary text-sm appearance-none cursor-pointer"
                               >
-                                <option value="">Seleccione un cargo...</option>
-                                <option value="Director General">Director General</option>
-                                <option value="Directora General">Directora General</option>
-                                <option value="Director">Director</option>
-                                <option value="Directora">Directora</option>
-                                <option value="Director Técnico">Director Técnico</option>
-                                <option value="Directora Técnica">Directora Técnica</option>
-                                <option value="Director Administrativo">Director Administrativo</option>
-                                <option value="Directora Administrativa">Directora Administrativa</option>
-                                <option value="Subdirector">Subdirector</option>
-                                <option value="Subdirectora">Subdirectora</option>
-                                <option value="Subdirector Técnico">Subdirector Técnico</option>
-                                <option value="Subdirectora Técnica">Subdirectora Técnica</option>
+                                <option value="" className="bg-[#0f172a]">Seleccione un cargo...</option>
+                                <option value="Director General" className="bg-[#0f172a]">Director General</option>
+                                <option value="Directora General" className="bg-[#0f172a]">Directora General</option>
+                                <option value="Director" className="bg-[#0f172a]">Director</option>
+                                <option value="Directora" className="bg-[#0f172a]">Directora</option>
+                                <option value="Director Técnico" className="bg-[#0f172a]">Director Técnico</option>
+                                <option value="Directora Técnica" className="bg-[#0f172a]">Directora Técnica</option>
+                                <option value="Director Administrativo" className="bg-[#0f172a]">Director Administrativo</option>
+                                <option value="Directora Administrativa" className="bg-[#0f172a]">Directora Administrativa</option>
+                                <option value="Subdirector" className="bg-[#0f172a]">Subdirector</option>
+                                <option value="Subdirectora" className="bg-[#0f172a]">Subdirectora</option>
+                                <option value="Subdirector Técnico" className="bg-[#0f172a]">Subdirector Técnico</option>
+                                <option value="Subdirectora Técnica" className="bg-[#0f172a]">Subdirectora Técnica</option>
                               </select>
                             </div>
                             <div>
-                              <label className="block text-xs font-medium text-text-primary mb-1">Sexo</label>
+                              <label className="block text-xs font-medium text-text-primary mb-1 uppercase tracking-widest">Sexo</label>
                               <select
                                 value={director.sexo || ''}
                                 onChange={(e) => updateDirector(index, 'sexo', e.target.value)}
-                                className="w-full px-3 py-2 border border-white/10 rounded-lg focus:ring-2 focus:ring-accent bg-bg-primary/50 text-text-primary text-sm"
+                                className="w-full px-3 py-2 border border-white/10 rounded-lg focus:ring-2 focus:ring-accent bg-[#020617] text-text-primary text-sm appearance-none cursor-pointer"
                               >
-                                <option value="">Seleccione...</option>
-                                <option value="Masculino">Masculino</option>
-                                <option value="Femenino">Femenino</option>
+                                <option value="" className="bg-[#0f172a]">Seleccione...</option>
+                                <option value="Masculino" className="bg-[#0f172a]">Masculino</option>
+                                <option value="Femenino" className="bg-[#0f172a]">Femenino</option>
                               </select>
                             </div>
                             <div>
-                              <label className="block text-xs font-medium text-text-primary mb-1">Jornada</label>
+                              <label className="block text-xs font-medium text-text-primary mb-1 uppercase tracking-widest">Jornada</label>
                               <select
                                 value={director.jornada}
                                 onChange={(e) => updateDirector(index, 'jornada', e.target.value)}
-                                className="w-full px-3 py-2 border border-white/10 rounded-lg focus:ring-2 focus:ring-accent bg-bg-primary/50 text-text-primary text-sm"
+                                className="w-full px-3 py-2 border border-white/10 rounded-lg focus:ring-2 focus:ring-accent bg-[#020617] text-text-primary text-sm appearance-none cursor-pointer"
                               >
-                                <option value="">-</option>
-                                <option value="Matutina">Matutina</option>
-                                <option value="Vespertina">Vespertina</option>
-                                <option value="Nocturna">Nocturna</option>
-                                <option value="Semipresencial">Semipresencial</option>
-                                <option value="Virtual">Virtual</option>
-                                <option value="Fin de Semana (Sábado)">Fin de Semana (Sábado)</option>
-                                <option value="Fin de Semana (Domingo)">Fin de Semana (Domingo)</option>
-                                <option value="Extendida">Extendida</option>
+                                <option value="" className="bg-[#0f172a]">-</option>
+                                <option value="Matutina" className="bg-[#0f172a]">Matutina</option>
+                                <option value="Vespertina" className="bg-[#0f172a]">Vespertina</option>
+                                <option value="Nocturna" className="bg-[#0f172a]">Nocturna</option>
+                                <option value="Semipresencial" className="bg-[#0f172a]">Semipresencial</option>
+                                <option value="Virtual" className="bg-[#0f172a]">Virtual</option>
+                                <option value="Fin de Semana (Sábado)" className="bg-[#0f172a]">Fin de Semana (Sábado)</option>
+                                <option value="Fin de Semana (Domingo)" className="bg-[#0f172a]">Fin de Semana (Domingo)</option>
+                                <option value="Extendida" className="bg-[#0f172a]">Extendida</option>
                               </select>
                             </div>
                             <div className="col-span-2">
@@ -939,11 +963,11 @@ export default function SetupWizard({ onComplete }) {
                                        input.onchange = (e) => handleDirectorFotoChange(index, e);
                                        input.click();
                                      }}
-                                     className="p-1.5 bg-bg-tertiary border border-white/10 rounded-lg text-text-secondary hover:bg-gray-200 transition-colors flex items-center gap-1.5"
+                                     className="p-1.5 bg-white/10 border border-white/10 rounded-lg text-text-primary hover:bg-white/20 transition-all flex items-center gap-1.5"
                                      title="Subir archivo"
                                    >
                                       <Upload size={14} />
-                                      <span className="text-[10px] font-semibold">Subir</span>
+                                      <span className="text-[10px] font-semibold uppercase tracking-wider">Subir</span>
                                    </button>
                                    <button
                                      type="button"
@@ -951,11 +975,11 @@ export default function SetupWizard({ onComplete }) {
                                        setWebcamTarget({ type: 'director', index });
                                        setShowWebcam(true);
                                      }}
-                                     className="p-1.5 bg-blue-50 border border-blue-200 rounded-lg text-blue-600 hover:bg-blue-100 transition-colors flex items-center gap-1.5"
+                                     className="p-1.5 bg-accent/10 border border-accent/30 rounded-lg text-accent hover:bg-accent/20 transition-all flex items-center gap-1.5"
                                      title="Tomar foto"
                                    >
                                       <Camera size={14} />
-                                      <span className="text-[10px] font-semibold">Cámara</span>
+                                      <span className="text-[10px] font-semibold uppercase tracking-wider">Cámara</span>
                                    </button>
                                 </div>
                               </div>
@@ -966,11 +990,11 @@ export default function SetupWizard({ onComplete }) {
                     </div>
                   </div>
 
-                  <div className="flex gap-3 pt-4">
+                  <div className="flex gap-3 pt-6">
                     <button
                       type="button"
                       onClick={() => setStep(0)}
-                      className="w-1/3 bg-gray-200 hover:bg-gray-300 text-text-primary font-bold py-3 rounded-lg transition-colors"
+                      className="w-1/3 bg-white/5 hover:bg-white/10 text-text-primary border border-white/10 font-bold py-3 rounded-xl transition-all"
                     >
                       Atrás
                     </button>
@@ -978,7 +1002,7 @@ export default function SetupWizard({ onComplete }) {
                       type="button"
                       onClick={() => setStep(2)}
                       disabled={!formData.nombre || !formData.logo_file}
-                      className="w-2/3 bg-accent hover:bg-accent-light text-[#020617] font-bold shadow-glow border border-accent/50 text-white font-bold py-3 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                      className="w-2/3 bg-accent hover:bg-accent-light text-[#020617] font-black py-3 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-glow hover:shadow-accent/20 transform hover:-translate-y-0.5 active:scale-95"
                     >
                       Siguiente
                     </button>
@@ -999,7 +1023,7 @@ export default function SetupWizard({ onComplete }) {
                           name="admin_nombres"
                           value={formData.admin_nombres}
                           onChange={handleChange}
-                          className="w-full pl-10 pr-4 py-2 border border-white/10 rounded-lg focus:ring-2 focus:ring-accent bg-bg-primary/50 text-text-primary"
+                          className="w-full pl-10 pr-4 py-2 border border-white/10 rounded-lg focus:ring-2 focus:ring-accent bg-white/10 text-white"
                           placeholder="Juan"
                           required
                         />
@@ -1014,7 +1038,7 @@ export default function SetupWizard({ onComplete }) {
                           name="admin_apellidos"
                           value={formData.admin_apellidos}
                           onChange={handleChange}
-                          className="w-full pl-10 pr-4 py-2 border border-white/10 rounded-lg focus:ring-2 focus:ring-accent bg-bg-primary/50 text-text-primary"
+                          className="w-full pl-10 pr-4 py-2 border border-white/10 rounded-lg focus:ring-2 focus:ring-accent bg-white/10 text-white"
                           placeholder="Pérez"
                           required
                         />
@@ -1024,47 +1048,47 @@ export default function SetupWizard({ onComplete }) {
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-text-primary mb-1">Cargo</label>
+                      <label className="block text-sm font-medium text-text-primary mb-1 uppercase tracking-widest text-[11px]">Cargo</label>
                       <div className="relative">
-                        <User className="absolute left-3 top-3 text-gray-400" size={18} />
+                        <User className="absolute left-3 top-3 text-white/30" size={18} />
                         <select
                           name="admin_cargo"
                           value={formData.admin_cargo}
                           onChange={handleChange}
-                          className="w-full pl-10 pr-4 py-2 border border-white/10 rounded-lg focus:ring-2 focus:ring-accent appearance-none bg-bg-primary/50 text-text-primary font-medium"
+                          className="w-full pl-10 pr-4 py-2 border border-white/10 rounded-lg focus:ring-2 focus:ring-accent appearance-none bg-[#020617] text-text-primary font-medium cursor-pointer"
                           required
                         >
-                          <option value="">Seleccione...</option>
-                          <option value="Director">Director</option>
-                          <option value="Directora">Directora</option>
-                          <option value="Director General">Director General</option>
-                          <option value="Directora General">Directora General</option>
-                          <option value="Director Técnico">Director Técnico</option>
-                          <option value="Directora Técnica">Directora Técnica</option>
-                          <option value="Director Administrativo">Director Administrativo</option>
-                          <option value="Directora Administrativa">Directora Administrativa</option>
-                          <option value="Subdirector">Subdirector</option>
-                          <option value="Subdirectora">Subdirectora</option>
-                          <option value="Subdirector Técnico">Subdirector Técnico</option>
-                          <option value="Subdirectora Técnica">Subdirectora Técnica</option>
-                          <option value="Docente">Docente</option>
-                          <option value="Secretaria">Secretaria</option>
-                          <option value="Secretario">Secretario</option>
-                          <option value="Operativo">Operativo</option>
-                          <option value="Auxiliar">Auxiliar</option>
+                          <option value="" className="bg-[#0f172a]">Seleccione...</option>
+                          <option value="Director" className="bg-[#0f172a]">Director</option>
+                          <option value="Directora" className="bg-[#0f172a]">Directora</option>
+                          <option value="Director General" className="bg-[#0f172a]">Director General</option>
+                          <option value="Directora General" className="bg-[#0f172a]">Directora General</option>
+                          <option value="Director Técnico" className="bg-[#0f172a]">Director Técnico</option>
+                          <option value="Directora Técnica" className="bg-[#0f172a]">Directora Técnica</option>
+                          <option value="Director Administrativo" className="bg-[#0f172a]">Director Administrativo</option>
+                          <option value="Directora Administrativa" className="bg-[#0f172a]">Directora Administrativa</option>
+                          <option value="Subdirector" className="bg-[#0f172a]">Subdirector</option>
+                          <option value="Subdirectora" className="bg-[#0f172a]">Subdirectora</option>
+                          <option value="Subdirector Técnico" className="bg-[#0f172a]">Subdirector Técnico</option>
+                          <option value="Subdirectora Técnica" className="bg-[#0f172a]">Subdirectora Técnica</option>
+                          <option value="Docente" className="bg-[#0f172a]">Docente</option>
+                          <option value="Secretaria" className="bg-[#0f172a]">Secretaria</option>
+                          <option value="Secretario" className="bg-[#0f172a]">Secretario</option>
+                          <option value="Operativo" className="bg-[#0f172a]">Operativo</option>
+                          <option value="Auxiliar" className="bg-[#0f172a]">Auxiliar</option>
                         </select>
                       </div>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-text-primary mb-1">Nombre de Usuario</label>
+                      <label className="block text-sm font-medium text-text-primary mb-1 uppercase tracking-widest text-[11px]">Nombre de Usuario</label>
                       <div className="relative">
-                        <LogIn className="absolute left-3 top-3 text-gray-400" size={18} />
+                        <LogIn className="absolute left-3 top-3 text-white/30" size={18} />
                         <input
                           type="text"
                           name="admin_username"
                           value={formData.admin_username}
                           onChange={handleChange}
-                          className="w-full pl-10 pr-4 py-2 border border-white/10 rounded-lg focus:ring-2 focus:ring-accent bg-bg-primary/50 text-text-primary font-medium"
+                          className="w-full pl-10 pr-4 py-2 border border-white/10 rounded-lg focus:ring-2 focus:ring-accent bg-white/10 text-white"
                           placeholder="admin_acceso"
                           required={!formData.admin_email}
                         />
@@ -1072,25 +1096,25 @@ export default function SetupWizard({ onComplete }) {
                       <p className="text-[10px] text-text-muted mt-0.5">Identificador único para entrar al sistema</p>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-text-primary mb-1">Jornada</label>
+                      <label className="block text-sm font-medium text-text-primary mb-1 uppercase tracking-widest text-[11px]">Jornada</label>
                       <div className="relative">
-                        <Clock className="absolute left-3 top-3 text-gray-400" size={18} />
+                        <Clock className="absolute left-3 top-3 text-white/30" size={18} />
                         <select
                           name="admin_jornada"
                           value={formData.admin_jornada}
                           onChange={handleChange}
-                          className="w-full pl-10 pr-4 py-2 border border-white/10 rounded-lg focus:ring-2 focus:ring-accent appearance-none bg-bg-primary/50 text-text-primary"
+                          className="w-full pl-10 pr-4 py-2 border border-white/10 rounded-lg focus:ring-2 focus:ring-accent appearance-none bg-[#020617] text-text-primary font-medium cursor-pointer"
                           required
                         >
-                          <option value="">Seleccione...</option>
-                          <option value="Matutina">Matutina</option>
-                          <option value="Vespertina">Vespertina</option>
-                          <option value="Nocturna">Nocturna</option>
-                          <option value="Semipresencial">Semipresencial</option>
-                          <option value="Virtual">Virtual</option>
-                          <option value="Fin de Semana (Sábado)">Fin de Semana (Sábado)</option>
-                          <option value="Fin de Semana (Domingo)">Fin de Semana (Domingo)</option>
-                          <option value="Extendida">Extendida</option>
+                          <option value="" className="bg-[#0f172a]">Seleccione...</option>
+                          <option value="Matutina" className="bg-[#0f172a]">Matutina</option>
+                          <option value="Vespertina" className="bg-[#0f172a]">Vespertina</option>
+                          <option value="Nocturna" className="bg-[#0f172a]">Nocturna</option>
+                          <option value="Semipresencial" className="bg-[#0f172a]">Semipresencial</option>
+                          <option value="Virtual" className="bg-[#0f172a]">Virtual</option>
+                          <option value="Fin de Semana (Sábado)" className="bg-[#0f172a]">Fin de Semana (Sábado)</option>
+                          <option value="Fin de Semana (Domingo)" className="bg-[#0f172a]">Fin de Semana (Domingo)</option>
+                          <option value="Extendida" className="bg-[#0f172a]">Extendida</option>
                         </select>
                       </div>
                     </div>
@@ -1116,11 +1140,11 @@ export default function SetupWizard({ onComplete }) {
                                input.onchange = (e) => handleAdminFotoChange(e);
                                input.click();
                              }}
-                             className="p-2 bg-bg-tertiary border border-white/10 rounded-lg text-text-secondary hover:bg-gray-200 transition-colors flex items-center gap-2"
+                             className="p-2 bg-white/10 border border-white/10 rounded-lg text-text-primary hover:bg-white/20 transition-all flex items-center gap-2"
                              title="Subir archivo"
                            >
                               <Upload size={16} />
-                              <span className="text-xs font-semibold">Subir</span>
+                              <span className="text-xs font-semibold uppercase tracking-wider">Subir</span>
                            </button>
                            <button
                              type="button"
@@ -1128,11 +1152,11 @@ export default function SetupWizard({ onComplete }) {
                                setWebcamTarget({ type: 'admin', index: null });
                                setShowWebcam(true);
                              }}
-                             className="p-2 bg-blue-50 border border-blue-200 rounded-lg text-blue-600 hover:bg-blue-100 transition-colors flex items-center gap-2"
+                             className="p-2 bg-accent/10 border border-accent/30 rounded-lg text-accent hover:bg-accent/20 transition-all flex items-center gap-2"
                              title="Tomar foto"
                            >
                               <Camera size={16} />
-                              <span className="text-xs font-semibold">Cámara</span>
+                              <span className="text-xs font-semibold uppercase tracking-wider">Cámara</span>
                            </button>
                         </div>
                      </div>
@@ -1147,7 +1171,7 @@ export default function SetupWizard({ onComplete }) {
                         name="admin_email"
                         value={formData.admin_email}
                         onChange={handleChange}
-                        className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-accent bg-bg-primary/50 text-text-primary ${
+                        className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-accent bg-[#020617] text-text-primary ${
                           formData.admin_email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.admin_email)
                             ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
                             : 'border-white/10'
@@ -1173,7 +1197,7 @@ export default function SetupWizard({ onComplete }) {
                         name="admin_password"
                         value={formData.admin_password}
                         onChange={handleChange}
-                        className="w-full pl-10 pr-12 py-2 border border-white/10 rounded-lg focus:ring-2 focus:ring-accent bg-bg-primary/50 text-text-primary"
+                        className="w-full pl-10 pr-12 py-2 border border-white/10 rounded-lg focus:ring-2 focus:ring-accent bg-[#020617] text-text-primary"
                         placeholder="••••••••"
                         required
                         minLength={6}
@@ -1199,7 +1223,7 @@ export default function SetupWizard({ onComplete }) {
                         name="admin_password_confirm"
                         value={formData.admin_password_confirm}
                         onChange={handleChange}
-                        className="w-full pl-10 pr-12 py-2 border border-white/10 rounded-lg focus:ring-2 focus:ring-accent bg-bg-primary/50 text-text-primary"
+                        className="w-full pl-10 pr-12 py-2 border border-white/10 rounded-lg focus:ring-2 focus:ring-accent bg-[#020617] text-text-primary"
                         placeholder="••••••••"
                         required
                         minLength={8}
@@ -1215,11 +1239,11 @@ export default function SetupWizard({ onComplete }) {
                     </div>
                   </div>
 
-                  <div className="flex gap-3 pt-4">
+                  <div className="flex gap-3 pt-6">
                     <button
                       type="button"
                       onClick={() => setStep(1)}
-                      className="w-1/3 bg-gray-200 hover:bg-gray-300 text-text-primary font-bold py-3 rounded-lg transition-colors"
+                      className="w-1/3 bg-white/5 hover:bg-white/10 text-text-primary border border-white/10 font-bold py-3 rounded-xl transition-all"
                     >
                       Atrás
                     </button>
@@ -1227,7 +1251,7 @@ export default function SetupWizard({ onComplete }) {
                       type="button"
                       onClick={() => setStep(3)}
                       disabled={(!formData.admin_email && !formData.admin_username) || !formData.admin_password || formData.admin_password !== formData.admin_password_confirm}
-                      className="w-2/3 bg-accent hover:bg-accent-light text-[#020617] font-bold shadow-glow border border-accent/50 text-white font-bold py-3 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                      className="w-2/3 bg-accent hover:bg-accent-light text-[#020617] font-black py-3 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-glow hover:shadow-accent/20 transform hover:-translate-y-0.5 active:scale-95"
                     >
                       Siguiente
                     </button>
@@ -1239,239 +1263,258 @@ export default function SetupWizard({ onComplete }) {
               {step === 3 && (
                 <div className="space-y-4">
                   {/* Datos Institucionales */}
-                  <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
-                    <div className="flex items-center justify-between mb-3">
-                      <h3 className="font-bold text-text-primary flex items-center gap-2">
-                        <School size={20} className="text-blue-600" />
-                        Datos Institucionales
-                      </h3>
-                      <button
-                        type="button"
-                        onClick={() => setStep(1)}
-                        className="text-blue-600 hover:text-blue-700 text-sm flex items-center gap-1"
-                      >
-                        <Edit2 size={14} />
-                        Editar
-                      </button>
+                  <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-6 border border-white/10 shadow-xl relative overflow-hidden group">
+                    <div className="absolute -right-4 -top-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                      <School size={100} className="text-accent" />
                     </div>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-text-secondary">Nombre:</span>
-                        <span className="font-medium text-text-primary">{formData.nombre}</span>
+                    <div className="relative z-10">
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="font-bold text-accent flex items-center gap-2 text-lg uppercase tracking-wider">
+                          <School size={22} />
+                          Datos Institucionales
+                        </h3>
+                        <button
+                          type="button"
+                          onClick={() => setStep(1)}
+                          className="bg-accent/10 hover:bg-accent/20 text-accent p-2 rounded-lg transition-all"
+                        >
+                          <Edit2 size={16} />
+                        </button>
                       </div>
-                      {formData.direccion && (
-                        <div className="flex justify-between">
-                          <span className="text-text-secondary">Dirección:</span>
-                          <span className="font-medium text-text-primary">{formData.direccion}</span>
+                      <div className="space-y-3 text-sm">
+                        <div className="flex justify-between border-b border-white/5 pb-2">
+                          <span className="text-text-secondary">Nombre:</span>
+                          <span className="font-bold text-text-primary">{formData.nombre}</span>
                         </div>
-                      )}
-                      <div className="flex justify-between">
-                        <span className="text-text-secondary">Ubicación:</span>
-                        <span className="font-medium text-text-primary">Guatemala - {formData.departamento} - {formData.municipio}</span>
-                      </div>
-                      {formData.email && (
-                        <div className="flex justify-between">
-                          <span className="text-text-secondary">Email:</span>
-                          <span className="font-medium text-text-primary">{formData.email}</span>
+                        {formData.direccion && (
+                          <div className="flex justify-between border-b border-white/5 pb-2">
+                            <span className="text-text-secondary">Dirección:</span>
+                            <span className="font-medium text-text-primary">{formData.direccion}</span>
+                          </div>
+                        )}
+                        <div className="flex justify-between border-b border-white/5 pb-2">
+                          <span className="text-text-secondary">Ubicación:</span>
+                          <span className="font-medium text-text-primary">Guatemala - {formData.departamento} - {formData.municipio}</span>
                         </div>
-                      )}
-                      {formData.telefono && (
-                        <div className="flex justify-between">
-                          <span className="text-text-secondary">Teléfono:</span>
-                          <span className="font-medium text-text-primary">{formData.telefono}</span>
+                        {formData.email && (
+                          <div className="flex justify-between border-b border-white/5 pb-2">
+                            <span className="text-text-secondary">Email:</span>
+                            <span className="font-medium text-text-primary italic">{formData.email}</span>
+                          </div>
+                        )}
+                        {formData.telefono && (
+                          <div className="flex justify-between border-b border-white/5 pb-2">
+                            <span className="text-text-secondary">Teléfono:</span>
+                            <span className="font-medium text-text-primary">{formData.telefono}</span>
+                          </div>
+                        )}
+                        <div className="flex justify-between border-b border-white/5 pb-2">
+                          <span className="text-text-secondary">Horario:</span>
+                          <span className="font-medium px-2 py-0.5 bg-accent/10 rounded text-accent">{formData.horario_inicio} - {formData.horario_salida}</span>
                         </div>
-                      )}
-                      <div className="flex justify-between">
-                        <span className="text-text-secondary">Horario:</span>
-                        <span className="font-medium text-text-primary">{formData.horario_inicio} - {formData.horario_salida}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-text-secondary">Ciclo Escolar:</span>
-                        <span className="font-medium text-text-primary">{formData.ciclo_escolar}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-text-secondary">Margen:</span>
-                        <span className="font-medium text-text-primary">{formData.margen_puntualidad_min} min</span>
-                      </div>
-                      {logoPreview && (
-                        <div className="mt-3 pt-3 border-t border-blue-200">
-                          <p className="text-text-secondary text-xs mb-2">Logo:</p>
-                          <img src={logoPreview} alt="Logo" className="h-16 object-contain" />
+                        <div className="flex justify-between border-b border-white/5 pb-2">
+                          <span className="text-text-secondary">Ciclo Escolar:</span>
+                          <span className="font-bold text-accent">{formData.ciclo_escolar}</span>
                         </div>
-                      )}
+                        <div className="flex justify-between border-b border-white/5 pb-2">
+                          <span className="text-text-secondary">Margen:</span>
+                          <span className="font-medium text-text-primary">{formData.margen_puntualidad_min} min</span>
+                        </div>
+                        {logoPreview && (
+                          <div className="mt-4 flex items-center gap-4 bg-[#020617]/50 p-3 rounded-xl border border-white/5">
+                            <p className="text-white/60 text-xs uppercase tracking-widest font-bold">Logo:</p>
+                            <img src={logoPreview} alt="Logo" className="h-12 w-12 object-contain rounded-lg bg-white p-1" />
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
 
                   {/* Directores Agregados */}
                   {directores.length > 0 && (
-                    <div className="bg-purple-50 rounded-lg p-4 border border-purple-200">
-                      <div className="flex items-center justify-between mb-3">
-                        <h3 className="font-bold text-text-primary flex items-center gap-2">
-                          <Users size={20} className="text-purple-600" />
-                          Directores ({directores.length})
-                        </h3>
-                        <button
-                          type="button"
-                          onClick={() => setStep(1)}
-                          className="text-purple-600 hover:text-purple-700 text-sm flex items-center gap-1"
-                        >
-                          <Edit2 size={14} />
-                          Editar
-                        </button>
+                    <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-6 border border-white/10 shadow-xl relative overflow-hidden group">
+                      <div className="absolute -right-4 -top-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                        <Users size={100} className="text-emerald-500" />
                       </div>
-                      <div className="space-y-3">
-                        {directores.map((director, index) => (
-                          <div key={index} className="bg-bg-primary/50 rounded-lg p-3 border border-purple-200">
-                            <div className="flex items-start gap-3">
-                              {director.foto_preview ? (
-                                <img 
-                                  src={director.foto_preview} 
-                                  alt={`Director ${index + 1}`}
-                                  className="w-12 h-12 rounded-full object-cover border-2 border-purple-300"
-                                />
-                              ) : (
-                                <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center border-2 border-purple-300">
-                                  <User size={30} className="text-purple-600" />
-                                </div>
-                              )}
+                      <div className="relative z-10">
+                        <div className="flex items-center justify-between mb-4">
+                          <h3 className="font-bold text-emerald-400 flex items-center gap-2 text-lg uppercase tracking-wider">
+                            <Users size={22} />
+                            Directores ({directores.length})
+                          </h3>
+                          <button
+                            type="button"
+                            onClick={() => setStep(1)}
+                            className="bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 p-2 rounded-lg transition-all"
+                          >
+                            <Edit2 size={16} />
+                          </button>
+                        </div>
+                        <div className="space-y-3">
+                          {directores.map((director, index) => (
+                            <div key={index} className="bg-[#020617]/40 rounded-xl p-4 border border-white/5 flex items-start gap-4">
+                              <div className="relative flex-shrink-0">
+                                {director.foto_preview ? (
+                                  <img 
+                                    src={director.foto_preview} 
+                                    alt={`Director ${index + 1}`}
+                                    className="w-14 h-14 rounded-full object-cover border-2 border-emerald-500/50"
+                                  />
+                                ) : (
+                                  <div className="w-14 h-14 rounded-full bg-emerald-500/10 flex items-center justify-center border-2 border-emerald-500/30">
+                                    <User size={30} className="text-emerald-500" />
+                                  </div>
+                                )}
+                              </div>
                               <div className="flex-1">
-                                <p className="font-semibold text-text-primary">
+                                <p className="font-bold text-text-primary text-lg">
                                   {director.nombres} {director.apellidos}
                                 </p>
-                                <p className="text-sm text-purple-700 font-medium">
+                                <p className="text-sm text-emerald-400 font-bold uppercase tracking-widest text-[10px]">
                                   {director.cargo}
                                 </p>
                                 {director.jornada && (
-                                  <p className="text-xs text-text-secondary mt-1">
-                                    Jornada: {director.jornada}
+                                  <p className="text-xs text-text-muted mt-1 flex items-center gap-1">
+                                    <Clock size={12} />
+                                    Jornada {director.jornada}
                                   </p>
                                 )}
                               </div>
                             </div>
-                          </div>
-                        ))}
+                          ))}
+                        </div>
                       </div>
                     </div>
                   )}
 
                   {/* Datos del Administrador */}
-                  <div className="bg-green-50 rounded-lg p-4 border border-green-200">
-                    <div className="flex items-center justify-between mb-3">
-                      <h3 className="font-bold text-text-primary flex items-center gap-2">
-                        <User size={20} className="text-green-600" />
-                        Cuenta de Administrador
-                      </h3>
-                      <button
-                        type="button"
-                        onClick={() => setStep(2)}
-                        className="text-green-600 hover:text-green-700 text-sm flex items-center gap-1"
-                      >
-                        <Edit2 size={14} />
-                        Editar
-                      </button>
+                  <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-6 border border-white/10 shadow-xl relative overflow-hidden group">
+                    <div className="absolute -right-4 -top-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                      <User size={100} className="text-blue-500" />
                     </div>
-                    <div className="bg-bg-primary/50 rounded-lg p-3 border border-green-200">
-                      <div className="flex items-start gap-3">
-                        {formData.admin_foto_preview ? (
-                          <img 
-                            src={formData.admin_foto_preview} 
-                            alt="Administrador"
-                            className="w-12 h-12 rounded-full object-cover border-2 border-green-300"
-                          />
-                        ) : (
-                          <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center border-2 border-green-300">
-                            <User size={30} className="text-green-600" />
-                          </div>
-                        )}
+                    <div className="relative z-10">
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="font-bold text-blue-400 flex items-center gap-2 text-lg uppercase tracking-wider">
+                          <User size={22} />
+                          Cuenta de Administrador
+                        </h3>
+                        <button
+                          type="button"
+                          onClick={() => setStep(2)}
+                          className="bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 p-2 rounded-lg transition-all"
+                        >
+                          <Edit2 size={16} />
+                        </button>
+                      </div>
+                      <div className="bg-[#020617]/40 rounded-xl p-4 border border-white/5 flex items-start gap-4">
+                        <div className="relative flex-shrink-0">
+                          {formData.admin_foto_preview ? (
+                            <img 
+                              src={formData.admin_foto_preview} 
+                              alt="Administrador"
+                              className="w-14 h-14 rounded-full object-cover border-2 border-blue-500/50"
+                            />
+                          ) : (
+                            <div className="w-14 h-14 rounded-full bg-blue-500/10 flex items-center justify-center border-2 border-blue-500/30">
+                              <User size={30} className="text-blue-400" />
+                            </div>
+                          )}
+                        </div>
                         <div className="flex-1">
-                          <p className="font-semibold text-text-primary">
+                          <p className="font-bold text-text-primary text-lg">
                             {formData.admin_nombres} {formData.admin_apellidos}
                           </p>
-                          <p className="text-sm text-green-700 font-medium">
+                          <p className="text-sm text-blue-400 font-bold uppercase tracking-widest text-[10px]">
                             {formData.admin_cargo}
                           </p>
-                          {formData.admin_username && (
-                            <p className="text-xs text-text-secondary mt-1">
-                              Usuario: <span className="font-bold">{formData.admin_username}</span>
-                            </p>
-                          )}
-                          {formData.admin_email && (
-                            <p className="text-xs text-text-secondary mt-1">
-                              Email: {formData.admin_email}
-                            </p>
-                          )}
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            {formData.admin_username && (
+                              <span className="text-[10px] bg-white/5 px-2 py-0.5 rounded text-text-muted">
+                                Usuario: <span className="text-text-primary font-bold">{formData.admin_username}</span>
+                              </span>
+                            )}
+                            {formData.admin_email && (
+                              <span className="text-[10px] bg-white/5 px-2 py-0.5 rounded text-text-muted">
+                                {formData.admin_email}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex gap-3 pt-4">
+                  <div className="flex gap-3 pt-6">
                     <button
                       type="button"
                       onClick={() => setStep(2)}
-                      className="w-1/3 bg-gray-200 hover:bg-gray-300 text-text-primary font-bold py-3 rounded-lg transition-colors"
+                      className="w-1/3 bg-white/5 hover:bg-white/10 text-text-primary border border-white/10 font-bold py-3 rounded-xl transition-all"
                     >
                       Atrás
                     </button>
                     <button
                       type="submit"
                       disabled={loading}
-                      className="w-2/3 bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                      className="w-2/3 bg-emerald-600 hover:bg-emerald-500 text-[#020617] font-black py-3 rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-glow-sm hover:shadow-glow transform hover:-translate-y-0.5 active:scale-95"
                     >
                       {loading ? (
                         <>
-                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" />
-                          Inicializando...
+                          <div className="animate-spin rounded-full h-5 w-5 border-2 border-[#020617]/30 border-t-[#020617]" />
+                          <span>Inicializando...</span>
                         </>
                       ) : (
                         <>
                           <CheckCircle size={20} />
-                          Finalizar Setup
+                          <span>Finalizar Setup</span>
                         </>
                       )}
                     </button>
                   </div>
                 </div>
               )}
+            </form>
 
               {/* PASO 4: ÉXITO Y LLAVE MAESTRA */}
               {step === 4 && (
                 <div className="space-y-6 text-center py-8">
-                  <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto text-green-600 mb-4 animate-bounce">
-                    <CheckCircle size={48} />
+                  <div className="w-24 h-24 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto text-emerald-400 mb-4 border border-emerald-500/20 shadow-glow-sm">
+                    <CheckCircle size={56} className="animate-pulse" />
                   </div>
-                  <h3 className="text-2xl font-bold text-text-primary">¡Configuración Completada!</h3>
-                  <p className="text-text-secondary max-w-md mx-auto">
+                  <h3 className="text-3xl font-black text-white tracking-tight">¡Configuración Completada!</h3>
+                  <p className="text-text-secondary max-w-md mx-auto text-sm">
                     El sistema ha sido inicializado con éxito. Por favor, guarda la siguiente información en un lugar seguro.
                   </p>
 
-                  <div className="bg-amber-50 border-2 border-amber-200 rounded-xl p-6 relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:opacity-20 transition-opacity">
-                      <Lock size={64} />
+                  <div className="bg-[#020617]/80 backdrop-blur-xl border-2 border-amber-500/30 rounded-2xl p-8 relative overflow-hidden group shadow-2xl">
+                    <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                      <Lock size={120} className="text-amber-500" />
                     </div>
-                    <p className="text-amber-800 font-bold text-sm mb-2 uppercase tracking-wider">Llave Maestra de Recuperación</p>
+                    <p className="text-amber-400 font-bold text-xs mb-4 uppercase tracking-widest">Llave Maestra de Recuperación</p>
                     <div className="flex items-center justify-center gap-4">
-                      <code className="bg-bg-primary/50 px-6 py-3 rounded-lg border border-amber-300 text-3xl font-black text-amber-900 tracking-[0.2em] shadow-inner select-all">
+                      <code className="bg-white/5 px-8 py-4 rounded-xl border border-amber-500/20 text-4xl font-black text-amber-400 tracking-[0.2em] shadow-inner select-all font-mono">
                         {masterKey || '----------'}
                       </code>
                     </div>
-                    <p className="text-amber-700 text-xs mt-4 leading-relaxed">
-                      ⚠️ **IMPORTANTE**: Necesitarás esta llave para recuperar el acceso si olvidas la contraseña del Administrador. <br/>
-                      No se volverá a mostrar. Guárdala, imprímela o tómale una foto.
-                    </p>
+                    <div className="mt-6 flex items-start gap-3 bg-amber-500/5 p-4 rounded-xl border border-amber-500/10">
+                      <AlertCircle size={20} className="text-amber-500 flex-shrink-0 mt-0.5" />
+                      <p className="text-amber-200/70 text-xs leading-relaxed text-left">
+                        <span className="text-amber-400 font-bold">IMPORTANTE:</span> Necesitarás esta llave para recuperar el acceso si olvidas la contraseña del Administrador.
+                        No se volverá a mostrar. Guárdala, imprímela o tómale una foto.
+                      </p>
+                    </div>
                     
                     {/* Botones de Copiar y Descargar */}
-                    <div className="flex gap-3 mt-4">
+                    <div className="flex gap-4 mt-8">
                       <button
                         type="button"
                         onClick={() => {
                           navigator.clipboard.writeText(masterKey);
                           toast.success('Llave copiada al portapapeles');
                         }}
-                        className="flex-1 bg-amber-600 hover:bg-amber-700 text-white font-semibold py-2.5 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 shadow-md hover:shadow-lg"
+                        className="flex-1 bg-white/5 hover:bg-white/10 text-white font-bold py-3 px-4 rounded-xl border border-white/10 transition-all flex items-center justify-center gap-2 active:scale-95"
                       >
-                        <Copy size={18} />
-                        Copiar Llave
+                        <Copy size={18} className="text-amber-400" />
+                        Copiar
                       </button>
                       <button
                         type="button"
@@ -1495,7 +1538,7 @@ export default function SetupWizard({ onComplete }) {
                           document.body.removeChild(element);
                           toast.success('Llave descargada como archivo .txt');
                         }}
-                        className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-2.5 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 shadow-md hover:shadow-lg"
+                        className="flex-1 bg-emerald-500 hover:bg-emerald-400 text-[#020617] font-black py-3 px-4 rounded-xl transition-all flex items-center justify-center gap-2 active:scale-95 shadow-glow-sm"
                       >
                         <Download size={18} />
                         Descargar .txt
@@ -1509,13 +1552,15 @@ export default function SetupWizard({ onComplete }) {
                       if (onComplete) onComplete();
                       navigate('/login');
                     }}
-                    className="w-full bg-accent hover:bg-accent-light text-[#020617] font-bold shadow-glow border border-accent/50 text-white font-bold py-4 rounded-xl shadow-xl transition-all transform hover:-translate-y-1 hover:shadow-2xl"
+                    className="w-full bg-accent hover:bg-accent-light text-[#020617] font-black py-4 rounded-2xl shadow-glow transition-all transform hover:-translate-y-1 active:scale-95"
                   >
                     Ir al Inicio de Sesión
                   </button>
                 </div>
               )}
-            </form>
+              </motion.div>
+            </AnimatePresence>
+
             </div>
           </div>
         </div>

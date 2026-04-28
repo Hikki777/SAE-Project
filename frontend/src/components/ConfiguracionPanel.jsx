@@ -1231,8 +1231,7 @@ const SistemaSettings = ({ currentUser }) => {
           // Esta API moderna puede dar más información
           navigator.userAgentData.getHighEntropyValues(['platformVersion', 'model'])
             .then(ua => {
-              // Aquí podríamos obtener más detalles, pero es asíncrono
-              console.log('User-Agent Data:', ua);
+              // Información silenciosa para depuración si fuera necesario
             })
             .catch(() => {});
         }
@@ -1464,10 +1463,11 @@ const SistemaSettings = ({ currentUser }) => {
     setResetting(true);
     try {
       await client.post('/admin/reset-factory', { masterKey: masterKeyInput });
-      toast.success('Sistema restablecido correctamente. Recargando...');
+      toast.success('Sistema restablecido correctamente. Reiniciando...');
       setTimeout(() => {
         localStorage.clear();
-        window.location.hash = '/setup';
+        sessionStorage.clear();
+        window.location.reload(); // Recarga total para asegurar estado limpio
       }, 2000);
     } catch (error) {
       console.error(error);

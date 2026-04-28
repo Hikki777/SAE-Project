@@ -6,6 +6,7 @@ const NodeCache = require('node-cache');
 const path = require('path');
 const fs = require('fs-extra');
 const crypto = require('crypto');
+const multer = require('multer');
 
 // ─────────────────────────────────────────────
 // CONFIGURACIÓN DE VARIABLES DE ENTORNO
@@ -409,6 +410,7 @@ app.use('/api/alumnos', alumnosRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/asistencias', asistenciasRoutes);
 app.use('/api/docentes', docentesRoutes);
+app.use('/api/personal', docentesRoutes); // Alias para compatibilidad con JustificacionesPanel
 app.use('/api/reportes', reportesRoutes);
 app.use('/api/institucion', institucionRoutes);
 app.use('/api/metrics', metricsRoutes);
@@ -424,6 +426,16 @@ app.use('/api/sync', require('./routes/sync'));
 // ============ ERROR HANDLER ============
 
 app.use((err, req, res, next) => {
+  // Manejar errores de Multer específicamente
+  if (err instanceof multer.MulterError) {
+    logger.warn({ err, url: req.url }, '[MULTER] Error en subida de archivo');
+    return res.status(400).json({ 
+      error: 'Error en la subida del archivo', 
+      detalle: err.message,
+      codigo: err.code 
+    });
+  }
+
   logger.error(
     {
       err,
@@ -433,6 +445,9 @@ app.use((err, req, res, next) => {
     },
     '[ERROR] Error no capturado en la aplicacion'
   );
+  
+  // Log adicional a consola para debug en caliente
+  console.error('[CRITICAL ERROR]', err);
 
   res.status(500).json({
     error: 'Internal Server Error',

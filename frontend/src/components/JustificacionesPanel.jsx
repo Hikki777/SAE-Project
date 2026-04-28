@@ -818,10 +818,11 @@ function StatCard({ icon, label, value, color }) {
      blue: 'border-l-blue-500 bg-blue-50 dark:bg-blue-900/20',
      teal: 'border-l-teal-500 bg-teal-50 dark:bg-teal-900/20',
      orange: 'border-l-orange-500 bg-orange-50 dark:bg-orange-900/20',
-     red: 'border-l-red-500 bg-red-50 dark:bg-red-900/20'
+     red: 'border-l-red-500 bg-red-50 dark:bg-red-900/20',
+     green: 'border-l-green-500 bg-green-50 dark:bg-green-900/20'
   };
   return (
-    <div className={`p-4 rounded-xl shadow-sm border-l-4 ${colors[color] || 'bg-white'} dark:border-gray-700`}>
+    <div className={`p-4 rounded-xl shadow-sm border-l-4 ${colors[color] || 'bg-white dark:bg-gray-800 border-l-gray-400 dark:border-l-gray-600'} transition-all`}>
        <div className="flex justify-between items-center">
           <div>
             <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">{label}</p>

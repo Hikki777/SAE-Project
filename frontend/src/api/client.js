@@ -70,6 +70,12 @@ const client = axios.create({
 // Interceptor para agregar token
 client.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
+  
+  // Debug: Verificar si el token existe antes de enviarlo
+  if (!token && !config.url.includes('/auth/login')) {
+    console.warn(`[API Client] Token ausente para la petición: ${config.url}`);
+  }
+
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }

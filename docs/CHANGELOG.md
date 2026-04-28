@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.1.5] - 2026-04-28
+### 🛠️ Estabilización del Backend y Generación de QR
+- **[QR Engine]** Refactorización completa del motor de generación de códigos QR.
+  - **SVG + Sharp**: Migración de `canvas` a un flujo de `SVG` procesado por `Sharp` para eliminar dependencias nativas inestables en Windows.
+  - **Precisión Visual**: Ajuste milimétrico del posicionamiento del carnet (coordenadas píxel-perfect) para evitar solapamientos y garantizar legibilidad.
+  - **Márgenes Optimizados**: Reducción del margen interno del QR para mayor densidad de datos y facilidad de escaneo.
+- **[Archivos/Uploads]** Estandarización del sistema de almacenamiento.
+  - **Memory Storage**: Migración de Multer a almacenamiento en memoria para evitar errores de permisos (`EPERM`) al escribir en carpetas protegidas de Windows.
+  - **Normalización Automática**: Integración de `sharp` en el flujo de subida para validar y convertir todas las imágenes (fotos, logos) a PNG optimizado automáticamente.
+  - **Soporte de Logos Pesados**: Implementado pre-procesamiento para manejar logos de alta resolución (9MB+) sin afectar el rendimiento del servidor.
+- **[Correcciones]**
+  - **Fix 500 Error**: Eliminados los fallos persistentes en la generación de imágenes QR causados por dependencias de bajo nivel.
+  - **Fix Uploads**: Corregida la subida de fotos de usuario en el Setup Wizard y Panel de Configuración.
+  - **Debug**: Añadidos logs estructurados para diagnóstico rápido de fallos en el motor gráfico del servidor.
+
+
 ## [1.1.4] - 2026-04-27
 ### ✨ Interfaz Dark Mode Futurista (Glassmorphism & Neon Glow)
 - **[UI/UX]** Migración completa a un diseño "Dark Only" de alta gama.

@@ -103,6 +103,16 @@ function App() {
     setIsInitialized(false); // Timeout
   };
 
+  // Forzar cierre de sesión si el sistema no está inicializado (post-reset)
+  useEffect(() => {
+    if (isInitialized === false && isLoggedIn) {
+      console.log("[App] Sistema no inicializado detectado. Limpiando sesión stale...");
+      localStorage.removeItem("token");
+      setIsLoggedIn(false);
+      setUser(null);
+    }
+  }, [isInitialized, isLoggedIn]);
+
   useEffect(() => {
     const handleStorageChange = () => {
       setIsLoggedIn(!!localStorage.getItem("token"));
@@ -379,7 +389,7 @@ function App() {
           )}
         </AnimatePresence>
 
-        <div className="flex h-screen bg-transparent relative overflow-hidden bg-grid-pattern">
+        <div className="fixed inset-0 bg-transparent overflow-auto text-text-primary bg-grid-pattern dark">
           {/* Decorative global bubbles (Technological Texture) */}
           <div className="absolute top-0 left-0 w-[500px] h-[500px] bg-accent/5 rounded-full mix-blend-screen filter blur-[100px] animate-blob pointer-events-none"></div>
           <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-purple-500/5 rounded-full mix-blend-screen filter blur-[100px] animate-blob animation-delay-2000 pointer-events-none"></div>

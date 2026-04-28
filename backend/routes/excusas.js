@@ -11,9 +11,9 @@ const router = express.Router();
 
 // Configurar multer para evidencia (PDFs, imágenes)
 const storage = multer.diskStorage({
-  destination: async function (req, file, cb) {
+  destination: function (req, file, cb) {
     const dir = path.join(UPLOADS_DIR, 'justificaciones');
-    await fs.ensureDir(dir);
+    fs.ensureDirSync(dir);
     cb(null, dir);
   },
   filename: function (req, file, cb) {

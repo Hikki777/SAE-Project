@@ -10,38 +10,10 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs-extra');
 const { UPLOADS_DIR } = require('../utils/paths');
+const { uploadBuffer } = require('../services/imageService');
 
-// Configuración de Multer para logos y fotos de admin
-const storage = multer.diskStorage({
-  destination: async function (req, file, cb) {
-    let dir = UPLOADS_DIR;
-    if (file.fieldname === 'logo') {
-      dir = path.join(dir, 'logos');
-    } else if (file.fieldname === 'admin_foto') {
-      // Admin siempre va a usuarios/
-      dir = path.join(dir, 'usuarios');
-    } else if (file.fieldname.startsWith('director_fotos_')) {
-      // Directores van a directores/
-      dir = path.join(dir, 'directores');
-    }
-    await fs.ensureDir(dir);
-    cb(null, dir);
-  },
-  filename: function (req, file, cb) {
-    const ext = path.extname(file.originalname);
-    let prefix = 'file';
-    
-    if (file.fieldname === 'logo') {
-      prefix = 'logo';
-    } else if (file.fieldname === 'admin_foto') {
-      prefix = 'admin';
-    } else if (file.fieldname.startsWith('director_fotos_')) {
-      prefix = 'director';
-    }
-    
-    cb(null, `${prefix}-${Date.now()}${ext}`);
-  },
-});
+// Configuración de Multer para logos y fotos (Uso de memoria para estabilidad en Windows/Electron)
+const storage = multer.memoryStorage();
 
 const upload = multer({
   storage: storage,
@@ -107,16 +79,25 @@ router.get('/', async (req, res) => {
 // POST /api/institucion/init - Inicializar institución (Setup Wizard)
 router.post(
   '/init',
-  upload.fields([
-    { name: 'logo', maxCount: 1 },
-    { name: 'admin_foto', maxCount: 1 },
-    // Permitir fotos de directores dinámica (limitada a 5)
-    { name: 'director_fotos_0', maxCount: 1 },
-    { name: 'director_fotos_1', maxCount: 1 },
-    { name: 'director_fotos_2', maxCount: 1 },
-    { name: 'director_fotos_3', maxCount: 1 },
-    { name: 'director_fotos_4', maxCount: 1 }
-  ]),
+  (req, res, next) => {
+    const uploadFields = upload.fields([
+      { name: 'logo', maxCount: 1 },
+      { name: 'admin_foto', maxCount: 1 },
+      { name: 'director_fotos_0', maxCount: 1 },
+      { name: 'director_fotos_1', maxCount: 1 },
+      { name: 'director_fotos_2', maxCount: 1 },
+      { name: 'director_fotos_3', maxCount: 1 },
+      { name: 'director_fotos_4', maxCount: 1 }
+    ]);
+    
+    uploadFields(req, res, (err) => {
+      if (err) {
+        logger.error({ err }, '[MULTER] Error en /institucion/init');
+        return res.status(400).json({ error: 'Error al subir archivos en el setup', detalle: err.message });
+      }
+      next();
+    });
+  },
   [
     // Validaciones (Nota: al usar multer, req.body se procesa después de los archivos)
     check('nombre').notEmpty().withMessage('El nombre es obligatorio'),
@@ -169,13 +150,15 @@ router.post(
       // Procesar logo
       let logoPath = null;
       if (req.files && req.files['logo'] && req.files['logo'][0]) {
-        logoPath = `logos/${req.files['logo'][0].filename}`;
+        const logoResult = await uploadBuffer(req.files['logo'][0].buffer, 'logos', `logo-${Date.now()}`);
+        logoPath = logoResult.secure_url;
       }
 
       // Procesar foto admin
       let adminFotoPath = null;
       if (req.files && req.files['admin_foto'] && req.files['admin_foto'][0]) {
-        adminFotoPath = `usuarios/${req.files['admin_foto'][0].filename}`;
+        const adminResult = await uploadBuffer(req.files['admin_foto'][0].buffer, 'usuarios', `admin-${Date.now()}`);
+        adminFotoPath = adminResult.secure_url;
       }
 
       // Generar Master Recovery Key (12 chars alfanuméricos) - SE MUESTRA SOLO UNA VEZ
@@ -274,8 +257,9 @@ router.post(
             let dirFotoPath = null;
             const fotoField = `director_fotos_${i}`;
             if (req.files && req.files[fotoField] && req.files[fotoField][0]) {
-              dirFotoPath = `directores/${req.files[fotoField][0].filename}`;
-              logger.info({ index: i, fotoField, filename: req.files[fotoField][0].filename }, '[DEBUG] Foto de director procesada');
+              const dirResult = await uploadBuffer(req.files[fotoField][0].buffer, 'directores', `director-${i}-${Date.now()}`);
+              dirFotoPath = dirResult.secure_url;
+              logger.info({ index: i, fotoField }, '[DEBUG] Foto de director procesada');
             } else {
               logger.warn({ index: i, fotoField, hasFiles: !!req.files, hasField: !!(req.files && req.files[fotoField]) }, '[DEBUG] No se encontró foto para director');
             }
@@ -349,7 +333,8 @@ router.put('/', upload.fields([{ name: 'logo', maxCount: 1 }]), async (req, res)
     // Procesar logo si existe
     let logoPath = null;
     if (req.files && req.files['logo'] && req.files['logo'][0]) {
-      logoPath = `logos/${req.files['logo'][0].filename}`;
+      const logoResult = await uploadBuffer(req.files['logo'][0].buffer, 'logos', `logo-${Date.now()}`);
+      logoPath = logoResult.secure_url;
     }
 
     const institucionData = {

@@ -9,19 +9,10 @@ const path = require('path');
 const fs = require('fs-extra');
 const { UPLOADS_DIR } = require('../utils/paths');
 
-// Configuración de Multer
-const storage = multer.diskStorage({
-  destination: async function (req, file, cb) {
-    const dir = path.join(UPLOADS_DIR, 'usuarios');
-    await fs.ensureDir(dir);
-    cb(null, dir);
-  },
-  filename: function (req, file, cb) {
-    // user-ID-timestamp.ext
-    const ext = path.extname(file.originalname);
-    cb(null, `user-${req.params.id}-${Date.now()}${ext}`);
-  }
-});
+const { uploadBuffer, deleteImage } = require('../services/imageService');
+
+// Configuración de Multer para memoria (más estable en Windows/Electron)
+const storage = multer.memoryStorage();
 
 const upload = multer({
   storage: storage,
@@ -111,7 +102,12 @@ router.post('/', upload.single('foto'), async (req, res) => {
     const hash_pass = await bcrypt.hash(password, salt);
 
     // Determinar foto_path si existe archivo
-    const foto_path = req.file ? `usuarios/${req.file.filename}` : null;
+    let foto_path = null;
+    if (req.file) {
+      const publicId = `user-${Date.now()}`;
+      const result = await uploadBuffer(req.file.buffer, 'usuarios', publicId);
+      foto_path = result.secure_url;
+    }
 
     const usuario = await prisma.usuario.create({
       data: {
@@ -143,7 +139,10 @@ router.post('/', upload.single('foto'), async (req, res) => {
 
   } catch (error) {
     logger.error({ err: error }, '[ERROR] Error creando usuario');
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ 
+      error: error.message,
+      stack: error.stack 
+    });
   }
 });
 
@@ -192,7 +191,7 @@ router.delete('/:id', async (req, res) => {
  */
 router.put('/:id', upload.single('foto'), async (req, res) => {
   try {
-    if (req.user.rol !== 'admin' && req.user.id !== parseInt(req.params.id)) {
+    if (req.user.rol !== 'admin' && parseInt(req.user.id) !== parseInt(req.params.id)) {
       return res.status(403).json({ error: 'No autorizado. Solo administradores pueden modificar usuarios o puedes modificar tu propio perfil.' });
     }
 
@@ -248,12 +247,14 @@ router.put('/:id', upload.single('foto'), async (req, res) => {
 
     // Manejar foto si viene en el request
     if (req.file) {
-      updateData.foto_path = `usuarios/${req.file.filename}`;
+      const publicId = `user-${id}-${Date.now()}`;
+      const result = await uploadBuffer(req.file.buffer, 'usuarios', publicId);
+      updateData.foto_path = result.secure_url;
       
-      // Intentar borrar foto anterior si existe y no es la nueva
+      // Intentar borrar foto anterior si existe
       if (existingUser.foto_path && existingUser.foto_path !== updateData.foto_path) {
-          const oldPath = path.join(UPLOADS_DIR, existingUser.foto_path);
-          fs.remove(oldPath).catch(err => logger.warn({ err }, 'Error borrando foto antigua'));
+          const oldPublicId = path.parse(existingUser.foto_path).name;
+          deleteImage(oldPublicId).catch(err => logger.warn({ err }, 'Error borrando foto antigua'));
       }
     }
 
@@ -262,6 +263,8 @@ router.put('/:id', upload.single('foto'), async (req, res) => {
       const salt = await bcrypt.genSalt(10);
       updateData.hash_pass = await bcrypt.hash(password, salt);
     }
+
+    logger.debug({ id, updateData }, '[DEBUG] Intentando update de usuario');
 
     const usuario = await prisma.usuario.update({
       where: { id },
@@ -285,20 +288,32 @@ router.put('/:id', upload.single('foto'), async (req, res) => {
  * POST /api/usuarios/:id/foto
  * Subir foto de perfil
  */
-router.post('/:id/foto', upload.single('foto'), async (req, res) => {
+router.post('/:id/foto', (req, res, next) => {
+  upload.single('foto')(req, res, (err) => {
+    if (err) {
+      logger.error({ err }, '[MULTER] Error subiendo foto de usuario');
+      return res.status(400).json({ error: 'Error al procesar la imagen', detalle: err.message });
+    }
+    next();
+  });
+}, async (req, res) => {
   try {
     const id = parseInt(req.params.id);
+    logger.debug({ id, file: !!req.file }, '[USER-PHOTO] Iniciando subida de foto');
     
     // Verificar permisos: Admin o el mismo usuario
-    if (req.user.rol !== 'admin' && req.user.id !== id) {
+    if (req.user.rol !== 'admin' && parseInt(req.user.id) !== id) {
       return res.status(403).json({ error: 'No autorizado' });
     }
 
     if (!req.file) {
+      logger.warn({ id }, '[USER-PHOTO] Intento de subida sin archivo');
       return res.status(400).json({ error: 'No se subió ninguna imagen' });
     }
 
-    const relativePath = `usuarios/${req.file.filename}`;
+    const publicId = `user-${id}-${Date.now()}`;
+    const result = await uploadBuffer(req.file.buffer, 'usuarios', publicId);
+    const relativePath = result.secure_url;
 
     // Actualizar usuario
     const usuario = await prisma.usuario.update({
@@ -312,7 +327,11 @@ router.post('/:id/foto', upload.single('foto'), async (req, res) => {
 
   } catch (error) {
     logger.error({ err: error }, '[ERROR] Subiendo foto usuario');
-    res.status(500).json({ error: 'Error al subir la foto' });
+    res.status(500).json({ 
+      error: 'Error al subir la foto',
+      message: error.message,
+      stack: error.stack 
+    });
   }
 });
 
