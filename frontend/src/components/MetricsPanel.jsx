@@ -30,7 +30,7 @@ import {
   Tooltip, 
   ResponsiveContainer 
 } from 'recharts';
-import toast, { Toaster } from 'react-hot-toast';
+import toast from 'react-hot-toast';
 import { CardSkeleton } from './LoadingSpinner';
 import client from '../api/client';
 
@@ -365,7 +365,7 @@ export default function MetricsPanel() {
         </AnimatePresence>
       </div>
 
-      <Toaster position="bottom-right" />
+
     </div>
   );
 }

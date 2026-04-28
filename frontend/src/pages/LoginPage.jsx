@@ -93,7 +93,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-blue-900 via-blue-700 to-indigo-900 flex items-center justify-center p-4 overflow-hidden">
+    <div className="fixed inset-0 bg-transparent flex items-center justify-center p-4 overflow-hidden">
       {/* Modals Overlay */}
       <AnimatePresence>
         {showSuccessModal && (
@@ -106,9 +106,9 @@ export default function LoginPage() {
             <motion.div
               initial={{ scale: 0.9, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
-              className="bg-white rounded-2xl shadow-2xl p-8 max-w-sm w-full text-center border-t-8 border-green-500"
+              className="bg-bg-secondary/80 backdrop-blur-xl rounded-2xl shadow-glow p-8 max-w-sm w-full text-center border border-success/20"
             >
-              <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4 text-green-600 overflow-hidden border-2 border-green-200">
+              <div className="w-24 h-24 bg-success/10 rounded-full flex items-center justify-center mx-auto mb-4 text-success overflow-hidden border border-success/30">
                 {loggedInUser?.foto_path ? (
                   <img 
                     src={`${BASE_URL}/api/uploads/${loggedInUser.foto_path}`} 
@@ -119,14 +119,14 @@ export default function LoginPage() {
                   <CheckCircle2 size={48} />
                 )}
               </div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">¡Bienvenido!</h2>
-              <p className="text-gray-600 text-lg mb-4">
-                Hola, <span className="font-bold text-blue-600">
+              <h2 className="text-2xl font-bold text-text-primary mb-2">¡Bienvenido!</h2>
+              <p className="text-text-secondary text-lg mb-4">
+                Hola, <span className="font-bold text-accent">
                   {loggedInUser?.nombres ? `${loggedInUser.nombres} ${loggedInUser.apellidos || ''}` : loggedInUser?.email.split('@')[0]}
                 </span>
               </p>
-              <div className="flex items-center justify-center gap-2 text-green-600 font-medium">
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-ping"></div>
+              <div className="flex items-center justify-center gap-2 text-success font-medium">
+                <div className="w-2 h-2 bg-success rounded-full animate-ping"></div>
                 Accediendo al sistema...
               </div>
             </motion.div>
@@ -144,13 +144,13 @@ export default function LoginPage() {
               initial={{ scale: 0.9, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              className="bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full text-center border-t-8 border-red-500"
+              className="bg-bg-secondary/80 backdrop-blur-xl rounded-2xl shadow-glow p-6 max-w-sm w-full text-center border border-danger/20"
             >
-              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4 text-red-600">
+              <div className="w-16 h-16 bg-danger/10 rounded-full flex items-center justify-center mx-auto mb-4 text-danger border border-danger/30">
                 <XCircle size={40} />
               </div>
-              <h2 className="text-xl font-bold text-gray-900 mb-2">Error de Acceso</h2>
-              <p className="text-gray-600">{error === 'Credenciales inválidas' ? 'Email o contraseña incorrectos' : error}</p>
+              <h2 className="text-xl font-bold text-text-primary mb-2">Error de Acceso</h2>
+              <p className="text-text-secondary">{error === 'Credenciales inválidas' ? 'Email o contraseña incorrectos' : error}</p>
             </motion.div>
           </motion.div>
         )}
@@ -165,7 +165,7 @@ export default function LoginPage() {
             <motion.div
               initial={{ scale: 0.9, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
-              className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl p-8 max-w-md w-full border-t-8 border-blue-500 relative"
+              className="bg-bg-secondary/80 backdrop-blur-xl rounded-3xl shadow-glow p-8 max-w-md w-full border border-accent/20 relative"
             >
               <button 
                 onClick={() => setShowRecoveryModal(false)}
@@ -284,36 +284,36 @@ export default function LoginPage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl p-8 max-w-md w-full relative z-10 border border-white/20"
+        className="bg-bg-secondary/70 backdrop-blur-xl shadow-glow rounded-2xl p-8 max-w-md w-full relative z-10 border border-accent/20"
       >
         {/* Logo/Icon */}
         <div className="text-center mb-8">
           <div className="mb-6 relative inline-block">
             <div className="absolute inset-0 bg-blue-500/10 blur-2xl rounded-full"></div>
-            <div className="relative bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
-              <img src="./logo.png" alt="Logo SAE" className="h-16 w-16 mx-auto object-contain" />
+            <div className="relative bg-bg-tertiary p-4 rounded-2xl shadow-glow-sm border border-white/5">
+              <img src="./logo.png" alt="Logo SAE" className="h-16 w-16 mx-auto object-contain drop-shadow-lg" />
             </div>
           </div>
           <div className="text-center">
-            <h1 className="text-3xl font-bold text-gray-900 mb-1 tracking-tight">SAE</h1>
-            <p className="text-gray-500 font-medium">Sistema de Administración Educativa</p>
-            <p className="text-gray-400 text-sm mt-1">Gestión Educativa Libre</p>
+            <h1 className="text-3xl font-bold text-text-primary mb-1 tracking-tight">SAE</h1>
+            <p className="text-text-secondary font-medium">Sistema de Administración Educativa</p>
+            <p className="text-text-muted text-sm mt-1">Gestión Educativa Libre</p>
           </div>
         </div>
 
         <form onSubmit={handleLogin} className="space-y-5">
           {/* Identifier Input (Email or Username) */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1.5 ml-1">Correo o Usuario</label>
+            <label className="block text-sm font-semibold text-text-primary mb-1.5 ml-1">Correo o Usuario</label>
             <div className="relative group">
-              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none group-focus-within:text-blue-500 transition-colors">
-                <Mail size={18} className="text-gray-400 group-focus-within:text-inherit" />
+              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none group-focus-within:text-accent transition-colors">
+                <Mail size={18} className="text-text-secondary group-focus-within:text-inherit" />
               </div>
               <input
                 type="text"
                 value={identifier}
                 onChange={(e) => setIdentifier(e.target.value)}
-                className={`w-full pl-11 pr-4 py-3 bg-white border ${submitted && !identifier ? 'border-red-500 ring-4 ring-red-500/10' : 'border-gray-200'} rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-gray-900 placeholder-gray-400 shadow-sm font-medium`}
+                className={`w-full pl-11 pr-4 py-3 bg-bg-primary/50 border ${submitted && !identifier ? 'border-red-500 ring-2 ring-red-500/20' : 'border-white/10'} rounded-xl focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none transition-all text-text-primary placeholder-text-muted shadow-inner font-medium`}
                 placeholder="Identificador de acceso"
                 autoComplete="username"
                 required
@@ -324,23 +324,23 @@ export default function LoginPage() {
 
           {/* Password Input */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1.5 ml-1">Contraseña</label>
+            <label className="block text-sm font-semibold text-text-primary mb-1.5 ml-1">Contraseña</label>
             <div className="relative group">
-              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none group-focus-within:text-blue-500 transition-colors">
-                <Lock size={18} className="text-gray-400 group-focus-within:text-inherit" />
+              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none group-focus-within:text-accent transition-colors">
+                <Lock size={18} className="text-text-secondary group-focus-within:text-inherit" />
               </div>
               <input
                 type={showPassword ? "text" : "password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className={`w-full pl-11 pr-12 py-3 bg-white border ${submitted && !password ? 'border-red-500 ring-4 ring-red-500/10' : 'border-gray-200'} rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-gray-900 placeholder-gray-400 shadow-sm`}
+                className={`w-full pl-11 pr-12 py-3 bg-bg-primary/50 border ${submitted && !password ? 'border-red-500 ring-2 ring-red-500/20' : 'border-white/10'} rounded-xl focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none transition-all text-text-primary placeholder-text-muted shadow-inner`}
                 placeholder="••••••••"
                 required
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-gray-400 hover:text-blue-600 transition-colors focus:outline-none"
+                className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-text-secondary hover:text-accent transition-colors focus:outline-none"
               >
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
@@ -351,7 +351,7 @@ export default function LoginPage() {
               <button 
                 type="button"
                 onClick={() => setShowRecoveryModal(true)}
-                className="text-xs font-semibold text-blue-600 hover:text-blue-800 hover:underline transition-all"
+                className="text-xs font-semibold text-accent hover:text-accent-light hover:underline transition-all"
               >
                 ¿Olvidaste tu contraseña?
               </button>
@@ -364,7 +364,7 @@ export default function LoginPage() {
             whileTap={{ scale: 0.98 }}
             type="submit"
             disabled={loading || showSuccessModal}
-            className="w-full bg-blue-600 hover:bg-blue-700 active:bg-blue-800 disabled:bg-gray-300 text-white font-bold py-3.5 px-4 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20 hover:shadow-xl hover:shadow-blue-500/30 transform select-none"
+            className="w-full bg-accent hover:bg-accent-light active:bg-accent-light/80 disabled:bg-gray-600 text-[#020617] font-bold py-3.5 px-4 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 shadow-glow hover:shadow-glow-sm transform select-none"
           >
             {loading ? (
               <div className="flex items-center gap-2">

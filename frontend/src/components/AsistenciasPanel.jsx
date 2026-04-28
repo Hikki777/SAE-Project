@@ -4,7 +4,7 @@ import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Clock, UserCheck, UserX, Search, Calendar, TrendingUp, QrCode, Camera, CameraOff, XCircle } from 'lucide-react';
-import toast, { Toaster } from 'react-hot-toast';
+import toast from 'react-hot-toast';
 import client, { API_URL, BASE_URL } from '../api/client';
 import QrScanner from 'qr-scanner';
 import { TableSkeleton } from './LoadingSpinner';
@@ -1697,28 +1697,7 @@ export default function AsistenciasPanel() {
         />
       )}
 
-      <Toaster 
-        position="top-right"
-        toastOptions={{
-          duration: 3000,
-          style: {
-            background: '#363636',
-            color: '#fff',
-          },
-          success: {
-            iconTheme: {
-              primary: '#10b981',
-              secondary: '#fff',
-            },
-          },
-          error: {
-            iconTheme: {
-              primary: '#ef4444',
-              secondary: '#fff',
-            },
-          },
-        }}
-      />
+
       {/* Modal de Ausentes al finalizar */}
       {showAusentesModal && createPortal(
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">

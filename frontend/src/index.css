@@ -13,6 +13,14 @@
   box-sizing: border-box;
 }
 
+html {
+  color-scheme: dark;
+}
+
+html.light {
+  color-scheme: dark;
+}
+
 html,
 body,
 #root {
@@ -22,6 +30,17 @@ body,
     sans-serif;
 }
 
+/* Tema oscuro por defecto (Forzado para la UI SaaS) */
+body {
+  @apply bg-bg-primary text-text-primary;
+  background: radial-gradient(circle at top left, #020617, #000000);
+}
+html {
+  @apply text-text-primary;
+}
+html.dark {
+  @apply text-text-primary;
+}
 
 /* FIX: Forzar visibilidad de inputs de tiempo en todos los navegadores/modos */
 input[type="time"] {
@@ -48,15 +67,31 @@ input[type="time"]::-webkit-datetime-edit-ampm-field {
   }
 
   .btn-primary {
-    @apply btn bg-blue-600 hover:bg-blue-700 text-white;
+    @apply btn bg-accent text-white hover:bg-accent-light shadow-glow;
   }
 
   .btn-secondary {
-    @apply btn bg-gray-400 hover:bg-gray-500 text-white;
+    @apply btn bg-bg-tertiary hover:bg-gray-600 text-text-primary border border-border;
   }
 
   .card {
-    @apply bg-white rounded-lg shadow-lg p-6;
+    @apply bg-bg-secondary rounded-xl shadow-card border border-border p-6;
+  }
+
+  .card-glow {
+    @apply bg-bg-secondary rounded-xl shadow-glow border border-border p-6;
+  }
+
+  .stat-card {
+    @apply bg-bg-secondary rounded-xl border border-border p-4 hover:shadow-glow transition-shadow duration-300;
+  }
+
+  .glass {
+    @apply bg-white/10 backdrop-blur-xs border border-white/20 rounded-xl;
+  }
+
+  .text-muted {
+    @apply text-text-secondary;
   }
 }
 
@@ -86,5 +121,22 @@ input[type="time"]::-webkit-datetime-edit-ampm-field {
 
   .animation-delay-4000 {
     animation-delay: 4s;
+  }
+
+  /* Glow effects */
+  .glow-cyan {
+    box-shadow: 0 0 20px rgba(34, 211, 238, 0.25);
+  }
+
+  .glow-cyan-sm {
+    box-shadow: 0 0 10px rgba(34, 211, 238, 0.15);
+  }
+
+  .bg-grid-pattern {
+    background-image: 
+      linear-gradient(rgba(34, 211, 238, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(34, 211, 238, 0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    background-position: center top;
   }
 }

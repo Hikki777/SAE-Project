@@ -4,12 +4,12 @@ export function Badge({ children, variant = 'default', className = '' }) {
   const baseClasses = "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold";
   
   const variants = {
-    default: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300",
-    primary: "bg-primary-100 text-primary-800 dark:bg-primary-900/30 dark:text-primary-400",
-    success: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
-    warning: "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400",
-    danger: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
-    info: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
+    default: "bg-bg-tertiary text-text-primary dark:bg-bg-tertiary dark:text-text-primary border border-border",
+    primary: "bg-accent/20 text-accent dark:bg-accent/20 dark:text-accent border border-accent/50",
+    success: "bg-status-success/20 text-status-success dark:bg-status-success/20 dark:text-status-success border border-status-success/50",
+    warning: "bg-status-warning/20 text-status-warning dark:bg-status-warning/20 dark:text-status-warning border border-status-warning/50",
+    danger: "bg-status-error/20 text-status-error dark:bg-status-error/20 dark:text-status-error border border-status-error/50",
+    info: "bg-accent-light/20 text-accent-light dark:bg-accent-light/20 dark:text-accent-light border border-accent-light/50",
   };
 
   return (

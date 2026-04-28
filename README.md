@@ -1,10 +1,10 @@
 # SAE - Sistema de Administración Educativa
 
-![Version](https://img.shields.io/badge/version-1.1.2-brightgreen.svg) ![Electron](https://img.shields.io/badge/Electron-v35-9FEAF9.svg) ![React](https://img.shields.io/badge/React-19-61DAFB.svg) ![Node](https://img.shields.io/badge/Node-18%2B-339933.svg) ![Status](https://img.shields.io/badge/Status-Stable-brightgreen.svg) ![License](https://img.shields.io/badge/License-GPL--3.0-blue.svg)
+![Version](https://img.shields.io/badge/version-1.1.4-brightgreen.svg) ![Electron](https://img.shields.io/badge/Electron-v35-9FEAF9.svg) ![React](https://img.shields.io/badge/React-19-61DAFB.svg) ![Node](https://img.shields.io/badge/Node-18%2B-339933.svg) ![Status](https://img.shields.io/badge/Status-Stable-brightgreen.svg) ![License](https://img.shields.io/badge/License-GPL--3.0-blue.svg)
 
 **Gestión Educativa Libre** para instituciones de Guatemala
 
-> **✅ VERSIÓN 1.1.2 ESTABLE**: Versión de producción con motor de backup v2.0, sincronización horaria robusta y avatares dinámicos por género.
+> **✅ VERSIÓN 1.1.4 ESTABLE**: Nueva interfaz **Dark Mode Futurista** con Glassmorphism, texturas tecnológicas y optimización de carga de datos instantánea.
 
 ---
 
@@ -194,16 +194,14 @@ Guatemala 🇬🇹
 
 ---
 
-## 📝 Notas de la Versión 1.1.2
+## 📝 Notas de la Versión 1.1.4
 
-### 🚀 Estabilización y Mejoras Críticas
-- ✅ **Backup v2.0**: Migración a streams binarios con cifrado AES-256-GCM. Backups ahora son 100% portables y ligeros (sin límites de RAM).
-- ✅ **Restauración Estable**: Corregido error 400 Bad Request en restauración mediante uso de native fetch y gestión correcta de boundaries multipart.
-- ✅ **Sincronización Horaria**: Implementado sistema de doble consulta (WorldTimeAPI + TimeAPI.io) con failover automático para prevenir fraudes en asistencias.
-- ✅ **Identidad Visual**: Implementación de `GenderAvatar` en todo el sistema (Scanner QR, Personal, Alumnos, Usuarios) para una experiencia visual pulida si no hay foto.
-- ✅ **Estandarización**: "6to. Diversificado" oficialmente renombrado a "Graduandos" según nomenclatura educativa estándar.
-- ✅ **Webcam Cam**: Soporte nativo y estable de captura de fotos en todos los módulos (Setup, Personal, Usuarios).
-- ✅ **Auto-Updater Fix**: Corrección de firma digital SHA-512 y metadatos `latest.yml` para garantizar que el sistema detecte nuevas versiones automáticamente.
-- ✅ **Automatización de Builds**: Implementación del script `dist:publish` para evitar olvidos manuales en futuros despliegues.
+### 🚀 Interfaz Dark Mode Futurista y Optimización
+- ✅ **Diseño Inmersivo**: Transición completa a un estilo "Dark Mode" premium con efectos de Glassmorphism (cristal) y Neon Glow.
+- ✅ **Textura Tecnológica**: Implementación de fondos con rejillas dinámicas y burbujas neón para una estética SaaS de vanguardia.
+- ✅ **Carga Instantánea**: Optimización de gráficos en el Dashboard mediante la desactivación de animaciones de entrada, permitiendo una visualización inmediata de datos.
+- ✅ **Refactorización de "Acerca de"**: Panel rediseñado con alineación centrada, créditos de API (Time Sync) corregidos y branding del autor unificado.
+- ✅ **Setup Wizard**: Modernización del asistente de configuración inicial para alinearlo con la nueva identidad visual del sistema.
+- ✅ **Estabilidad**: Corregidos errores de alineación CSS y redundancias en el pie de página global.
 
 Esta versión consolida todos los hotfixes previos en una base de código robusta, optimizada para entornos Windows con instalación de un solo clic y gestión automática de directorios en `%APPDATA%`.

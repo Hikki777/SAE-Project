@@ -103,7 +103,7 @@ const AcercaDePanel = () => {
             {/* Version Badge using glassmorphism Card */}
             <Card noPadding className="flex items-center gap-2 px-6 py-2.5 rounded-2xl shadow-md border-opacity-50">
               <span className="text-xs font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">Versión</span>
-              <span className="text-2xl font-black text-blue-600 dark:text-blue-400">{currentVersion}</span>
+              <span className="text-2xl font-black text-blue-600 dark:text-blue-400"> v{currentVersion}</span>
             </Card>
 
             {/* Update Status integrated */}
@@ -140,7 +140,7 @@ const AcercaDePanel = () => {
                   animate={{ opacity: 1, scale: 1 }}
                 >
                   <Button variant="warning" icon={Zap} className="rounded-2xl px-6">
-                    Nueva Versión v{latestVersion}
+                    Nueva Versión {latestVersion}
                   </Button>
                 </motion.a>
               )}
@@ -202,11 +202,13 @@ const AcercaDePanel = () => {
           <motion.div variants={itemVariants} className="group relative">
             <div className="absolute -inset-0.5 bg-gradient-to-r from-emerald-600 to-blue-600 rounded-3xl blur opacity-10 group-hover:opacity-20 transition duration-1000 group-hover:duration-200" />
             <Card className="h-full flex flex-col items-center text-center p-8 rounded-3xl relative z-10">
-              <div className="w-24 h-24 mb-6 relative">
-                 <div className="absolute inset-0 bg-blue-600/20 blur-2xl rounded-full" />
-                 <div className="relative w-full h-full rounded-3xl bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center text-white shadow-xl rotate-3 hover:rotate-0 transition-transform duration-500 overflow-hidden border-2 border-white/20 dark:border-gray-700">
-                   <UserAvatar size={48} />
-                 </div>
+              <div className="w-32 h-32 mb-6 relative mx-auto flex items-center justify-center">
+                 <div className="absolute inset-0 bg-accent/20 blur-2xl rounded-full" />
+                 <img 
+                   src="https://github.com/Hikki777.png" 
+                   alt="Hikki777" 
+                   className="relative w-32 h-32 rounded-3xl object-cover shadow-glow transition-transform duration-500 hover:scale-105 border border-white/10" 
+                 />
               </div>
 
               <span className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-1">Autor & Desarrollador</span>
@@ -252,49 +254,34 @@ const AcercaDePanel = () => {
                     Aviso Legal y Responsabilidad
                   </p>
                   <p className="opacity-90 font-medium">
-                    SAE - Proyecto es una plataforma interna de código abierto diseñada para apoyar a las instituciones educativas con herramientas intuitivas de gestión y automatización de asistencias. Bajo la licencia GNU GPL v3.0, fomentamos la transparencia y colaboración, siendo responsabilidad de la institución su gestión técnica y el resguardo seguro de su información.
+                    SAE - Proyect es una plataforma interna de código abierto diseñada para apoyar a las instituciones educativas con herramientas intuitivas de gestión y automatización de asistencias. Bajo la licencia GNU GPL v3.0, fomentamos la transparencia y colaboración, siendo responsabilidad de la institución su gestión técnica y el resguardo seguro de su información.
                   </p>
                 </div>
               </div>
             </Card>
             
             {/* Sistema Status & Attribution Footer */}
-            <div className="flex flex-col md:flex-row items-center justify-between gap-6 pt-4 border-t border-gray-200 dark:border-gray-800">
-              
+            <div className="flex flex-col items-center justify-center pt-10 border-t border-white/10">
               {/* Time Sync Capsule */}
-              <Card noPadding className="flex items-center gap-3 px-4 py-2 rounded-2xl group">
-                <div className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500" />
-                </div>
-                <span className="text-[10px] uppercase font-black tracking-widest text-gray-500 dark:text-gray-400">
-                  Network Time Sync:
-                </span>
-                <a 
-                  href="https://time.now/developer" 
-                  target="_blank" 
-                  rel="noopener noreferrer" 
-                  className="text-[10px] font-black text-blue-600 dark:text-blue-400 hover:scale-105 transition-transform"
-                >
-                  Time.now API
-                </a>
-              </Card>
-
-              {/* Copyright & Author Capsule */}
-              <Card noPadding className="flex items-center gap-3 px-4 py-2 rounded-2xl group">
-                <div className="p-1 bg-indigo-100/50 dark:bg-indigo-900/30 rounded-lg text-indigo-600 dark:text-indigo-400">
-                  <Binary size={10} />
-                </div>
-                <div className="flex flex-col items-end">
-                   <p className="text-[9px] font-black text-gray-500 dark:text-gray-400 tracking-widest uppercase">
-                    © {new Date().getFullYear()} SAE-Project
-                  </p>
-                  <p className="text-[8px] text-gray-400 dark:text-gray-500 font-bold">
-                    Developed by {author}
-                  </p>
+              <Card noPadding className="w-max mx-auto border border-white/5 shadow-glow rounded-2xl">
+                <div className="flex items-center justify-center gap-3 px-6 py-3">
+                  <div className="relative w-2 h-2 flex-shrink-0">
+                    <span className="animate-ping absolute inset-0 rounded-full bg-blue-400 opacity-75" />
+                    <span className="relative block w-2 h-2 rounded-full bg-blue-500" />
+                  </div>
+                  <span className="text-sm uppercase font-black tracking-widest text-text-secondary whitespace-nowrap">
+                    Network Time Sync:
+                  </span>
+                  <a 
+                    href="https://time.now/developer" 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="text-sm font-black text-accent hover:text-accent-light transition-all whitespace-nowrap"
+                  >
+                    Time.now API
+                  </a>
                 </div>
               </Card>
-
             </div>
           </div>
         </motion.div>

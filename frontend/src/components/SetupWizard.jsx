@@ -422,20 +422,20 @@ export default function SetupWizard({ onComplete }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-blue-900 via-blue-700 to-indigo-900 overflow-auto">
-      {/* Fondo decorativo */}
-      <div className="absolute inset-0 opacity-10 pointer-events-none">
-        <div className="absolute top-0 left-0 w-96 h-96 bg-white dark:bg-gray-800 rounded-full filter blur-3xl"></div>
-        <div className="absolute bottom-0 right-0 w-96 h-96 bg-blue-300 rounded-full filter blur-3xl"></div>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-indigo-300 rounded-full filter blur-3xl"></div>
+    <div className="fixed inset-0 bg-transparent overflow-auto text-text-primary bg-grid-pattern">
+      {/* Fondo decorativo (Technological Texture) */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-0 left-0 w-[500px] h-[500px] bg-accent/5 rounded-full mix-blend-screen filter blur-[100px] animate-blob"></div>
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-purple-500/5 rounded-full mix-blend-screen filter blur-[100px] animate-blob animation-delay-2000"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-blue-500/5 rounded-full mix-blend-screen filter blur-[120px] animate-blob animation-delay-4000"></div>
       </div>
 
       {/* Contenedor del formulario */}
       <div className="relative z-10 min-h-screen flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col md:flex-row my-4">
+        <div className="bg-bg-secondary/80 backdrop-blur-xl border border-white/5 rounded-2xl shadow-glow w-full max-w-4xl overflow-hidden flex flex-col md:flex-row my-4">
           
           {/* Sidebar */}
-          <div className="bg-gradient-to-br from-blue-900 to-blue-800 text-white p-8 md:w-1/3 flex flex-col justify-between">
+          <div className="bg-bg-tertiary/50 border-r border-white/5 text-text-primary p-8 md:w-1/3 flex flex-col justify-between">
             <div>
               <div className="flex flex-col items-center text-center gap-4 mb-8">
                 <img src="./logo.png" alt="Logo SAE" className="h-24 object-contain drop-shadow-md" />
@@ -479,7 +479,7 @@ export default function SetupWizard({ onComplete }) {
           {/* Formulario */}
           <div className="md:w-2/3">
             <div className="p-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">
+            <h2 className="text-2xl font-bold text-text-primary mb-6">
               {step === 0 ? 'Modo de Instalación' :
                step === 1 ? 'Datos Institucionales y Directores' :
                step === 2 ? 'Cuenta de Administrador' :
@@ -490,22 +490,22 @@ export default function SetupWizard({ onComplete }) {
             {/* PASO 0: Selección de Modo */}
             {step === 0 && (
               <div className="space-y-2">
-                <p className="text-gray-600 text-sm mb-4">
+                <p className="text-text-secondary text-sm mb-4">
                   Selecciona cómo deseas configurar este equipo:
                 </p>
 
                 {/* Nueva Instalación */}
                 <div 
                   onClick={() => setStep(1)}
-                  className="border-2 border-blue-100 hover:border-blue-500 rounded-xl p-6 cursor-pointer transition-all hover:bg-blue-50 group"
+                  className="border-2 border-white/10 hover:border-blue-500 rounded-xl p-6 cursor-pointer transition-all hover:bg-blue-50 group"
                 >
                   <div className="flex items-center gap-4">
                     <div className="bg-blue-100 p-3 rounded-full group-hover:bg-blue-600 group-hover:text-white transition-colors">
                       <School size={32} />
                     </div>
                     <div className="flex-1">
-                      <h3 className="text-lg font-bold text-gray-900">Nueva Instalación (Servidor)</h3>
-                      <p className="text-gray-600 text-sm">
+                      <h3 className="text-lg font-bold text-text-primary">Nueva Instalación (Servidor)</h3>
+                      <p className="text-text-secondary text-sm">
                         Configura este equipo como el servidor principal. Aquí se guardarán todos los datos.
                       </p>
                     </div>
@@ -528,20 +528,20 @@ export default function SetupWizard({ onComplete }) {
                         <Wifi size={32} />
                       </div>
                       <div>
-                        <h3 className="text-xl font-black text-gray-900 tracking-tight">Conectar como Equipo Cliente</h3>
-                        <p className="text-gray-600 text-sm leading-relaxed">
+                        <h3 className="text-xl font-black text-text-primary tracking-tight">Conectar como Equipo Cliente</h3>
+                        <p className="text-text-secondary text-sm leading-relaxed">
                           Sincroniza este dispositivo con un servidor central en tu red local.
                         </p>
                       </div>
                     </div>
 
-                    <div className="bg-white/60 backdrop-blur-sm border border-green-200/50 rounded-xl p-4 mb-6">
+                    <div className="bg-bg-primary/50/60 backdrop-blur-sm border border-green-200/50 rounded-xl p-4 mb-6">
                       <div className="flex items-start gap-3">
                         <Info size={18} className="text-green-600 mt-0.5 flex-shrink-0" />
                         <div>
                           <p className="text-xs font-bold text-green-800 uppercase tracking-wider mb-1">¿Dónde encuentro la URL?</p>
-                          <p className="text-xs text-gray-500 leading-relaxed">
-                            En el servidor principal, ve a <span className="font-semibold text-gray-700">Configuración &gt; Red</span>. 
+                          <p className="text-xs text-text-muted leading-relaxed">
+                            En el servidor principal, ve a <span className="font-semibold text-text-primary">Configuración &gt; Red</span>. 
                             Verás un código QR o la dirección IP que debes ingresar aquí.
                           </p>
                         </div>
@@ -550,7 +550,7 @@ export default function SetupWizard({ onComplete }) {
 
                     <form onSubmit={handleConnect} className="space-y-4">
                       <div>
-                        <label className="block text-xs font-bold text-gray-700 uppercase tracking-widest mb-2 ml-1">Dirección del Servidor</label>
+                        <label className="block text-xs font-bold text-text-primary uppercase tracking-widest mb-2 ml-1">Dirección del Servidor</label>
                         <div className="relative group/input">
                           <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within/input:text-green-600 transition-colors">
                             <Network size={20} />
@@ -560,7 +560,7 @@ export default function SetupWizard({ onComplete }) {
                             value={serverUrl}
                             onChange={(e) => setServerUrl(e.target.value)}
                             placeholder="http://192.168.1.xxx:58824"
-                            className="w-full pl-12 pr-4 py-4 border-2 border-gray-100 rounded-2xl focus:ring-4 focus:ring-green-500/10 focus:border-green-500 bg-white text-gray-900 font-mono text-sm transition-all shadow-inner"
+                            className="w-full pl-12 pr-4 py-4 border-2 border-gray-100 rounded-2xl focus:ring-4 focus:ring-green-500/10 focus:border-green-500 bg-bg-primary/50 text-text-primary font-mono text-sm transition-all shadow-inner"
                             required
                           />
                         </div>
@@ -608,7 +608,7 @@ export default function SetupWizard({ onComplete }) {
               {step === 1 && (
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-900 mb-1">Nombre de la Institución</label>
+                    <label className="block text-sm font-medium text-text-primary mb-1">Nombre de la Institución</label>
                     <div className="relative">
                       <School className="absolute left-3 top-3 text-gray-400" size={18} />
                       <input
@@ -616,7 +616,7 @@ export default function SetupWizard({ onComplete }) {
                         name="nombre"
                         value={formData.nombre}
                         onChange={handleChange}
-                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900"
+                        className="w-full pl-10 pr-4 py-2 border border-white/10 rounded-lg focus:ring-2 focus:ring-accent focus:border-accent bg-bg-primary/50 text-text-primary"
                         placeholder="Ej: Colegio San José"
                         required
                       />
@@ -624,7 +624,7 @@ export default function SetupWizard({ onComplete }) {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-900 mb-1">Dirección</label>
+                    <label className="block text-sm font-medium text-text-primary mb-1">Dirección</label>
                     <div className="relative">
                       <MapPin className="absolute left-3 top-3 text-gray-400" size={18} />
                       <input
@@ -632,7 +632,7 @@ export default function SetupWizard({ onComplete }) {
                         name="direccion"
                         value={formData.direccion}
                         onChange={handleChange}
-                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900"
+                        className="w-full pl-10 pr-4 py-2 border border-white/10 rounded-lg focus:ring-2 focus:ring-accent focus:border-accent bg-bg-primary/50 text-text-primary"
                         placeholder="Ej: 4ta Calle 10-20 Zona 1"
                       />
                     </div>
@@ -640,7 +640,7 @@ export default function SetupWizard({ onComplete }) {
 
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-900 mb-1">País</label>
+                    <label className="block text-sm font-medium text-text-primary mb-1">País</label>
                     <div className="relative">
                       <Globe className="absolute left-3 top-3 text-gray-400" size={18} />
                       <input
@@ -648,17 +648,17 @@ export default function SetupWizard({ onComplete }) {
                         name="pais"
                         value={formData.pais}
                         onChange={handleChange}
-                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 text-gray-900"
+                        className="w-full pl-10 pr-4 py-2 border border-white/10 rounded-lg focus:ring-2 focus:ring-accent focus:border-accent bg-bg-tertiary text-text-primary"
                         placeholder="Guatemala"
                         readOnly
                       />
                     </div>
-                    <p className="text-xs text-gray-500 mt-1">País configurado por defecto</p>
+                    <p className="text-xs text-text-muted mt-1">País configurado por defecto</p>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-900 mb-1">Departamento</label>
+                      <label className="block text-sm font-medium text-text-primary mb-1">Departamento</label>
                       <div className="relative">
                         <MapPin className="absolute left-3 top-3 text-gray-400" size={18} />
                         <input
@@ -666,13 +666,13 @@ export default function SetupWizard({ onComplete }) {
                           name="departamento"
                           value={formData.departamento}
                           onChange={handleChange}
-                          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900"
+                          className="w-full pl-10 pr-4 py-2 border border-white/10 rounded-lg focus:ring-2 focus:ring-accent focus:border-accent bg-bg-primary/50 text-text-primary"
                           placeholder="Ej: Guatemala"
                         />
                       </div>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-900 mb-1">Municipio</label>
+                      <label className="block text-sm font-medium text-text-primary mb-1">Municipio</label>
                       <div className="relative">
                         <MapPin className="absolute left-3 top-3 text-gray-400" size={18} />
                         <input
@@ -680,7 +680,7 @@ export default function SetupWizard({ onComplete }) {
                           name="municipio"
                           value={formData.municipio}
                           onChange={handleChange}
-                          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900"
+                          className="w-full pl-10 pr-4 py-2 border border-white/10 rounded-lg focus:ring-2 focus:ring-accent focus:border-accent bg-bg-primary/50 text-text-primary"
                           placeholder="Ej: Guatemala"
                         />
                       </div>
@@ -689,7 +689,7 @@ export default function SetupWizard({ onComplete }) {
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-900 mb-1">Email Institucional</label>
+                      <label className="block text-sm font-medium text-text-primary mb-1">Email Institucional</label>
                       <div className="relative">
                         <Mail className="absolute left-3 top-3 text-gray-400" size={18} />
                         <input
@@ -697,13 +697,13 @@ export default function SetupWizard({ onComplete }) {
                           name="email"
                           value={formData.email}
                           onChange={handleChange}
-                          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900"
+                          className="w-full pl-10 pr-4 py-2 border border-white/10 rounded-lg focus:ring-2 focus:ring-accent focus:border-accent bg-bg-primary/50 text-text-primary"
                           placeholder="contacto@colegio.edu"
                         />
                       </div>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-900 mb-1">Teléfono</label>
+                      <label className="block text-sm font-medium text-text-primary mb-1">Teléfono</label>
                       <div className="relative">
                         <Phone className="absolute left-3 top-3 text-gray-400" size={18} />
                         <input
@@ -711,7 +711,7 @@ export default function SetupWizard({ onComplete }) {
                           name="telefono"
                           value={formData.telefono}
                           onChange={handleChange}
-                          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900"
+                          className="w-full pl-10 pr-4 py-2 border border-white/10 rounded-lg focus:ring-2 focus:ring-accent focus:border-accent bg-bg-primary/50 text-text-primary"
                           placeholder="+502 5555 5555"
                         />
                       </div>
@@ -719,7 +719,7 @@ export default function SetupWizard({ onComplete }) {
                   </div>
                   <div className="grid grid-cols-3 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-900 mb-1">Entrada</label>
+                      <label className="block text-sm font-medium text-text-primary mb-1">Entrada</label>
                       <div className="relative">
                         <Clock className="absolute left-3 top-3 text-gray-400" size={18} />
                         <input
@@ -727,14 +727,14 @@ export default function SetupWizard({ onComplete }) {
                           name="horario_inicio"
                           value={formData.horario_inicio}
                           onChange={handleChange}
-                          className="w-full pl-10 pr-2 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900"
+                          className="w-full pl-10 pr-2 py-2 border border-white/10 rounded-lg focus:ring-2 focus:ring-accent focus:border-accent bg-bg-primary/50 text-text-primary"
                           style={{ colorScheme: 'light' }}
                           required
                         />
                       </div>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-900 mb-1">Salida</label>
+                      <label className="block text-sm font-medium text-text-primary mb-1">Salida</label>
                       <div className="relative">
                         <LogOut className="absolute left-3 top-3 text-gray-400" size={18} />
                         <input
@@ -742,14 +742,14 @@ export default function SetupWizard({ onComplete }) {
                           name="horario_salida"
                           value={formData.horario_salida}
                           onChange={handleChange}
-                          className="w-full pl-10 pr-2 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900"
+                          className="w-full pl-10 pr-2 py-2 border border-white/10 rounded-lg focus:ring-2 focus:ring-accent focus:border-accent bg-bg-primary/50 text-text-primary"
                           style={{ colorScheme: 'light' }}
                           required
                         />
                       </div>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-900 mb-1">Margen (min)</label>
+                      <label className="block text-sm font-medium text-text-primary mb-1">Margen (min)</label>
                       <div className="relative">
                         <Clock className="absolute left-3 top-3 text-gray-400" size={18} />
                         <input
@@ -757,7 +757,7 @@ export default function SetupWizard({ onComplete }) {
                           name="margen_puntualidad_min"
                           value={formData.margen_puntualidad_min}
                           onChange={handleChange}
-                          className="w-full pl-10 pr-2 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900"
+                          className="w-full pl-10 pr-2 py-2 border border-white/10 rounded-lg focus:ring-2 focus:ring-accent focus:border-accent bg-bg-primary/50 text-text-primary"
                           min="0"
                           required
                         />
@@ -766,8 +766,8 @@ export default function SetupWizard({ onComplete }) {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-900 mb-1">Logo Institucional</label>
-                    <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:bg-blue-50 hover:border-blue-400 transition-all cursor-pointer relative group">
+                    <label className="block text-sm font-medium text-text-primary mb-1">Logo Institucional</label>
+                    <div className="border-2 border-dashed border-white/10 rounded-xl p-6 text-center hover:bg-blue-50 hover:border-blue-400 transition-all cursor-pointer relative group">
                       <input
                         type="file"
                         accept="image/*"
@@ -783,8 +783,8 @@ export default function SetupWizard({ onComplete }) {
                           </div>
                         </div>
                       ) : (
-                        <div className="flex flex-col items-center text-gray-500 group-hover:text-blue-600 transition-colors">
-                          <div className="bg-gray-100 p-3 rounded-full mb-3 group-hover:bg-blue-100 transition-colors">
+                        <div className="flex flex-col items-center text-text-muted group-hover:text-blue-600 transition-colors">
+                          <div className="bg-bg-tertiary p-3 rounded-full mb-3 group-hover:bg-blue-100 transition-colors">
                               <Upload size={24} />
                           </div>
                           <p className="font-medium">Haz clic para subir el logo</p>
@@ -795,7 +795,7 @@ export default function SetupWizard({ onComplete }) {
                   </div>
 
                   <div>
-                     <label className="block text-sm font-medium text-gray-900 mb-1">Ciclo Escolar</label>
+                     <label className="block text-sm font-medium text-text-primary mb-1">Ciclo Escolar</label>
                      <div className="relative">
                        <Clock className="absolute left-3 top-3 text-gray-400" size={18} />
                        <input
@@ -803,19 +803,19 @@ export default function SetupWizard({ onComplete }) {
                          name="ciclo_escolar"
                          value={formData.ciclo_escolar}
                          onChange={handleChange}
-                         className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900"
+                         className="w-full pl-10 pr-4 py-2 border border-white/10 rounded-lg focus:ring-2 focus:ring-accent focus:border-accent bg-bg-primary/50 text-text-primary"
                          min="2020"
                          max="2100"
                          required
                        />
                      </div>
-                     <p className="text-xs text-gray-500 mt-1">Año del ciclo escolar actual</p>
+                     <p className="text-xs text-text-muted mt-1">Año del ciclo escolar actual</p>
                   </div>
 
                   {/* Sección de Directores */}
-                  <div className="border-t border-gray-200 pt-6 mt-6">
+                  <div className="border-t border-white/10 pt-6 mt-6">
                     <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-lg font-bold text-gray-900">Directores de la Institución</h3>
+                      <h3 className="text-lg font-bold text-text-primary">Directores de la Institución</h3>
                       <button
                         type="button"
                         onClick={addDirector}
@@ -827,15 +827,15 @@ export default function SetupWizard({ onComplete }) {
                       </button>
                     </div>
                     
-                    <p className="text-sm text-gray-600 mb-4">
+                    <p className="text-sm text-text-secondary mb-4">
                       Agregue los directores de su institución. Estos aparecerán en reportes oficiales.
                     </p>
 
                     <div className="space-y-4">
                       {directores.map((director, index) => (
-                        <div key={index} className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                        <div key={index} className="bg-bg-tertiary border border-white/10 rounded-lg p-4">
                           <div className="flex items-center justify-between mb-3">
-                            <span className="text-sm font-semibold text-gray-700">Director {index + 1}</span>
+                            <span className="text-sm font-semibold text-text-primary">Director {index + 1}</span>
                             {directores.length > 1 && (
                               <button
                                 type="button"
@@ -848,31 +848,31 @@ export default function SetupWizard({ onComplete }) {
                           </div>
                           <div className="grid grid-cols-2 gap-3">
                             <div>
-                              <label className="block text-xs font-medium text-gray-700 mb-1">Nombres</label>
+                              <label className="block text-xs font-medium text-text-primary mb-1">Nombres</label>
                               <input
                                 type="text"
                                 value={director.nombres}
                                 onChange={(e) => updateDirector(index, 'nombres', e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white text-gray-900 text-sm"
+                                className="w-full px-3 py-2 border border-white/10 rounded-lg focus:ring-2 focus:ring-accent bg-bg-primary/50 text-text-primary text-sm"
                                 placeholder="Ej: Juan Carlos"
                               />
                             </div>
                             <div>
-                              <label className="block text-xs font-medium text-gray-700 mb-1">Apellidos</label>
+                              <label className="block text-xs font-medium text-text-primary mb-1">Apellidos</label>
                               <input
                                 type="text"
                                 value={director.apellidos}
                                 onChange={(e) => updateDirector(index, 'apellidos', e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white text-gray-900 text-sm"
+                                className="w-full px-3 py-2 border border-white/10 rounded-lg focus:ring-2 focus:ring-accent bg-bg-primary/50 text-text-primary text-sm"
                                 placeholder="Ej: Pérez López"
                               />
                             </div>
                             <div className="col-span-2">
-                              <label className="block text-xs font-medium text-gray-700 mb-1">Cargo</label>
+                              <label className="block text-xs font-medium text-text-primary mb-1">Cargo</label>
                               <select
                                 value={director.cargo}
                                 onChange={(e) => updateDirector(index, 'cargo', e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white text-gray-900 text-sm"
+                                className="w-full px-3 py-2 border border-white/10 rounded-lg focus:ring-2 focus:ring-accent bg-bg-primary/50 text-text-primary text-sm"
                               >
                                 <option value="">Seleccione un cargo...</option>
                                 <option value="Director General">Director General</option>
@@ -890,11 +890,11 @@ export default function SetupWizard({ onComplete }) {
                               </select>
                             </div>
                             <div>
-                              <label className="block text-xs font-medium text-gray-700 mb-1">Sexo</label>
+                              <label className="block text-xs font-medium text-text-primary mb-1">Sexo</label>
                               <select
                                 value={director.sexo || ''}
                                 onChange={(e) => updateDirector(index, 'sexo', e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white text-gray-900 text-sm"
+                                className="w-full px-3 py-2 border border-white/10 rounded-lg focus:ring-2 focus:ring-accent bg-bg-primary/50 text-text-primary text-sm"
                               >
                                 <option value="">Seleccione...</option>
                                 <option value="Masculino">Masculino</option>
@@ -902,11 +902,11 @@ export default function SetupWizard({ onComplete }) {
                               </select>
                             </div>
                             <div>
-                              <label className="block text-xs font-medium text-gray-700 mb-1">Jornada</label>
+                              <label className="block text-xs font-medium text-text-primary mb-1">Jornada</label>
                               <select
                                 value={director.jornada}
                                 onChange={(e) => updateDirector(index, 'jornada', e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white text-gray-900 text-sm"
+                                className="w-full px-3 py-2 border border-white/10 rounded-lg focus:ring-2 focus:ring-accent bg-bg-primary/50 text-text-primary text-sm"
                               >
                                 <option value="">-</option>
                                 <option value="Matutina">Matutina</option>
@@ -920,9 +920,9 @@ export default function SetupWizard({ onComplete }) {
                               </select>
                             </div>
                             <div className="col-span-2">
-                              <label className="block text-xs font-medium text-gray-700 mb-1">Foto (Opcional)</label>
+                              <label className="block text-xs font-medium text-text-primary mb-1">Foto (Opcional)</label>
                               <div className="flex items-center gap-3">
-                                <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden border-2 border-gray-300">
+                                <div className="w-16 h-16 rounded-full bg-bg-tertiary flex items-center justify-center overflow-hidden border-2 border-white/10">
                                   {director.foto_preview ? (
                                     <img src={director.foto_preview} alt="Preview" className="w-full h-full object-cover" />
                                   ) : (
@@ -939,7 +939,7 @@ export default function SetupWizard({ onComplete }) {
                                        input.onchange = (e) => handleDirectorFotoChange(index, e);
                                        input.click();
                                      }}
-                                     className="p-1.5 bg-gray-100 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-200 transition-colors flex items-center gap-1.5"
+                                     className="p-1.5 bg-bg-tertiary border border-white/10 rounded-lg text-text-secondary hover:bg-gray-200 transition-colors flex items-center gap-1.5"
                                      title="Subir archivo"
                                    >
                                       <Upload size={14} />
@@ -970,7 +970,7 @@ export default function SetupWizard({ onComplete }) {
                     <button
                       type="button"
                       onClick={() => setStep(0)}
-                      className="w-1/3 bg-gray-200 hover:bg-gray-300 text-gray-900 font-bold py-3 rounded-lg transition-colors"
+                      className="w-1/3 bg-gray-200 hover:bg-gray-300 text-text-primary font-bold py-3 rounded-lg transition-colors"
                     >
                       Atrás
                     </button>
@@ -978,7 +978,7 @@ export default function SetupWizard({ onComplete }) {
                       type="button"
                       onClick={() => setStep(2)}
                       disabled={!formData.nombre || !formData.logo_file}
-                      className="w-2/3 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                      className="w-2/3 bg-accent hover:bg-accent-light text-[#020617] font-bold shadow-glow border border-accent/50 text-white font-bold py-3 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
                     >
                       Siguiente
                     </button>
@@ -991,7 +991,7 @@ export default function SetupWizard({ onComplete }) {
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-900 mb-1">Nombres</label>
+                      <label className="block text-sm font-medium text-text-primary mb-1">Nombres</label>
                       <div className="relative">
                         <User className="absolute left-3 top-3 text-gray-400" size={18} />
                         <input
@@ -999,14 +999,14 @@ export default function SetupWizard({ onComplete }) {
                           name="admin_nombres"
                           value={formData.admin_nombres}
                           onChange={handleChange}
-                          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
+                          className="w-full pl-10 pr-4 py-2 border border-white/10 rounded-lg focus:ring-2 focus:ring-accent bg-bg-primary/50 text-text-primary"
                           placeholder="Juan"
                           required
                         />
                       </div>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-900 mb-1">Apellidos</label>
+                      <label className="block text-sm font-medium text-text-primary mb-1">Apellidos</label>
                       <div className="relative">
                         <User className="absolute left-3 top-3 text-gray-400" size={18} />
                         <input
@@ -1014,7 +1014,7 @@ export default function SetupWizard({ onComplete }) {
                           name="admin_apellidos"
                           value={formData.admin_apellidos}
                           onChange={handleChange}
-                          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
+                          className="w-full pl-10 pr-4 py-2 border border-white/10 rounded-lg focus:ring-2 focus:ring-accent bg-bg-primary/50 text-text-primary"
                           placeholder="Pérez"
                           required
                         />
@@ -1024,14 +1024,14 @@ export default function SetupWizard({ onComplete }) {
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-900 mb-1">Cargo</label>
+                      <label className="block text-sm font-medium text-text-primary mb-1">Cargo</label>
                       <div className="relative">
                         <User className="absolute left-3 top-3 text-gray-400" size={18} />
                         <select
                           name="admin_cargo"
                           value={formData.admin_cargo}
                           onChange={handleChange}
-                          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 appearance-none bg-white text-gray-900 font-medium"
+                          className="w-full pl-10 pr-4 py-2 border border-white/10 rounded-lg focus:ring-2 focus:ring-accent appearance-none bg-bg-primary/50 text-text-primary font-medium"
                           required
                         >
                           <option value="">Seleccione...</option>
@@ -1056,7 +1056,7 @@ export default function SetupWizard({ onComplete }) {
                       </div>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-900 mb-1">Nombre de Usuario</label>
+                      <label className="block text-sm font-medium text-text-primary mb-1">Nombre de Usuario</label>
                       <div className="relative">
                         <LogIn className="absolute left-3 top-3 text-gray-400" size={18} />
                         <input
@@ -1064,22 +1064,22 @@ export default function SetupWizard({ onComplete }) {
                           name="admin_username"
                           value={formData.admin_username}
                           onChange={handleChange}
-                          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white text-gray-900 font-medium"
+                          className="w-full pl-10 pr-4 py-2 border border-white/10 rounded-lg focus:ring-2 focus:ring-accent bg-bg-primary/50 text-text-primary font-medium"
                           placeholder="admin_acceso"
                           required={!formData.admin_email}
                         />
                       </div>
-                      <p className="text-[10px] text-gray-500 mt-0.5">Identificador único para entrar al sistema</p>
+                      <p className="text-[10px] text-text-muted mt-0.5">Identificador único para entrar al sistema</p>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-900 mb-1">Jornada</label>
+                      <label className="block text-sm font-medium text-text-primary mb-1">Jornada</label>
                       <div className="relative">
                         <Clock className="absolute left-3 top-3 text-gray-400" size={18} />
                         <select
                           name="admin_jornada"
                           value={formData.admin_jornada}
                           onChange={handleChange}
-                          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 appearance-none bg-white text-gray-900"
+                          className="w-full pl-10 pr-4 py-2 border border-white/10 rounded-lg focus:ring-2 focus:ring-accent appearance-none bg-bg-primary/50 text-text-primary"
                           required
                         >
                           <option value="">Seleccione...</option>
@@ -1097,9 +1097,9 @@ export default function SetupWizard({ onComplete }) {
                   </div>
 
                   <div>
-                     <label className="block text-sm font-medium text-gray-900 mb-1">Foto de Perfil (Opcional)</label>
+                     <label className="block text-sm font-medium text-text-primary mb-1">Foto de Perfil (Opcional)</label>
                      <div className="flex items-center gap-4">
-                        <div className="w-16 h-16 rounded-full bg-gray-100 border border-gray-300 flex items-center justify-center overflow-hidden flex-shrink-0">
+                        <div className="w-16 h-16 rounded-full bg-bg-tertiary border border-white/10 flex items-center justify-center overflow-hidden flex-shrink-0">
                           {formData.admin_foto_preview ? (
                             <img src={formData.admin_foto_preview} alt="Preview" className="w-full h-full object-cover" />
                           ) : (
@@ -1116,7 +1116,7 @@ export default function SetupWizard({ onComplete }) {
                                input.onchange = (e) => handleAdminFotoChange(e);
                                input.click();
                              }}
-                             className="p-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-200 transition-colors flex items-center gap-2"
+                             className="p-2 bg-bg-tertiary border border-white/10 rounded-lg text-text-secondary hover:bg-gray-200 transition-colors flex items-center gap-2"
                              title="Subir archivo"
                            >
                               <Upload size={16} />
@@ -1139,7 +1139,7 @@ export default function SetupWizard({ onComplete }) {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-900 mb-1">Email (Opcional)</label>
+                    <label className="block text-sm font-medium text-text-primary mb-1">Email (Opcional)</label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-3 text-gray-400" size={18} />
                       <input
@@ -1147,10 +1147,10 @@ export default function SetupWizard({ onComplete }) {
                         name="admin_email"
                         value={formData.admin_email}
                         onChange={handleChange}
-                        className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 bg-white text-gray-900 ${
+                        className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-accent bg-bg-primary/50 text-text-primary ${
                           formData.admin_email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.admin_email)
                             ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
-                            : 'border-gray-300'
+                            : 'border-white/10'
                         }`}
                         placeholder="admin@ejemplo.com"
                         required={!formData.admin_username}
@@ -1165,7 +1165,7 @@ export default function SetupWizard({ onComplete }) {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-900 mb-1">Contraseña</label>
+                    <label className="block text-sm font-medium text-text-primary mb-1">Contraseña</label>
                     <div className="relative">
                       <Lock className="absolute left-3 top-3 text-gray-400" size={18} />
                       <input
@@ -1173,7 +1173,7 @@ export default function SetupWizard({ onComplete }) {
                         name="admin_password"
                         value={formData.admin_password}
                         onChange={handleChange}
-                        className="w-full pl-10 pr-12 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
+                        className="w-full pl-10 pr-12 py-2 border border-white/10 rounded-lg focus:ring-2 focus:ring-accent bg-bg-primary/50 text-text-primary"
                         placeholder="••••••••"
                         required
                         minLength={6}
@@ -1181,17 +1181,17 @@ export default function SetupWizard({ onComplete }) {
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-3 text-gray-400 hover:text-gray-600 transition-colors"
+                        className="absolute right-3 top-3 text-gray-400 hover:text-text-secondary transition-colors"
                       >
                         {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                       </button>
-                      <p className="text-xs text-gray-500 mt-1">Mínimo 6 caracteres (mayúsculas o números recomendados)</p>
+                      <p className="text-xs text-text-muted mt-1">Mínimo 6 caracteres (mayúsculas o números recomendados)</p>
                     </div>
                     <PasswordStrengthIndicator password={formData.admin_password} />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-900 mb-1">Confirmar Contraseña</label>
+                    <label className="block text-sm font-medium text-text-primary mb-1">Confirmar Contraseña</label>
                     <div className="relative">
                       <Lock className="absolute left-3 top-3 text-gray-400" size={18} />
                       <input
@@ -1199,7 +1199,7 @@ export default function SetupWizard({ onComplete }) {
                         name="admin_password_confirm"
                         value={formData.admin_password_confirm}
                         onChange={handleChange}
-                        className="w-full pl-10 pr-12 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
+                        className="w-full pl-10 pr-12 py-2 border border-white/10 rounded-lg focus:ring-2 focus:ring-accent bg-bg-primary/50 text-text-primary"
                         placeholder="••••••••"
                         required
                         minLength={8}
@@ -1207,11 +1207,11 @@ export default function SetupWizard({ onComplete }) {
                       <button
                         type="button"
                         onClick={() => setShowPasswordConfirm(!showPasswordConfirm)}
-                        className="absolute right-3 top-3 text-gray-400 hover:text-gray-600 transition-colors"
+                        className="absolute right-3 top-3 text-gray-400 hover:text-text-secondary transition-colors"
                       >
                         {showPasswordConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
                       </button>
-                      <p className="text-xs text-gray-500 mt-1">Mínimo 8 caracteres (mayúsculas, minúsculas, símbolos y números)</p>
+                      <p className="text-xs text-text-muted mt-1">Mínimo 8 caracteres (mayúsculas, minúsculas, símbolos y números)</p>
                     </div>
                   </div>
 
@@ -1219,7 +1219,7 @@ export default function SetupWizard({ onComplete }) {
                     <button
                       type="button"
                       onClick={() => setStep(1)}
-                      className="w-1/3 bg-gray-200 hover:bg-gray-300 text-gray-900 font-bold py-3 rounded-lg transition-colors"
+                      className="w-1/3 bg-gray-200 hover:bg-gray-300 text-text-primary font-bold py-3 rounded-lg transition-colors"
                     >
                       Atrás
                     </button>
@@ -1227,7 +1227,7 @@ export default function SetupWizard({ onComplete }) {
                       type="button"
                       onClick={() => setStep(3)}
                       disabled={(!formData.admin_email && !formData.admin_username) || !formData.admin_password || formData.admin_password !== formData.admin_password_confirm}
-                      className="w-2/3 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                      className="w-2/3 bg-accent hover:bg-accent-light text-[#020617] font-bold shadow-glow border border-accent/50 text-white font-bold py-3 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
                     >
                       Siguiente
                     </button>
@@ -1241,7 +1241,7 @@ export default function SetupWizard({ onComplete }) {
                   {/* Datos Institucionales */}
                   <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
                     <div className="flex items-center justify-between mb-3">
-                      <h3 className="font-bold text-gray-900 flex items-center gap-2">
+                      <h3 className="font-bold text-text-primary flex items-center gap-2">
                         <School size={20} className="text-blue-600" />
                         Datos Institucionales
                       </h3>
@@ -1256,46 +1256,46 @@ export default function SetupWizard({ onComplete }) {
                     </div>
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
-                        <span className="text-gray-600">Nombre:</span>
-                        <span className="font-medium text-gray-900">{formData.nombre}</span>
+                        <span className="text-text-secondary">Nombre:</span>
+                        <span className="font-medium text-text-primary">{formData.nombre}</span>
                       </div>
                       {formData.direccion && (
                         <div className="flex justify-between">
-                          <span className="text-gray-600">Dirección:</span>
-                          <span className="font-medium text-gray-900">{formData.direccion}</span>
+                          <span className="text-text-secondary">Dirección:</span>
+                          <span className="font-medium text-text-primary">{formData.direccion}</span>
                         </div>
                       )}
                       <div className="flex justify-between">
-                        <span className="text-gray-600">Ubicación:</span>
-                        <span className="font-medium text-gray-900">Guatemala - {formData.departamento} - {formData.municipio}</span>
+                        <span className="text-text-secondary">Ubicación:</span>
+                        <span className="font-medium text-text-primary">Guatemala - {formData.departamento} - {formData.municipio}</span>
                       </div>
                       {formData.email && (
                         <div className="flex justify-between">
-                          <span className="text-gray-600">Email:</span>
-                          <span className="font-medium text-gray-900">{formData.email}</span>
+                          <span className="text-text-secondary">Email:</span>
+                          <span className="font-medium text-text-primary">{formData.email}</span>
                         </div>
                       )}
                       {formData.telefono && (
                         <div className="flex justify-between">
-                          <span className="text-gray-600">Teléfono:</span>
-                          <span className="font-medium text-gray-900">{formData.telefono}</span>
+                          <span className="text-text-secondary">Teléfono:</span>
+                          <span className="font-medium text-text-primary">{formData.telefono}</span>
                         </div>
                       )}
                       <div className="flex justify-between">
-                        <span className="text-gray-600">Horario:</span>
-                        <span className="font-medium text-gray-900">{formData.horario_inicio} - {formData.horario_salida}</span>
+                        <span className="text-text-secondary">Horario:</span>
+                        <span className="font-medium text-text-primary">{formData.horario_inicio} - {formData.horario_salida}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-gray-600">Ciclo Escolar:</span>
-                        <span className="font-medium text-gray-900">{formData.ciclo_escolar}</span>
+                        <span className="text-text-secondary">Ciclo Escolar:</span>
+                        <span className="font-medium text-text-primary">{formData.ciclo_escolar}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-gray-600">Margen:</span>
-                        <span className="font-medium text-gray-900">{formData.margen_puntualidad_min} min</span>
+                        <span className="text-text-secondary">Margen:</span>
+                        <span className="font-medium text-text-primary">{formData.margen_puntualidad_min} min</span>
                       </div>
                       {logoPreview && (
                         <div className="mt-3 pt-3 border-t border-blue-200">
-                          <p className="text-gray-600 text-xs mb-2">Logo:</p>
+                          <p className="text-text-secondary text-xs mb-2">Logo:</p>
                           <img src={logoPreview} alt="Logo" className="h-16 object-contain" />
                         </div>
                       )}
@@ -1306,7 +1306,7 @@ export default function SetupWizard({ onComplete }) {
                   {directores.length > 0 && (
                     <div className="bg-purple-50 rounded-lg p-4 border border-purple-200">
                       <div className="flex items-center justify-between mb-3">
-                        <h3 className="font-bold text-gray-900 flex items-center gap-2">
+                        <h3 className="font-bold text-text-primary flex items-center gap-2">
                           <Users size={20} className="text-purple-600" />
                           Directores ({directores.length})
                         </h3>
@@ -1321,7 +1321,7 @@ export default function SetupWizard({ onComplete }) {
                       </div>
                       <div className="space-y-3">
                         {directores.map((director, index) => (
-                          <div key={index} className="bg-white rounded-lg p-3 border border-purple-200">
+                          <div key={index} className="bg-bg-primary/50 rounded-lg p-3 border border-purple-200">
                             <div className="flex items-start gap-3">
                               {director.foto_preview ? (
                                 <img 
@@ -1335,14 +1335,14 @@ export default function SetupWizard({ onComplete }) {
                                 </div>
                               )}
                               <div className="flex-1">
-                                <p className="font-semibold text-gray-900">
+                                <p className="font-semibold text-text-primary">
                                   {director.nombres} {director.apellidos}
                                 </p>
                                 <p className="text-sm text-purple-700 font-medium">
                                   {director.cargo}
                                 </p>
                                 {director.jornada && (
-                                  <p className="text-xs text-gray-600 mt-1">
+                                  <p className="text-xs text-text-secondary mt-1">
                                     Jornada: {director.jornada}
                                   </p>
                                 )}
@@ -1357,7 +1357,7 @@ export default function SetupWizard({ onComplete }) {
                   {/* Datos del Administrador */}
                   <div className="bg-green-50 rounded-lg p-4 border border-green-200">
                     <div className="flex items-center justify-between mb-3">
-                      <h3 className="font-bold text-gray-900 flex items-center gap-2">
+                      <h3 className="font-bold text-text-primary flex items-center gap-2">
                         <User size={20} className="text-green-600" />
                         Cuenta de Administrador
                       </h3>
@@ -1370,7 +1370,7 @@ export default function SetupWizard({ onComplete }) {
                         Editar
                       </button>
                     </div>
-                    <div className="bg-white rounded-lg p-3 border border-green-200">
+                    <div className="bg-bg-primary/50 rounded-lg p-3 border border-green-200">
                       <div className="flex items-start gap-3">
                         {formData.admin_foto_preview ? (
                           <img 
@@ -1384,19 +1384,19 @@ export default function SetupWizard({ onComplete }) {
                           </div>
                         )}
                         <div className="flex-1">
-                          <p className="font-semibold text-gray-900">
+                          <p className="font-semibold text-text-primary">
                             {formData.admin_nombres} {formData.admin_apellidos}
                           </p>
                           <p className="text-sm text-green-700 font-medium">
                             {formData.admin_cargo}
                           </p>
                           {formData.admin_username && (
-                            <p className="text-xs text-gray-600 mt-1">
+                            <p className="text-xs text-text-secondary mt-1">
                               Usuario: <span className="font-bold">{formData.admin_username}</span>
                             </p>
                           )}
                           {formData.admin_email && (
-                            <p className="text-xs text-gray-600 mt-1">
+                            <p className="text-xs text-text-secondary mt-1">
                               Email: {formData.admin_email}
                             </p>
                           )}
@@ -1409,7 +1409,7 @@ export default function SetupWizard({ onComplete }) {
                     <button
                       type="button"
                       onClick={() => setStep(2)}
-                      className="w-1/3 bg-gray-200 hover:bg-gray-300 text-gray-900 font-bold py-3 rounded-lg transition-colors"
+                      className="w-1/3 bg-gray-200 hover:bg-gray-300 text-text-primary font-bold py-3 rounded-lg transition-colors"
                     >
                       Atrás
                     </button>
@@ -1440,8 +1440,8 @@ export default function SetupWizard({ onComplete }) {
                   <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto text-green-600 mb-4 animate-bounce">
                     <CheckCircle size={48} />
                   </div>
-                  <h3 className="text-2xl font-bold text-gray-900">¡Configuración Completada!</h3>
-                  <p className="text-gray-600 max-w-md mx-auto">
+                  <h3 className="text-2xl font-bold text-text-primary">¡Configuración Completada!</h3>
+                  <p className="text-text-secondary max-w-md mx-auto">
                     El sistema ha sido inicializado con éxito. Por favor, guarda la siguiente información en un lugar seguro.
                   </p>
 
@@ -1451,7 +1451,7 @@ export default function SetupWizard({ onComplete }) {
                     </div>
                     <p className="text-amber-800 font-bold text-sm mb-2 uppercase tracking-wider">Llave Maestra de Recuperación</p>
                     <div className="flex items-center justify-center gap-4">
-                      <code className="bg-white px-6 py-3 rounded-lg border border-amber-300 text-3xl font-black text-amber-900 tracking-[0.2em] shadow-inner select-all">
+                      <code className="bg-bg-primary/50 px-6 py-3 rounded-lg border border-amber-300 text-3xl font-black text-amber-900 tracking-[0.2em] shadow-inner select-all">
                         {masterKey || '----------'}
                       </code>
                     </div>
@@ -1509,7 +1509,7 @@ export default function SetupWizard({ onComplete }) {
                       if (onComplete) onComplete();
                       navigate('/login');
                     }}
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-xl transition-all transform hover:-translate-y-1 hover:shadow-2xl"
+                    className="w-full bg-accent hover:bg-accent-light text-[#020617] font-bold shadow-glow border border-accent/50 text-white font-bold py-4 rounded-xl shadow-xl transition-all transform hover:-translate-y-1 hover:shadow-2xl"
                   >
                     Ir al Inicio de Sesión
                   </button>

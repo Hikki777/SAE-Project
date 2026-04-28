@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { FileText, Download, Calendar, Filter, FileSpreadsheet, Users, TrendingUp, Clock, Award, CreditCard, User, Search, Loader, FileCheck, Construction } from 'lucide-react';
+import { FileText, Download, Calendar, Filter, FileSpreadsheet, Users, TrendingUp, Clock, Award, CreditCard, User, Search, Loader, FileCheck } from 'lucide-react';
 import client, { API_URL, BASE_URL } from '../api/client';
 import { exportAttendancePDF } from '../utils/exportPdf';
 import { exportAttendanceExcel } from '../utils/exportExcel';
@@ -486,14 +486,166 @@ export default function ReportesPanel({ initialTab = 'asistencias' }) {
             </div>
         )}
 
-        {/* Placeholders for tabs 3 & 4 */}
-        {(activeTab === 'documentos' || activeTab === 'carnets') && (
-          <div className="flex flex-col items-center justify-center h-[400px] text-center p-8 bg-gray-50 dark:bg-gray-800/50 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-700">
-             <div className="bg-blue-100 dark:bg-blue-900/30 p-6 rounded-full mb-6">
-               <Construction className="w-16 h-16 text-blue-600 dark:text-blue-400" />
-             </div>
-             <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Próximamente, función en desarrollo</h3>
-             <p className="text-gray-500 dark:text-gray-400 max-w-md text-lg">Esta funcionalidad estará disponible en futuras actualizaciones.</p>
+        {/* TAB 2: DOCUMENTOS OFICIALES */}
+        {activeTab === 'documentos' && (
+          <div className="space-y-6">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <Award className="text-blue-600 w-5 h-5" />
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Documento Oficial</h2>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    <Users className="inline w-4 h-4 mr-1" />Estudiante
+                  </label>
+                  <select
+                    value={alumnoSeleccionado}
+                    onChange={(e) => setAlumnoSeleccionado(e.target.value)}
+                    className="w-full bg-white dark:bg-gray-900/50 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">-- Selecciona un estudiante --</option>
+                    {alumnos.map(a => (
+                      <option key={a.id} value={a.id}>
+                        {a.nombres} {a.apellidos} — {a.carnet}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Tipo de Documento</label>
+                  <div className="flex gap-4">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input type="radio" checked={tipoDocumento === 'constancia'} onChange={() => setTipoDocumento('constancia')} className="text-blue-600" />
+                      <span className="text-gray-700 dark:text-gray-300">Constancia de Inscripción</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input type="radio" checked={tipoDocumento === 'carta'} onChange={() => setTipoDocumento('carta')} className="text-blue-600" />
+                      <span className="text-gray-700 dark:text-gray-300">Carta de Conducta</span>
+                    </label>
+                  </div>
+                </div>
+
+                <button
+                  onClick={handleGenerarDocumento}
+                  disabled={generandoDoc || !alumnoSeleccionado}
+                  className={`flex items-center justify-center gap-3 px-6 py-4 rounded-lg transition w-full ${
+                    generandoDoc || !alumnoSeleccionado
+                      ? 'bg-gray-300 cursor-not-allowed text-gray-500'
+                      : 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:scale-105'
+                  }`}
+                >
+                  {generandoDoc ? (
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <FileText className="w-5 h-5" />
+                  )}
+                  <div className="text-left">
+                    <div className="font-semibold">{generandoDoc ? 'Generando...' : 'Generar Documento PDF'}</div>
+                    <div className="text-sm opacity-90">El documento se descargará automáticamente</div>
+                  </div>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* TAB 3: CARNETS */}
+        {activeTab === 'carnets' && (
+          <div className="space-y-6">
+            {/* Carnet de Alumno */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <CreditCard className="text-blue-600 w-5 h-5" />
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Carnet de Alumno</h2>
+              </div>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    <Users className="inline w-4 h-4 mr-1" />Selecciona un Alumno
+                  </label>
+                  <select
+                    value={alumnoCarnet}
+                    onChange={(e) => setAlumnoCarnet(e.target.value)}
+                    className="w-full bg-white dark:bg-gray-900/50 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">-- Selecciona un alumno --</option>
+                    {alumnos.filter(a => a.estado === 'activo').map(a => (
+                      <option key={a.id} value={a.id}>
+                        {a.nombres} {a.apellidos} — {a.grado} — {a.carnet}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <button
+                  onClick={handleGenerarCarnetAlumno}
+                  disabled={generandoCarnet || !alumnoCarnet}
+                  className={`flex items-center justify-center gap-3 px-6 py-4 rounded-lg transition w-full ${
+                    generandoCarnet || !alumnoCarnet
+                      ? 'bg-gray-300 cursor-not-allowed text-gray-500'
+                      : 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:scale-105'
+                  }`}
+                >
+                  {generandoCarnet ? (
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <CreditCard className="w-5 h-5" />
+                  )}
+                  <div className="text-left">
+                    <div className="font-semibold">{generandoCarnet ? 'Generando...' : 'Generar Carnet de Alumno'}</div>
+                    <div className="text-sm opacity-90">Incluye foto, QR y datos académicos</div>
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            {/* Carnet de Personal */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <User className="text-green-600 w-5 h-5" />
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Carnet de Personal</h2>
+              </div>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    <User className="inline w-4 h-4 mr-1" />Selecciona un Miembro del Personal
+                  </label>
+                  <select
+                    value={personalCarnet}
+                    onChange={(e) => setPersonalCarnet(e.target.value)}
+                    className="w-full bg-white dark:bg-gray-900/50 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">-- Selecciona un miembro del personal --</option>
+                    {personal.map(p => (
+                      <option key={p.id} value={p.id}>
+                        {p.nombres} {p.apellidos} — {p.cargo || 'Personal'}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <button
+                  onClick={handleGenerarCarnetPersonal}
+                  disabled={generandoCarnet || !personalCarnet}
+                  className={`flex items-center justify-center gap-3 px-6 py-4 rounded-lg transition w-full ${
+                    generandoCarnet || !personalCarnet
+                      ? 'bg-gray-300 cursor-not-allowed text-gray-500'
+                      : 'bg-green-600 hover:bg-green-700 text-white shadow-lg hover:scale-105'
+                  }`}
+                >
+                  {generandoCarnet ? (
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <User className="w-5 h-5" />
+                  )}
+                  <div className="text-left">
+                    <div className="font-semibold">{generandoCarnet ? 'Generando...' : 'Generar Carnet de Personal'}</div>
+                    <div className="text-sm opacity-90">Incluye foto, QR y datos del cargo</div>
+                  </div>
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>

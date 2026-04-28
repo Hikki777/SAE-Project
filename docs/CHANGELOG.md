@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.1.4] - 2026-04-27
+### ✨ Interfaz Dark Mode Futurista (Glassmorphism & Neon Glow)
+- **[UI/UX]** Migración completa a un diseño "Dark Only" de alta gama.
+  - **Fondo Global**: Implementada textura de rejilla tecnológica (`bg-grid-pattern`) y burbujas de neón animadas.
+  - **Glassmorphism**: Aplicado efecto de cristal translúcido en modales, tarjetas y barras laterales.
+  - **Neon Glow**: Efectos de resplandor cian/neón en botones y tarjetas al pasar el ratón.
+  - **Setup Wizard**: Rediseño inmersivo con estética SaaS moderna.
+  - **Acerca de**: Refactorización del panel con alineación centrada, créditos de API corregidos y foto de autor centralizada.
+- **[Rendimiento]** Optimización de renderizado en Dashboard.
+  - **Instant Load**: Desactivadas las animaciones de Recharts para una carga instantánea de estadísticas.
+- **[Correcciones]**
+  - Fix: Alineación vertical del indicador de red (Time Sync) corregida para ser consistente entre navegadores.
+  - Limpieza: Eliminados elementos visuales redundantes en el pie de página.
+
+
 ## [1.1.3] - 2026-04-20
 ### ✨ Refactorización del Sistema de Usuarios y Modernización de UI
 - **[Autenticación]** Sistema de acceso flexible (Dual Login).

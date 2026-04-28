@@ -4,7 +4,7 @@ import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GraduationCap, Plus, Edit, Trash2, Download, Search, Filter, X, User, QrCode, BookOpen, Sun, CheckCircle, XCircle, Briefcase, RotateCcw, AlertCircle, Camera, AlertTriangle, ShieldAlert } from 'lucide-react';
 import WebcamCaptureModal from './WebcamCaptureModal';
-import toast, { Toaster } from 'react-hot-toast';
+import toast from 'react-hot-toast';
 import { alumnosAPI, qrAPI, institucionAPI } from '../api/endpoints';
 import { TableSkeleton } from './LoadingSpinner';
 import GenderAvatar from './GenderAvatar';
@@ -210,7 +210,7 @@ export default function AlumnosPanel() {
       
       setShowModal(false);
       setEditingAlumno(null);
-      setFormData({ carnet: '', nombres: '', apellidos: '', grado: '', especialidad: '', jornada: '', sexo: '', foto: null, preview: null });
+      setFormData({ carnet: '', nombres: '', apellidos: '', grado: '', seccion: '', carrera: '', especialidad: '', jornada: '', sexo: '', foto: null, preview: null });
       setCarnetMode('auto');
       setSuggestedCarnet('');
       setCarnetValidation({ valid: true, error: null });
@@ -467,7 +467,7 @@ export default function AlumnosPanel() {
           icon={Plus}
           onClick={() => {
             setEditingAlumno(null);
-            setFormData({ carnet: '', nombres: '', apellidos: '', grado: '', especialidad: '', jornada: '', sexo: '', foto: null, preview: null });
+            setFormData({ carnet: '', nombres: '', apellidos: '', grado: '', seccion: '', carrera: '', especialidad: '', jornada: '', sexo: '', foto: null, preview: null });
             setShowModal(true);
           }}
         >
@@ -1173,33 +1173,7 @@ export default function AlumnosPanel() {
         document.body
       )}
 
-      {/* Toast notifications */}
-      <Toaster
-        position="top-right"
-        containerStyle={{
-          zIndex: 99999
-        }}
-        toastOptions={{
-          duration: 3000,
-          style: {
-            background: '#fff',
-            color: '#363636',
-            boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
-          },
-          success: {
-            iconTheme: {
-              primary: '#10b981',
-              secondary: '#fff',
-            },
-          },
-          error: {
-            iconTheme: {
-              primary: '#ef4444',
-              secondary: '#fff',
-            },
-          },
-        }}
-      />
+
 
       {/* Modal de visualización de QR */}
       {qrModalData && createPortal(

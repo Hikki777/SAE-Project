@@ -36,7 +36,7 @@ import {
   institucionAPI,
   dashboardAPI,
 } from "../api/endpoints";
-import toast, { Toaster } from "react-hot-toast";
+import toast from "react-hot-toast";
 import offlineQueueService from "../services/offlineQueue";
 import { CardSkeleton } from "./LoadingSpinner";
 
@@ -244,7 +244,6 @@ export default function Dashboard() {
   const fetchDashboardStats = async () => {
     try {
       const response = await dashboardAPI.stats();
-      console.log("Dashboard Stats Response:", response.data);
       const data = response.data;
       // Guard: asegurar que los campos usados por Recharts sean objetos planos
       // Un campo null o con prototype raro rompe Object.entries() en recharts
@@ -299,30 +298,7 @@ export default function Dashboard() {
     }
   };
 
-  /* eslint-disable no-unused-vars */
-  const StatCard = ({ icon: Icon, label, value, color }) => (
-    <div
-      className={`bg-white dark:bg-gray-800 rounded-xl shadow-xl dark:shadow-gray-900/50 p-6 border-l-4 border-${color}-500 hover:shadow-2xl transition-shadow duration-300`}
-    >
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-gray-700 dark:text-gray-300 text-sm font-semibold">
-            {label}
-          </p>
-          <p
-            className={`text-3xl font-bold text-${color}-600 dark:text-${color}-400 mt-2`}
-          >
-            {value}
-          </p>
-        </div>
-        <Icon
-          className={`text-${color}-600 dark:text-${color}-500 opacity-40 dark:opacity-30`}
-          size={48}
-        />
-      </div>
-    </div>
-  );
-  /* eslint-enable no-unused-vars */
+
 
   return (
     <div className="space-y-6">
@@ -439,7 +415,7 @@ export default function Dashboard() {
       )}
 
       {/* Dynamic Date and Time Card */}
-      <div className="bg-white/70 dark:bg-gray-900/60 backdrop-blur-xl shadow-xl shadow-gray-200/50 dark:shadow-black/40 border border-white/50 dark:border-gray-800/50 rounded-2xl transition-all hover:shadow-2xl group overflow-hidden relative">
+      <div className="bg-bg-secondary/70 backdrop-blur-xl border-white/10 hover:border-accent/50 rounded-2xl transition-all hover:shadow-glow hover:-translate-y-1 group overflow-hidden relative">
         {/* Decorative corner icon */}
         <div className="absolute -right-6 -bottom-6 opacity-[0.03] dark:opacity-[0.05] group-hover:scale-110 transition-transform duration-500">
           <Clock size={120} />
@@ -495,7 +471,7 @@ export default function Dashboard() {
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         {/* 1. TARJETA ESTADO (Verde) */}
-        <div className="bg-white/70 dark:bg-gray-900/60 backdrop-blur-xl shadow-md border-y border-r border-white/50 dark:border-gray-800/50 rounded-xl p-5 transition-transform hover:scale-[1.02] border-l-4 border-emerald-500 flex items-center justify-between">
+        <div className="bg-bg-secondary/70 backdrop-blur-xl border-white/10 hover:border-accent/50 rounded-xl p-5 transition-all hover:shadow-glow hover:scale-[1.02] border-l-4 border-emerald-500 flex items-center justify-between">
           <div>
             <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
               Estado BD
@@ -510,7 +486,7 @@ export default function Dashboard() {
         </div>
 
         {/* 2. TARJETA ALUMNOS (Azul) */}
-        <div className="bg-white/70 dark:bg-gray-900/60 backdrop-blur-xl shadow-md border-y border-r border-white/50 dark:border-gray-800/50 rounded-xl p-5 transition-transform hover:scale-[1.02] border-l-4 border-blue-500 flex items-center justify-between">
+        <div className="bg-bg-secondary/70 backdrop-blur-xl border-white/10 hover:border-accent/50 rounded-xl p-5 transition-all hover:shadow-glow hover:scale-[1.02] border-l-4 border-blue-500 flex items-center justify-between">
           <div>
             <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
               Alumnos
@@ -525,7 +501,7 @@ export default function Dashboard() {
         </div>
 
         {/* 3. TARJETA PERSONAL (Naranja) */}
-        <div className="bg-white/70 dark:bg-gray-900/60 backdrop-blur-xl shadow-md border-y border-r border-white/50 dark:border-gray-800/50 rounded-xl p-5 transition-transform hover:scale-[1.02] border-l-4 border-orange-400 flex items-center justify-between">
+        <div className="bg-bg-secondary/70 backdrop-blur-xl border-white/10 hover:border-accent/50 rounded-xl p-5 transition-all hover:shadow-glow hover:scale-[1.02] border-l-4 border-orange-400 flex items-center justify-between">
           <div>
             <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
               Personal
@@ -540,7 +516,7 @@ export default function Dashboard() {
         </div>
 
         {/* 4. TARJETA QR (Cian/Turquesa) */}
-        <div className="bg-white/70 dark:bg-gray-900/60 backdrop-blur-xl shadow-md border-y border-r border-white/50 dark:border-gray-800/50 rounded-xl p-5 transition-transform hover:scale-[1.02] border-l-4 border-cyan-400 flex items-center justify-between">
+        <div className="bg-bg-secondary/70 backdrop-blur-xl border-white/10 hover:border-accent/50 rounded-xl p-5 transition-all hover:shadow-glow hover:scale-[1.02] border-l-4 border-cyan-400 flex items-center justify-between">
           <div>
             <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
               QR Generados
@@ -559,7 +535,7 @@ export default function Dashboard() {
       {!loading && asistenciasStats && asistenciasStats.porDia && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Gráfico de Líneas - Tendencia */}
-          <div className="bg-white/70 dark:bg-gray-900/60 backdrop-blur-xl shadow-xl shadow-gray-200/50 dark:shadow-black/40 border border-white/50 dark:border-gray-800/50 rounded-2xl p-6 relative">
+          <div className="bg-bg-secondary/70 backdrop-blur-xl border-white/5 rounded-2xl p-6 relative">
             <div className="flex items-center gap-2 mb-6">
               <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg text-blue-600 dark:text-blue-400">
                 <TrendingUp size={24} />
@@ -677,7 +653,7 @@ export default function Dashboard() {
           </div>
 
           {/* Gráfico de Barras - Entradas vs Salidas */}
-          <div className="bg-white/70 dark:bg-gray-900/60 backdrop-blur-xl shadow-xl shadow-gray-200/50 dark:shadow-black/40 border border-white/50 dark:border-gray-800/50 rounded-2xl p-6 relative">
+          <div className="bg-bg-secondary/70 backdrop-blur-xl border-white/5 rounded-2xl p-6 relative">
             <div className="flex items-center gap-2 mb-6">
               <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg text-green-600 dark:text-green-400">
                 <Calendar size={24} />
@@ -727,13 +703,13 @@ export default function Dashboard() {
                     cursor={{ fill: "transparent" }}
                   />
                   <Legend wrapperStyle={{ paddingTop: "20px" }} />
-                  <Bar
+                  <Bar isAnimationActive={false}
                     dataKey="entradas"
                     fill="#10b981"
                     radius={[4, 4, 0, 0]}
                     name="Entradas"
                   />
-                  <Bar
+                  <Bar isAnimationActive={false}
                     dataKey="salidas"
                     fill="#f59e0b"
                     radius={[4, 4, 0, 0]}
@@ -760,7 +736,7 @@ export default function Dashboard() {
           {/* Primera fila: Alumnos por Nivel y por Grado */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
             {/* Gráfico: Alumnos por Nivel Académico */}
-            <div className="bg-white/70 dark:bg-gray-900/60 backdrop-blur-xl shadow-xl shadow-gray-200/50 dark:shadow-black/40 border border-white/50 dark:border-gray-800/50 rounded-2xl p-6 relative">
+            <div className="bg-bg-secondary/70 backdrop-blur-xl border-white/5 rounded-2xl p-6 relative">
               <div className="flex items-center gap-2 mb-6">
                 <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg text-blue-600 dark:text-blue-400">
                   <Users size={24} />
@@ -777,7 +753,7 @@ export default function Dashboard() {
                 <>
                   <ResponsiveContainer width="100%" height={300}>
                     <PieChart>
-                      <Pie
+                      <Pie isAnimationActive={false}
                         data={[
                           {
                             name: "Primaria",
@@ -864,7 +840,7 @@ export default function Dashboard() {
             </div>
 
             {/* Gráfico: Alumnos por Grado */}
-            <div className="bg-white/70 dark:bg-gray-900/60 backdrop-blur-xl shadow-xl shadow-gray-200/50 dark:shadow-black/40 border border-white/50 dark:border-gray-800/50 rounded-2xl p-6 relative">
+            <div className="bg-bg-secondary/70 backdrop-blur-xl border-white/5 rounded-2xl p-6 relative">
               <div className="flex items-center gap-2 mb-6">
                 <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg text-purple-600 dark:text-purple-400">
                   <TrendingUp size={24} />
@@ -913,7 +889,7 @@ export default function Dashboard() {
                       }}
                       cursor={{ fill: "transparent" }}
                     />
-                    <Bar
+                    <Bar isAnimationActive={false}
                       dataKey="alumnos"
                       fill="#3b82f6"
                       radius={[4, 4, 0, 0]}
@@ -953,7 +929,7 @@ export default function Dashboard() {
           {/* Segunda fila: Distribución General (centrado) */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
             {/* Gráfico: Distribución General*/}
-            <div className="bg-white/70 dark:bg-gray-900/60 backdrop-blur-xl shadow-xl shadow-gray-200/50 dark:shadow-black/40 border border-white/50 dark:border-gray-800/50 rounded-2xl p-6 relative">
+            <div className="bg-bg-secondary/70 backdrop-blur-xl border-white/5 rounded-2xl p-6 relative">
               <div className="flex items-center gap-2 mb-6">
                 <div className="p-2 bg-pink-100 dark:bg-pink-900/30 rounded-lg text-pink-600 dark:text-pink-400">
                   <Users size={24} />
@@ -968,7 +944,7 @@ export default function Dashboard() {
                 dashboardStats.porSexo.femenino > 0) ? (
                 <ResponsiveContainer width="100%" height={300}>
                   <PieChart>
-                    <Pie
+                    <Pie isAnimationActive={false}
                       data={[
                         {
                           name: "Masculino",
@@ -1037,7 +1013,7 @@ export default function Dashboard() {
             </div>
 
             {/* Gráfico: Distribución de Personal por Sexo */}
-            <div className="bg-white/70 dark:bg-gray-900/60 backdrop-blur-xl shadow-xl shadow-gray-200/50 dark:shadow-black/40 border border-white/50 dark:border-gray-800/50 rounded-2xl p-6 relative">
+            <div className="bg-bg-secondary/70 backdrop-blur-xl border-white/5 rounded-2xl p-6 relative">
               <div className="flex items-center gap-2 mb-6">
                 <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg text-orange-600 dark:text-orange-400">
                   <Users size={24} />
@@ -1051,7 +1027,7 @@ export default function Dashboard() {
                 dashboardStats.personalPorSexo.femenino > 0) ? (
                 <ResponsiveContainer width="100%" height={300}>
                   <PieChart>
-                    <Pie
+                    <Pie isAnimationActive={false}
                       data={[
                         {
                           name: "Masculino",
@@ -1125,7 +1101,7 @@ export default function Dashboard() {
           {/* Tercera fila: Personal por Cargo y Jornadas */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
             {/* Gráfico: Personal por Cargo */}
-            <div className="bg-white/70 dark:bg-gray-900/60 backdrop-blur-xl shadow-xl shadow-gray-200/50 dark:shadow-black/40 border border-white/50 dark:border-gray-800/50 rounded-2xl p-6 relative">
+            <div className="bg-bg-secondary/70 backdrop-blur-xl border-white/5 rounded-2xl p-6 relative">
               <div className="flex items-center gap-2 mb-6">
                 <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg text-green-600 dark:text-green-400">
                   <Briefcase size={24} />
@@ -1174,7 +1150,7 @@ export default function Dashboard() {
                       }}
                       cursor={{ fill: "transparent" }}
                     />
-                    <Bar
+                    <Bar isAnimationActive={false}
                       dataKey="cantidad"
                       fill="#10b981"
                       radius={[4, 4, 0, 0]}
@@ -1211,7 +1187,7 @@ export default function Dashboard() {
             </div>
 
             {/* Gráfico: Usuarios por Jornada (Alumnos + Personal) */}
-            <div className="bg-white/70 dark:bg-gray-900/60 backdrop-blur-xl shadow-xl shadow-gray-200/50 dark:shadow-black/40 border border-white/50 dark:border-gray-800/50 rounded-2xl p-6 relative">
+            <div className="bg-bg-secondary/70 backdrop-blur-xl border-white/5 rounded-2xl p-6 relative">
               <div className="flex items-center gap-2 mb-6">
                 <div className="p-2 bg-amber-100 dark:bg-amber-900/30 rounded-lg text-amber-600 dark:text-amber-400">
                   <Calendar size={24} />
@@ -1267,13 +1243,13 @@ export default function Dashboard() {
                       cursor={{ fill: "transparent" }}
                     />
                     <Legend wrapperStyle={{ paddingTop: "20px" }} />
-                    <Bar
+                    <Bar isAnimationActive={false}
                       dataKey="alumnos"
                       fill="#3b82f6"
                       radius={[4, 4, 0, 0]}
                       name="Alumnos"
                     />
-                    <Bar
+                    <Bar isAnimationActive={false}
                       dataKey="personal"
                       fill="#f59e0b"
                       radius={[4, 4, 0, 0]}
@@ -1297,30 +1273,6 @@ export default function Dashboard() {
         </>
       )}
 
-      {/* Toast notifications */}
-      <Toaster
-        position="top-right"
-        toastOptions={{
-          duration: 3000,
-          style: {
-            background: "#1f2937",
-            color: "#fff",
-            borderRadius: "12px",
-          },
-          success: {
-            iconTheme: {
-              primary: "#10b981",
-              secondary: "#fff",
-            },
-          },
-          error: {
-            iconTheme: {
-              primary: "#ef4444",
-              secondary: "#fff",
-            },
-          },
-        }}
-      />
     </div>
   );
 }

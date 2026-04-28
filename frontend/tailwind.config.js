@@ -8,6 +8,42 @@ export default {
   theme: {
     extend: {
       colors: {
+        // Fondo principal
+        background: '#020617',
+        card: '#0f172a',
+        bg: {
+          primary: '#020617',
+          secondary: '#0f172a',
+          tertiary: '#1a1f3a',
+        },
+        // Acentos principales (Cyan moderno)
+        accent: {
+          DEFAULT: '#22d3ee',
+          light: '#38bdf8',
+          dark: '#1557a0',
+          muted: 'rgba(34, 211, 238, 0.1)',
+        },
+        // Textos
+        text: {
+          primary: '#e2e8f0',
+          secondary: '#94a3b8',
+          muted: '#4a5568',
+          light: '#8a96a8',
+        },
+        // Bordes
+        border: {
+          DEFAULT: 'rgba(255, 255, 255, 0.05)',
+          light: 'rgba(255, 255, 255, 0.1)',
+          strong: '#334155',
+        },
+        // Estados
+        status: {
+          success: '#22c55e',
+          warning: '#eab308',
+          error: '#ef4444',
+          neutral: '#64748b',
+        },
+        // Paleta heredada (compatibilidad)
         primary: {
           50: '#eff6ff',
           100: '#dbeafe',
@@ -36,6 +72,14 @@ export default {
           dark: '#b91c1c',
         },
       },
+      boxShadow: {
+        'glow': '0 0 20px rgba(34, 211, 238, 0.25)',
+        'glow-sm': '0 0 10px rgba(34, 211, 238, 0.15)',
+        'card': '0 4px 6px rgba(0, 0, 0, 0.3)',
+      },
+      borderRadius: {
+        'xl2': '16px',
+      },
       fontFamily: {
         sans: ['Outfit', 'sans-serif'],
         mono: [
@@ -47,6 +91,9 @@ export default {
           'Liberation Mono',
           'monospace'
         ]
+      },
+      backdropBlur: {
+        'xs': '2px',
       }
     },
   },

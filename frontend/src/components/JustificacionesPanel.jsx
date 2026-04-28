@@ -6,7 +6,7 @@ import {
   Search, ChevronLeft, ChevronRight, Users, Upload, ClipboardList
 } from 'lucide-react';
 import client, { API_URL, BASE_URL } from '../api/client';
-import toast, { Toaster } from 'react-hot-toast';
+import toast from 'react-hot-toast';
 import { generateJustificacionesPDF, generateJustificacionesExcel } from '../utils/reportGenerator';
 import RevisionRapidaView from './RevisionRapidaView';
 import ModalJustificacionRapida from './ModalJustificacionRapida';
@@ -692,7 +692,10 @@ export default function JustificacionesPanel() {
 
       {/* Tabla */}
       {loading ? (
-        <div className="flex justify-center py-20"><div className="loader" /></div>
+        <div className="flex flex-col items-center justify-center py-20 gap-3">
+          <div className="w-10 h-10 border-4 border-blue-200 dark:border-blue-900 border-t-blue-600 dark:border-t-blue-400 rounded-full animate-spin" />
+          <p className="text-sm text-gray-500 dark:text-gray-400">Cargando justificaciones...</p>
+        </div>
       ) : (
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
           <table className="w-full">
@@ -805,7 +808,6 @@ export default function JustificacionesPanel() {
         />
       )}
 
-      <Toaster position="top-right" />
     </div>
   );
 }

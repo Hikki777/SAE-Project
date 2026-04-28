@@ -12,7 +12,7 @@ import {
   LogOut,
   Home,
   Settings,
-  BarChart3,
+  GraduationCap,
   Wrench,
   User,
   Clock,
@@ -24,7 +24,7 @@ import {
   Info,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import ThemeToggle from "./components/ThemeToggle";
+
 import { authAPI } from "./api/endpoints";
 import ErrorBoundary from "./components/ErrorBoundary";
 import Dashboard from "./components/Dashboard";
@@ -340,12 +340,12 @@ function App() {
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.8, opacity: 0 }}
-                className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl p-10 max-w-sm w-full text-center border-t-8 border-red-500 relative overflow-hidden"
+                className="bg-bg-secondary/80 backdrop-blur-xl rounded-3xl shadow-glow p-10 max-w-sm w-full text-center border border-danger/50 relative overflow-hidden"
               >
                 {/* Decorative background element */}
                 <div className="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 bg-red-500/10 rounded-full blur-3xl"></div>
 
-                <div className="w-24 h-24 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-6 text-red-600 dark:text-red-400 border-2 border-red-100 dark:border-red-800 shadow-inner overflow-hidden">
+                <div className="w-24 h-24 bg-danger/10 rounded-full flex items-center justify-center mx-auto mb-6 text-danger border border-danger/30 shadow-inner overflow-hidden">
                   {user?.foto_path ? (
                     <img
                       src={`${BASE_URL}/api/uploads/${user.foto_path}`}
@@ -357,20 +357,20 @@ function App() {
                   )}
                 </div>
 
-                <h2 className="text-2xl font-black text-slate-900 dark:text-white mb-3 tracking-tight">
+                <h2 className="text-2xl font-black text-text-primary mb-3 tracking-tight">
                   ¡Hasta pronto!
                 </h2>
 
-                <p className="text-slate-600 dark:text-slate-300 text-lg mb-6 leading-relaxed">
+                <p className="text-text-secondary text-lg mb-6 leading-relaxed">
                   Gracias por tu trabajo hoy, <br />
-                  <span className="font-bold text-red-600 dark:text-red-400">
+                  <span className="font-bold text-danger">
                     {user?.nombres
                       ? `${user.nombres} ${user.apellidos || ""}`
                       : user?.email?.split("@")[0] || "Administrador"}
                   </span>
                 </p>
 
-                <div className="flex items-center justify-center gap-3 text-slate-400 dark:text-slate-500 font-medium bg-slate-50 dark:bg-slate-900/50 py-3 rounded-2xl">
+                <div className="flex items-center justify-center gap-3 text-text-muted font-medium bg-bg-tertiary/50 py-3 rounded-2xl">
                   <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
                   Cerrando sesión de forma segura...
                 </div>
@@ -379,32 +379,20 @@ function App() {
           )}
         </AnimatePresence>
 
-        <div className="flex h-screen bg-gradient-to-br from-blue-50 via-blue-100 to-indigo-100 dark:bg-gray-900">
+        <div className="flex h-screen bg-transparent relative overflow-hidden bg-grid-pattern">
+          {/* Decorative global bubbles (Technological Texture) */}
+          <div className="absolute top-0 left-0 w-[500px] h-[500px] bg-accent/5 rounded-full mix-blend-screen filter blur-[100px] animate-blob pointer-events-none"></div>
+          <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-purple-500/5 rounded-full mix-blend-screen filter blur-[100px] animate-blob animation-delay-2000 pointer-events-none"></div>
+          <div className="absolute -bottom-32 left-1/2 w-[600px] h-[600px] bg-blue-500/5 rounded-full mix-blend-screen filter blur-[120px] animate-blob animation-delay-4000 pointer-events-none"></div>
           {isLoggedIn && (
             <aside
-              className={`fixed inset-y-0 left-0 z-50 bg-gradient-to-b from-blue-600 to-blue-700 dark:from-slate-900 dark:to-slate-800 text-white transform transition-all duration-300 ease-in-out shadow-xl border-r border-blue-800 dark:border-transparent ${
+              className={`fixed inset-y-0 left-0 z-50 bg-bg-primary text-white transform transition-all duration-300 ease-in-out shadow-xl border-r border-white/5 ${
                 sidebarOpen
                   ? "translate-x-0 w-64"
                   : "-translate-x-full md:translate-x-0"
               } md:w-20 md:hover:w-64 group overflow-hidden`}
             >
-              <div className="p-4 border-b border-blue-800/30 dark:border-slate-700 flex items-center h-16 overflow-hidden">
-                <div className="flex items-center gap-4 min-w-max">
-                  <div className="w-8 flex justify-center flex-shrink-0">
-                    <img
-                      src="./logo.png"
-                      alt="Logo"
-                      className="w-8 h-8 object-contain"
-                    />
-                  </div>
-                  <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">
-                    <h1 className="text-xs font-bold text-white dark:bg-clip-text dark:text-transparent dark:bg-gradient-to-r dark:from-blue-400 dark:to-emerald-400 truncate max-w-[200px] whitespace-normal leading-tight">
-                      Sistema de Administración Educativa - SAE
-                      <span className="block text-[10px] opacity-70 mt-0.5">Versión {__APP_VERSION__}</span>
-                    </h1>
-                  </div>
-                </div>
-              </div>
+
 
               <div className="px-3 py-4 border-b border-blue-800/30 dark:border-slate-700/50 overflow-hidden">
                 {user && (
@@ -439,7 +427,7 @@ function App() {
 
               <nav className="p-2 space-y-0.5 flex-1">
                 <NavLink to="/" icon={Home} label="Dashboard" />
-                <NavLink to="/alumnos" icon={BarChart3} label="Alumnos" />
+                <NavLink to="/alumnos" icon={GraduationCap} label="Alumnos" />
                 <NavLink to="/docentes" icon={Users} label="Personal" />
                 <NavLink to="/asistencias" icon={Clock} label="Asistencias" />
 
@@ -459,9 +447,25 @@ function App() {
                 <NavLink to="/acerca-de" icon={Info} label="Acerca de" />
               </nav>
 
-              <div className="absolute bottom-16 left-3 right-3 overflow-hidden flex justify-center py-2">
-                <ThemeToggle />
+              <div className="p-4 border-t border-white/5 flex items-center mb-14 overflow-hidden">
+                <div className="flex items-center gap-4 min-w-max">
+                  <div className="w-8 flex justify-center flex-shrink-0">
+                    <img
+                      src="./logo.png"
+                      alt="Logo"
+                      className="w-8 h-8 object-contain"
+                    />
+                  </div>
+                  <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">
+                    <h1 className="text-xs font-bold text-white dark:bg-clip-text dark:text-transparent dark:bg-gradient-to-r dark:from-blue-400 dark:to-emerald-400 truncate max-w-[200px] whitespace-normal leading-tight">
+                      Sistema de Administración Educativa - SAE
+                      <span className="block text-[10px] text-text-muted mt-0.5">Versión {__APP_VERSION__}</span>
+                    </h1>
+                  </div>
+                </div>
               </div>
+
+
 
               <div className="absolute bottom-3 left-3 right-3 overflow-hidden">
                 <button
@@ -482,11 +486,11 @@ function App() {
 
           {/* Main Content */}
           <div
-            className={`flex-1 overflow-auto bg-transparent dark:bg-gray-900 transition-all duration-300 ${isLoggedIn ? "md:ml-20" : ""}`}
+            className={`flex-1 overflow-auto bg-transparent transition-all duration-300 ${isLoggedIn ? "md:ml-20" : ""}`}
           >
             {/* Mobile Menu - Solo mostrar si está autenticado */}
             {isLoggedIn && (
-              <div className="md:hidden bg-gradient-to-r from-blue-600 to-blue-700 dark:bg-slate-900 text-white p-4 flex items-center justify-between shadow-md">
+              <div className="md:hidden bg-bg-primary text-white p-4 flex items-center justify-between shadow-md border-b border-white/5">
                 <div className="flex items-center gap-2">
                   <img
                     src={
