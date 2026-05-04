@@ -8,6 +8,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { toast } from 'react-hot-toast';
 import GenderAvatar from './GenderAvatar';
 import client, { API_URL, BASE_URL } from '../api/client';
+import ModalMigracionCiclo from './ModalMigracionCiclo';
 
 
 
@@ -976,39 +977,55 @@ const EquipoSettings = ({ equipos, loading, onApprove, onDelete, serverInfo }) =
 
 // --- SUBCOMPONENT: Control Academico Settings ---
 const ControlAcademicoSettings = () => {
-  const [loading, setLoading] = useState(false);
-  const [previewData, setPreviewData] = useState(null);
-  const [executing, setExecuting] = useState(false);
+  const [loadingEstado, setLoadingEstado]     = useState(false);
+  const [estadoData, setEstadoData]           = useState(null);    // datos de /estado
+  const [executing, setExecuting]             = useState(false);
   const [confirmMigration, setConfirmMigration] = useState(false);
-  const [anioObjetivo, setAnioObjetivo] = useState(new Date().getFullYear() + 1);
+  const [resultados, setResultados]           = useState(null);    // resumen post-ejecución
+  // Ciclo a cerrar = año actual (el que tiene historial pendiente)
+  const [cicloACerrar, setCicloACerrar]       = useState(new Date().getFullYear());
 
-  const handleGenerarPreview = async () => {
-    setLoading(true);
+  // Cargar estado de migración del ciclo seleccionado
+  const handleVerificarEstado = async () => {
+    setLoadingEstado(true);
+    setEstadoData(null);
+    setResultados(null);
+    setConfirmMigration(false);
     try {
-      const response = await client.get(`/migracion/preview?anio=${anioObjetivo}`);
-      setPreviewData(response.data.preview);
-      toast.success('Vista previa generada');
+      const res = await client.get(`/migracion/estado?anio=${cicloACerrar}`);
+      setEstadoData(res.data);
+      if (!res.data.migracionPendiente) {
+        toast.success(`✅ El ciclo ${cicloACerrar} ya está completamente migrado`);
+      } else {
+        toast(`📋 ${res.data.totalPendientes} alumno(s) pendientes de migrar`);
+      }
     } catch (error) {
       console.error(error);
-      toast.error('Error generando vista previa');
+      toast.error('Error al verificar estado de migración');
     } finally {
-      setLoading(false);
+      setLoadingEstado(false);
     }
   };
 
+  // Ejecutar migración del ciclo
   const handleEjecutarMigracion = async () => {
     if (!confirmMigration) return;
     setExecuting(true);
     try {
-      const response = await client.post('/migracion/fin-de-anio', { anioEscolar: anioObjetivo });
-      const { resultados } = response.data;
-      
-      let msg = `Migración completada. ${resultados.promovidos.length} promovidos`;
-      if (resultados.graduados.length > 0) msg += `, ${resultados.graduados.length} graduados`;
-      
-      toast.success(msg, { duration: 6000 });
-      setPreviewData(null);
+      const res = await client.post('/migracion/fin-de-anio', { anioEscolar: cicloACerrar });
+      const { resultados: r } = res.data;
+
+      setResultados({
+        promovidos: r.promovidos?.length ?? 0,
+        graduados:  r.graduados?.length  ?? 0,
+        errores:    r.errores?.length    ?? 0,
+        detalleErrores: r.errores ?? []
+      });
       setConfirmMigration(false);
+      // Recargar estado para reflejar que ya no hay pendientes
+      const resEstado = await client.get(`/migracion/estado?anio=${cicloACerrar}`);
+      setEstadoData(resEstado.data);
+      toast.success(`🎓 Migración del ciclo ${cicloACerrar} completada`, { duration: 5000 });
     } catch (error) {
       console.error(error);
       toast.error('Error en migración: ' + (error.response?.data?.error || error.message));
@@ -1017,6 +1034,10 @@ const ControlAcademicoSettings = () => {
     }
   };
 
+  const { preview = { promociones: [], graduaciones: [], sinRegla: [] }, resumenPromocion = {} } = estadoData || {};
+  const totalPendientes = estadoData?.totalPendientes ?? 0;
+  const migracionPendiente = estadoData?.migracionPendiente ?? true;
+
   return (
     <motion.div
       initial={{ opacity: 0, x: 20 }}
@@ -1024,147 +1045,276 @@ const ControlAcademicoSettings = () => {
       exit={{ opacity: 0, x: -20 }}
       className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 space-y-6"
     >
+      {/* Cabecera */}
       <div className="border-b border-gray-200 dark:border-gray-700 pb-4">
         <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
           <FileText size={24} className="text-blue-600" />
           Control Académico y Migración
         </h3>
-        <p className="text-sm text-gray-500 mt-1">Gestión de fin de año, promoción de grados y graduaciones.</p>
+        <p className="text-sm text-gray-500 mt-1">
+          Cierre de ciclo escolar: promoción de grados y graduaciones de fin de año.
+        </p>
       </div>
 
-      {/* Panel de Control */}
-      <div className="bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800 rounded-xl p-6">
-        <h4 className="font-bold text-blue-900 dark:text-blue-200 mb-4 flex items-center gap-2">
-          <Activity size={20} />
-          Migración de Fin de Año
-        </h4>
-        <p className="text-sm text-blue-800 dark:text-blue-300 mb-6">
-          Esta herramienta mueve a todos los alumnos activos a su siguiente grado correspondiente según las reglas académicas.
-          Los alumnos de último grado serán marcados como graduados.
-        </p>
+      {/* Panel principal */}
+      <div className="bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800 rounded-xl p-6 space-y-5">
+        <div>
+          <h4 className="font-bold text-blue-900 dark:text-blue-200 mb-1 flex items-center gap-2">
+            <Activity size={20} />
+            Migración de Fin de Año
+          </h4>
+          <p className="text-sm text-blue-800 dark:text-blue-300">
+            Mueve todos los alumnos activos al grado siguiente según las reglas académicas del sistema.
+            Los alumnos de último grado serán marcados como <strong>graduados</strong>.
+          </p>
+        </div>
 
-        <div className="flex items-end gap-4">
+        {/* Selector de ciclo */}
+        <div className="flex flex-wrap items-end gap-4">
           <div>
-             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-               Año Escolar Destino
-             </label>
-             <input 
-               type="number" 
-               className="w-32 rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-800 px-3 py-2"
-               value={anioObjetivo}
-               onChange={(e) => setAnioObjetivo(parseInt(e.target.value))}
-             />
+            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
+              Ciclo a cerrar
+              <span className="ml-1 text-xs font-normal text-gray-400">(el año cuyo historial se registrará)</span>
+            </label>
+            <input
+              type="number"
+              className="w-36 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white px-3 py-2 text-center font-bold text-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              value={cicloACerrar}
+              min={2020}
+              max={new Date().getFullYear()}
+              onChange={(e) => {
+                setCicloACerrar(parseInt(e.target.value));
+                setEstadoData(null);
+                setResultados(null);
+                setConfirmMigration(false);
+              }}
+            />
           </div>
           <button
-            onClick={handleGenerarPreview}
-            disabled={loading || executing}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold flex items-center gap-2 disabled:opacity-50 transition-colors"
+            onClick={handleVerificarEstado}
+            disabled={loadingEstado || executing}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg font-semibold flex items-center gap-2 disabled:opacity-50 transition-colors shadow-sm"
           >
-            {loading ? <div className="animate-spin rounded-full h-4 w-4 border-2 border-white/30 border-t-white" /> : <ClipboardList size={18} />}
-            Generar Vista Previa
+            {loadingEstado
+              ? <div className="animate-spin rounded-full h-4 w-4 border-2 border-white/30 border-t-white" />
+              : <ClipboardList size={18} />
+            }
+            Verificar Estado
           </button>
         </div>
       </div>
 
-      {/* Resultados Preview */}
-      {previewData && (
-        <motion.div 
+      {/* ─── Resultado post-migración ─── */}
+      <AnimatePresence>
+        {resultados && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl p-5"
+          >
+            <h5 className="font-bold text-green-900 dark:text-green-200 flex items-center gap-2 mb-4">
+              <CheckCircle size={20} className="text-green-600" />
+              Migración del ciclo {cicloACerrar} completada
+            </h5>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="text-center bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm border border-green-100 dark:border-green-900">
+                <p className="text-3xl font-black text-blue-600">{resultados.promovidos}</p>
+                <p className="text-xs text-gray-500 mt-1 font-medium">Promovidos</p>
+              </div>
+              <div className="text-center bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm border border-green-100 dark:border-green-900">
+                <p className="text-3xl font-black text-purple-600">{resultados.graduados}</p>
+                <p className="text-xs text-gray-500 mt-1 font-medium">Graduados</p>
+              </div>
+              <div className={`text-center bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm border ${
+                resultados.errores > 0
+                  ? 'border-red-200 dark:border-red-900'
+                  : 'border-green-100 dark:border-green-900'
+              }`}>
+                <p className={`text-3xl font-black ${resultados.errores > 0 ? 'text-red-600' : 'text-gray-400'}`}>
+                  {resultados.errores}
+                </p>
+                <p className="text-xs text-gray-500 mt-1 font-medium">Errores</p>
+              </div>
+            </div>
+            {resultados.errores > 0 && (
+              <div className="mt-3 text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded-lg p-3">
+                <p className="font-semibold mb-1">Alumnos con error:</p>
+                {resultados.detalleErrores.slice(0, 5).map((e, i) => (
+                  <p key={i}>• ID {e.id}: {e.error}</p>
+                ))}
+                {resultados.detalleErrores.length > 5 && (
+                  <p className="text-gray-400">...y {resultados.detalleErrores.length - 5} más</p>
+                )}
+              </div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ─── Vista de estado del ciclo ─── */}
+      {estadoData && (
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="space-y-6"
+          className="space-y-5"
         >
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Promociones */}
-            <div className="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
-              <h5 className="font-bold text-gray-800 dark:text-gray-200 mb-3 flex items-center gap-2">
-                <Users size={18} className="text-green-600" />
-                Promociones ({Object.values(previewData.promociones).reduce((acc, curr) => acc + curr.length, 0)})
-              </h5>
-              <div className="space-y-2 max-h-60 overflow-y-auto custom-scrollbar pr-2">
-                {Object.entries(previewData.promociones).map(([cambio, alumnos]) => (
-                  <div key={cambio} className="bg-white dark:bg-gray-800 p-3 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700">
-                    <div className="text-xs font-bold text-blue-600 dark:text-blue-400 mb-1 uppercase tracking-wider">
-                      {cambio}
-                    </div>
-                    <div className="text-sm text-gray-600 dark:text-gray-400">
-                      {alumnos.length} alumnos
-                    </div>
-                  </div>
-                ))}
-                {Object.keys(previewData.promociones).length === 0 && (
-                  <p className="text-sm text-gray-400 italic">No hay promociones registradas.</p>
-                )}
-              </div>
-            </div>
-
-            {/* Graduaciones */}
-            <div className="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
-              <h5 className="font-bold text-gray-800 dark:text-gray-200 mb-3 flex items-center gap-2">
-                <FileText size={18} className="text-purple-600" />
-                Graduandos ({previewData.graduaciones.length})
-              </h5>
-              <div className="space-y-2 max-h-60 overflow-y-auto custom-scrollbar pr-2">
-                {previewData.graduaciones.map((graduado) => (
-                  <div key={graduado.id} className="bg-white dark:bg-gray-800 p-3 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 flex justify-between items-center">
-                     <div>
-                       <div className="font-medium text-gray-800 dark:text-gray-200">{graduado.nombre}</div>
-                       <div className="text-xs text-gray-500">{graduado.carrera || graduado.grado}</div>
-                     </div>
-                     <span className="text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-2 py-1 rounded-full font-bold">
-                       Graduado
-                     </span>
-                  </div>
-                ))}
-                 {previewData.graduaciones.length === 0 && (
-                  <p className="text-sm text-gray-400 italic">No hay graduandos este ciclo.</p>
-                )}
-              </div>
+          {/* Indicador de estado */}
+          <div className={`flex items-center gap-3 rounded-xl p-4 border ${
+            migracionPendiente
+              ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800'
+              : 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
+          }`}>
+            {migracionPendiente
+              ? <AlertCircle size={20} className="text-amber-600 flex-shrink-0" />
+              : <CheckCircle size={20} className="text-green-600 flex-shrink-0" />
+            }
+            <div>
+              <p className={`text-sm font-semibold ${
+                migracionPendiente
+                  ? 'text-amber-900 dark:text-amber-200'
+                  : 'text-green-900 dark:text-green-200'
+              }`}>
+                {migracionPendiente
+                  ? `${totalPendientes} alumno(s) pendientes de migrar en el ciclo ${cicloACerrar}`
+                  : `Ciclo ${cicloACerrar} completamente migrado — ${estadoData.totalYaMigrados} alumnos registrados`
+                }
+              </p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                Total activos: {estadoData.totalActivos} · Ya migrados: {estadoData.totalYaMigrados} · Pendientes: {totalPendientes}
+              </p>
             </div>
           </div>
 
-          {/* Zona de Confirmación */}
-          <div className="border-t-2 border-dashed border-gray-300 dark:border-gray-700 pt-6">
-            <div className="flex items-center gap-3 mb-4">
-              <input 
-                type="checkbox" 
-                id="confirmMigration" 
-                checked={confirmMigration}
-                onChange={(e) => setConfirmMigration(e.target.checked)}
-                className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500 cursor-pointer"
-              />
-              <label htmlFor="confirmMigration" className="text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer select-none">
-                Confirmo que he revisado la vista previa y deseo ejecutar la migración definitiva.
-              </label>
-            </div>
+          {/* Desglose de promociones y graduaciones (solo si hay pendientes) */}
+          {migracionPendiente && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              {/* Promociones */}
+              <div className="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
+                <h5 className="font-bold text-gray-800 dark:text-gray-200 mb-3 flex items-center gap-2">
+                  <Users size={18} className="text-blue-600" />
+                  Promociones de grado ({preview.promociones.length})
+                </h5>
+                <div className="space-y-2 max-h-56 overflow-y-auto custom-scrollbar pr-1">
+                  {Object.entries(resumenPromocion).length > 0 ? (
+                    Object.entries(resumenPromocion).map(([transicion, cantidad]) => (
+                      <div
+                        key={transicion}
+                        className="bg-white dark:bg-gray-800 px-3 py-2.5 rounded-lg border border-gray-100 dark:border-gray-700 flex items-center justify-between"
+                      >
+                        <span className="text-sm text-blue-700 dark:text-blue-300 font-medium">{transicion}</span>
+                        <span className="text-xs bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 font-bold px-2 py-0.5 rounded-full">
+                          {cantidad} alumnos
+                        </span>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-gray-400 italic">No hay promociones pendientes.</p>
+                  )}
+                </div>
+              </div>
 
-            <button
-              onClick={handleEjecutarMigracion}
-              disabled={!confirmMigration || executing}
-              className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {executing ? (
-                 <>
-                   <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                   Procesando Migración...
-                 </>
-              ) : (
-                 <>
-                   <Server size={20} />
-                   Ejecutar Migración de Fin de Año
-                 </>
+              {/* Graduaciones */}
+              <div className="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
+                <h5 className="font-bold text-gray-800 dark:text-gray-200 mb-3 flex items-center gap-2">
+                  <FileText size={18} className="text-purple-600" />
+                  Graduandos ({preview.graduaciones.length})
+                </h5>
+                <div className="space-y-2 max-h-56 overflow-y-auto custom-scrollbar pr-1">
+                  {preview.graduaciones.length > 0 ? (
+                    preview.graduaciones.map((g) => (
+                      <div
+                        key={g.id}
+                        className="bg-white dark:bg-gray-800 px-3 py-2.5 rounded-lg border border-gray-100 dark:border-gray-700 flex items-center justify-between"
+                      >
+                        <div>
+                          <p className="text-sm font-medium text-gray-800 dark:text-gray-200">{g.nombre}</p>
+                          <p className="text-xs text-gray-500">{g.carrera || g.grado}</p>
+                        </div>
+                        <span className="text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-2 py-1 rounded-full font-bold flex-shrink-0">
+                          Graduado
+                        </span>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-gray-400 italic">No hay graduandos este ciclo.</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Sin regla (si aplica) */}
+              {preview.sinRegla.length > 0 && (
+                <div className="md:col-span-2 bg-amber-50 dark:bg-amber-900/10 rounded-xl p-4 border border-amber-200 dark:border-amber-800">
+                  <h5 className="font-bold text-amber-900 dark:text-amber-200 mb-3 flex items-center gap-2">
+                    <AlertCircle size={18} className="text-amber-600" />
+                    Grados sin regla de promoción ({preview.sinRegla.length})
+                  </h5>
+                  <p className="text-xs text-amber-700 dark:text-amber-300 mb-3">
+                    Estos alumnos no serán afectados por la migración automática. Revísalos manualmente.
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {preview.sinRegla.map((a) => (
+                      <span
+                        key={a.id}
+                        className="text-xs bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 px-2.5 py-1 rounded-full"
+                      >
+                        {a.nombre} <span className="font-bold">({a.grado})</span>
+                      </span>
+                    ))}
+                  </div>
+                </div>
               )}
-            </button>
-            <p className="text-center text-xs text-gray-500 mt-2">
-              Se creará un registro en el historial académico de cada alumno procesado.
-            </p>
-          </div>
+            </div>
+          )}
+
+          {/* Zona de confirmación y ejecución */}
+          {migracionPendiente && (
+            <div className="border-t-2 border-dashed border-gray-300 dark:border-gray-700 pt-5">
+              <div className="flex items-center gap-3 mb-4">
+                <input
+                  type="checkbox"
+                  id="confirmMigration"
+                  checked={confirmMigration}
+                  onChange={(e) => setConfirmMigration(e.target.checked)}
+                  className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500 cursor-pointer"
+                />
+                <label htmlFor="confirmMigration" className="text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer select-none">
+                  Confirmo que he revisado el estado y deseo ejecutar la migración definitiva del ciclo <strong>{cicloACerrar}</strong>.
+                </label>
+              </div>
+
+              <button
+                onClick={handleEjecutarMigracion}
+                disabled={!confirmMigration || executing}
+                className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-bold py-3 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {executing ? (
+                  <>
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Procesando migración del ciclo {cicloACerrar}...
+                  </>
+                ) : (
+                  <>
+                    <Server size={20} />
+                    Ejecutar Migración — Ciclo {cicloACerrar}
+                  </>
+                )}
+              </button>
+              <p className="text-center text-xs text-gray-400 mt-2">
+                Se registrará el historial académico de {totalPendientes} alumno(s) para el ciclo {cicloACerrar}.
+              </p>
+            </div>
+          )}
         </motion.div>
       )}
     </motion.div>
   );
 };
 
+
+
 const SistemaSettings = ({ currentUser }) => {
+
   const [confirmReset, setConfirmReset] = useState(false);
   const [resetCode, setResetCode] = useState('');
   const [masterKeyInput, setMasterKeyInput] = useState('');
@@ -2017,6 +2167,14 @@ export default function ConfiguracionPanel() {
   });
   const [logoPreview, setLogoPreview] = useState(null);
   const [logoBase64, setLogoBase64] = useState(null);
+  // Ciclo escolar original cargado desde BD (para detectar cambio)
+  const [cicloEscolarOriginal, setCicloEscolarOriginal] = useState(null);
+  // Modal de migración de ciclo
+  const [showModalMigracion, setShowModalMigracion] = useState(false);
+  const [estadoMigracionData, setEstadoMigracionData] = useState(null);
+  const [migrandoEnProgreso, setMigrandoEnProgreso] = useState(false);
+  // Datos pendientes de guardar mientras espera confirmación del modal
+  const [pendingFormDataToSave, setPendingFormDataToSave] = useState(null);
 
   // Users State
   const [usuarios, setUsuarios] = useState([]);
@@ -2360,6 +2518,7 @@ export default function ConfiguracionPanel() {
     try {
       const response = await client.get('/institucion');
       const data = response.data;
+      const ciclo = data.ciclo_escolar || new Date().getFullYear();
       setFormData({
         nombre: data.nombre || '',
         horario_inicio: data.horario_inicio || '',
@@ -2371,8 +2530,10 @@ export default function ConfiguracionPanel() {
         departamento: data.departamento || '',
         municipio: data.municipio || '',
         pais: data.pais || '',
-        ciclo_escolar: data.ciclo_escolar || new Date().getFullYear()
+        ciclo_escolar: ciclo
       });
+      // Guardar el ciclo original para detectar si cambia
+      setCicloEscolarOriginal(ciclo);
       
       if (data.logo_path) {
         const logoUrl = data.logo_path.startsWith('http') 
@@ -2410,21 +2571,19 @@ export default function ConfiguracionPanel() {
     reader.readAsDataURL(file);
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  // Función interna que ejecuta el guardado real
+  const ejecutarGuardado = async (datos) => {
     setSaving(true);
-
     try {
       const dataToSend = new FormData();
-      
-      // Añadir campos de texto
-      Object.keys(formData).forEach(key => {
-        if (formData[key] !== null && formData[key] !== undefined) {
-          dataToSend.append(key, formData[key]);
+      const snapshot = datos || formData;
+
+      Object.keys(snapshot).forEach(key => {
+        if (snapshot[key] !== null && snapshot[key] !== undefined) {
+          dataToSend.append(key, snapshot[key]);
         }
       });
 
-      // Añadir archivo de logo si existe
       const fileInput = document.getElementById('logo-upload');
       if (fileInput && fileInput.files[0]) {
         dataToSend.append('logo', fileInput.files[0]);
@@ -2433,14 +2592,75 @@ export default function ConfiguracionPanel() {
       await client.put('/institucion', dataToSend, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
-      
-      toast.success('Configuración guardada correctamente');
-      setLogoBase64(null); // Limpiar base64 después de subir
-      fetchConfig(); // Recargar para ver el nuevo logo
+
+      toast.success('✅ Configuración guardada correctamente');
+      setLogoBase64(null);
+      fetchConfig();
     } catch (error) {
       toast.error('Error: ' + (error.response?.data?.error || error.message));
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    const cicloActual = Number(cicloEscolarOriginal);
+    const cicloNuevo  = Number(formData.ciclo_escolar);
+    const cicloCambio = cicloEscolarOriginal !== null && cicloNuevo > cicloActual;
+
+    if (cicloCambio) {
+      // Siempre mostrar el modal al subir el año — con o sin migraciones pendientes
+      setSaving(true);
+      try {
+        const res = await client.get(`/migracion/estado?anio=${cicloActual}`);
+        setEstadoMigracionData(res.data);
+      } catch (err) {
+        console.warn('No se pudo verificar estado de migración:', err.message);
+        // Si falla la consulta, mostrar modal con datos vacíos (no bloquear)
+        setEstadoMigracionData({
+          migracionPendiente: false,
+          totalActivos: 0,
+          totalPendientes: 0,
+          totalYaMigrados: 0,
+          preview: { promociones: [], graduaciones: [], sinRegla: [] },
+          resumenPromocion: {}
+        });
+      } finally {
+        setSaving(false);
+      }
+      setPendingFormDataToSave({ ...formData });
+      setShowModalMigracion(true);
+    } else {
+      await ejecutarGuardado();
+    }
+  };
+
+  // Acción: Solo cambiar año sin migrar
+  const handleSoloGuardarCiclo = async () => {
+    setShowModalMigracion(false);
+    setEstadoMigracionData(null);
+    await ejecutarGuardado(pendingFormDataToSave);
+    setPendingFormDataToSave(null);
+  };
+
+  // Acción: Migrar primero, luego guardar ciclo
+  const handleMigrarYGuardar = async () => {
+    setMigrandoEnProgreso(true);
+    try {
+      await client.post('/migracion/fin-de-anio', {
+        anioEscolar: cicloEscolarOriginal
+      });
+      toast.success(`🎓 Migración del ciclo ${cicloEscolarOriginal} completada`);
+      setShowModalMigracion(false);
+      setEstadoMigracionData(null);
+      await ejecutarGuardado(pendingFormDataToSave);
+      setPendingFormDataToSave(null);
+    } catch (error) {
+      toast.error('Error en la migración: ' + (error.response?.data?.error || error.message));
+    } finally {
+      setMigrandoEnProgreso(false);
     }
   };
 
@@ -2815,6 +3035,21 @@ export default function ConfiguracionPanel() {
           }
           setShowWebcam(false);
         }}
+      />
+      {/* ═══ Modal de Migración de Ciclo Escolar ═══ */}
+      <ModalMigracionCiclo
+        isOpen={showModalMigracion}
+        onClose={() => {
+          setShowModalMigracion(false);
+          setEstadoMigracionData(null);
+          setPendingFormDataToSave(null);
+        }}
+        onSoloGuardar={handleSoloGuardarCiclo}
+        onMigrarYGuardar={handleMigrarYGuardar}
+        cicloAnterior={cicloEscolarOriginal}
+        cicloNuevo={formData.ciclo_escolar}
+        estadoData={estadoMigracionData}
+        migrandoEnProgreso={migrandoEnProgreso}
       />
     </div>
   );

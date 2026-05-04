@@ -269,7 +269,98 @@ const migracionService = {
     if (grado.includes('Secundaria')) return 'Secundaria';
     if (grado.includes('Preparatoria')) return 'Preparatoria';
     return 'Otro';
-  }
+  },
+
+
+  /**
+   * Verifica el estado de migración de un ciclo escolar
+   * Retorna si hay migración pendiente y el detalle de qué alumnos se verían afectados
+   * @param {number} anioEscolar - Año escolar a verificar (ej: 2026)
+   */
+  async estadoMigracion(anioEscolar) {
+    // 1. Total de alumnos activos
+    const alumnosActivos = await prisma.alumno.findMany({
+      where: { estado: 'activo' },
+      select: {
+        id: true,
+        nombres: true,
+        apellidos: true,
+        grado: true,
+        seccion: true,
+        carrera: true,
+        nivel_actual: true
+      }
+    });
+
+    // 2. Alumnos que YA tienen historial de este año (ya migrados)
+    const yaHistorial = await prisma.historialAcademico.findMany({
+      where: { anio_escolar: anioEscolar },
+      select: { alumno_id: true }
+    });
+    const idsYaMigrados = new Set(yaHistorial.map(h => h.alumno_id));
+
+    // 3. Alumnos SIN historial del año (pendientes de migrar)
+    const alumnosPendientes = alumnosActivos.filter(a => !idsYaMigrados.has(a.id));
+
+    // 4. Si no hay pendientes, la migración ya está completa
+    const migracionPendiente = alumnosPendientes.length > 0;
+
+    // 5. Calcular preview de lo que ocurriría con cada alumno pendiente
+    const preview = {
+      promociones: [],   // Alumnos que subirían de grado
+      graduaciones: [],  // Alumnos que se graduarían
+      sinRegla: []       // Alumnos cuyo grado no tiene regla de promoción definida
+    };
+
+    for (const alumno of alumnosPendientes) {
+      const siguienteGrado = this.getSiguienteGrado(alumno.grado, alumno.carrera);
+
+      if (siguienteGrado === 'GRADUADO') {
+        preview.graduaciones.push({
+          id: alumno.id,
+          nombre: `${alumno.nombres} ${alumno.apellidos}`,
+          grado: alumno.grado,
+          carrera: alumno.carrera || null,
+          seccion: alumno.seccion || ''
+        });
+      } else if (siguienteGrado) {
+        preview.promociones.push({
+          id: alumno.id,
+          nombre: `${alumno.nombres} ${alumno.apellidos}`,
+          gradoActual: alumno.grado,
+          gradoSiguiente: siguienteGrado,
+          seccion: alumno.seccion || '',
+          carrera: alumno.carrera || null
+        });
+      } else {
+        preview.sinRegla.push({
+          id: alumno.id,
+          nombre: `${alumno.nombres} ${alumno.apellidos}`,
+          grado: alumno.grado,
+          seccion: alumno.seccion || ''
+        });
+      }
+    }
+
+    // 6. Agrupar promociones por transición para el resumen
+    const resumenPromocion = {};
+    for (const p of preview.promociones) {
+      const key = `${p.gradoActual} → ${p.gradoSiguiente}`;
+      if (!resumenPromocion[key]) resumenPromocion[key] = 0;
+      resumenPromocion[key]++;
+    }
+
+    return {
+      migracionPendiente,
+      totalActivos: alumnosActivos.length,
+      totalPendientes: alumnosPendientes.length,
+      totalYaMigrados: idsYaMigrados.size,
+      preview,
+      resumenPromocion
+    };
+  },
+
 };
 
 module.exports = migracionService;
+

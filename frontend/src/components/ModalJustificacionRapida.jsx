@@ -5,6 +5,7 @@ import { X, ArrowRight, Upload } from 'lucide-react';
 import client, { API_URL, BASE_URL } from '../api/client';
 import { excusasAPI } from '../api/endpoints';
 import toast from 'react-hot-toast';
+import './JustificacionesPanel.css';
 
 export default function ModalJustificacionRapida({ persona, fecha, onGuardar, onCancelar }) {
   const [formData, setFormData] = useState({

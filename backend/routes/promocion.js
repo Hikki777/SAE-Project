@@ -9,6 +9,22 @@ router.use(verifyJWT);
 router.use(verifyAdmin);
 
 /**
+ * GET /api/migracion/estado
+ * Verifica si la migración de fin de año para un ciclo está pendiente
+ * Retorna preview detallado de qué alumnos se promoverían/graduarían
+ */
+router.get('/estado', async (req, res) => {
+  try {
+    const anioEscolar = parseInt(req.query.anio) || new Date().getFullYear();
+    const estado = await promocionService.estadoMigracion(anioEscolar);
+    res.json({ success: true, anioEscolar, ...estado });
+  } catch (error) {
+    logger.error({ err: error }, 'Error verificando estado de migración');
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
  * GET /api/migracion/preview
  * Preview de migración de fin de año
  */
