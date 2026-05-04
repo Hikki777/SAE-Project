@@ -88,9 +88,10 @@ router.post('/create', verifyJWT, async (req, res) => {
       select: { nombre: true }
     });
     
+    const pkg = require('../../package.json');
     const internalMeta = {
         fecha: new Date().toISOString(),
-        version: '1.1.2',
+        version: pkg.version,
         institucion: institucion?.nombre || 'SAE System'
     };
     archive.append(JSON.stringify(internalMeta), { name: 'backup-info.json' });
