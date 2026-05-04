@@ -1,17 +1,18 @@
 # SAE - Sistema de Administración Educativa
 
-![Version](https://img.shields.io/badge/version-1.1.4-brightgreen.svg) ![Electron](https://img.shields.io/badge/Electron-v35-9FEAF9.svg) ![React](https://img.shields.io/badge/React-19-61DAFB.svg) ![Node](https://img.shields.io/badge/Node-18%2B-339933.svg) ![Status](https://img.shields.io/badge/Status-Stable-brightgreen.svg) ![License](https://img.shields.io/badge/License-GPL--3.0-blue.svg)
+![Version](https://img.shields.io/badge/version-1.1.6-brightgreen.svg) ![Electron](https://img.shields.io/badge/Electron-v35-9FEAF9.svg) ![React](https://img.shields.io/badge/React-19-61DAFB.svg) ![Node](https://img.shields.io/badge/Node-18%2B-339933.svg) ![Status](https://img.shields.io/badge/Status-Stable-brightgreen.svg) ![License](https://img.shields.io/badge/License-GPL--3.0-blue.svg)
 
 **Gestión Educativa Libre** para instituciones de Guatemala
 
-> **✅ VERSIÓN 1.1.4 ESTABLE**: Nueva interfaz **Dark Mode Futurista** con Glassmorphism, texturas tecnológicas y optimización de carga de datos instantánea.
+> **✅ VERSIÓN 1.1.6 ESTABLE**: Automatización inteligente de migración escolar con preview en tiempo real, interfaz Dark Mode Futurista optimizada y soporte nativo PWA.
 
 ---
 
 ## ✨ Características Principales
 
 - **📱 Control de Asistencia QR:** Registro rápido de entrada/salida para alumnos y personal con detección de retardos
-- **👥 Gestión Académica:** Expedientes digitales completos, generación de carnets y roles de usuario (Próximamente...)
+- **👥 Gestión Académica:** Expedientes digitales completos, generación de carnets y control de historial
+- **🔄 Migración de Ciclo:** Automatización de promociones y graduaciones de fin de año con pre-visualización interactiva y segura
 - **📊 Dashboard Interactivo:** Métricas en tiempo real sobre asistencia, puntualidad y ausentismo
 - **📝 Justificaciones:** Módulo nativo para gestionar excusas y permisos (médicos, familiares)
 - **🔒 Seguridad:** Roles de acceso (Admin/Operador), backups cifrados, rate limiting y validaciones
@@ -46,7 +47,7 @@
 
 1. **Descargar instalador:**
    - Ir a [Releases en GitHub](https://github.com/Hikki777/SAE-Project/releases)
-   - Descargar la última versión `SAE-Setup-1.1.2.exe`
+   - Descargar la última versión `SAE-1.1.6-Setup.exe`
 
 2. **Ejecutar instalador:**
    - Doble click en el archivo descargado
@@ -194,14 +195,13 @@ Guatemala 🇬🇹
 
 ---
 
-## 📝 Notas de la Versión 1.1.4
+## 📝 Notas de la Versión 1.1.6
 
-### 🚀 Interfaz Dark Mode Futurista y Optimización
-- ✅ **Diseño Inmersivo**: Transición completa a un estilo "Dark Mode" premium con efectos de Glassmorphism (cristal) y Neon Glow.
-- ✅ **Textura Tecnológica**: Implementación de fondos con rejillas dinámicas y burbujas neón para una estética SaaS de vanguardia.
-- ✅ **Carga Instantánea**: Optimización de gráficos en el Dashboard mediante la desactivación de animaciones de entrada, permitiendo una visualización inmediata de datos.
-- ✅ **Refactorización de "Acerca de"**: Panel rediseñado con alineación centrada, créditos de API (Time Sync) corregidos y branding del autor unificado.
-- ✅ **Setup Wizard**: Modernización del asistente de configuración inicial para alinearlo con la nueva identidad visual del sistema.
-- ✅ **Estabilidad**: Corregidos errores de alineación CSS y redundancias en el pie de página global.
+### 🔄 Automatización de Migración de Ciclo
+- ✅ **Modal Inteligente**: El sistema intercepta los cambios de año escolar y ofrece realizar la migración de datos con un panel interactivo antes de cerrar el ciclo.
+- ✅ **Preview Detallado**: Desglose automático de cuántos alumnos son promovidos, quiénes se gradúan, y cuáles casos irregulares requieren revisión manual.
+- ✅ **Failsafe System**: Protección contra fallos de red o errores de usuario al prevenir sobreescrituras accidentales del historial académico.
+- ✅ **Backups Dinámicos**: La metadata de los respaldos locales (`.bak`) ahora firma de manera dinámica la versión del sistema instalada.
+- ✅ **Branding & PWA**: Refinamiento estético del logo para múltiples resoluciones (`.ico` de alta fidelidad) y soporte "Add to Homescreen" (PWA) para despliegues web/Android.
 
-Esta versión consolida todos los hotfixes previos en una base de código robusta, optimizada para entornos Windows con instalación de un solo clic y gestión automática de directorios en `%APPDATA%`.
+Esta versión consolida los hotfixes previos en una base de código robusta, optimizada para entornos Windows con instalación de un solo clic y gestión automática de directorios en `%APPDATA%`.
