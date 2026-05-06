@@ -323,6 +323,7 @@ async function runEsquemaRepairs(prisma) {
     { name: 'email',                   type: 'TEXT' },
     { name: 'telefono',                type: 'TEXT' },
     { name: 'ciclo_escolar',           type: 'INTEGER DEFAULT 2026' },
+    { name: 'inicializado',            type: 'BOOLEAN DEFAULT 0' },
     { name: 'carnet_counter_global',   type: 'INTEGER DEFAULT 0' },
     { name: 'carnet_counter_personal', type: 'INTEGER DEFAULT 0' },
     { name: 'carnet_counter_alumnos',  type: 'INTEGER DEFAULT 0' },
@@ -351,9 +352,9 @@ async function runEsquemaRepairs(prisma) {
   ]);
 
   await repairTable(prisma, 'usuarios', [
+    { name: 'username',  type: 'TEXT' },
     { name: 'nombres',   type: 'TEXT' },
     { name: 'apellidos', type: 'TEXT' },
-    { name: 'sexo',      type: 'TEXT' },
     { name: 'foto_path', type: 'TEXT' },
     { name: 'cargo',     type: 'TEXT' },
     { name: 'jornada',   type: 'TEXT' }

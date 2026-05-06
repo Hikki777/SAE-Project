@@ -27,7 +27,7 @@ export const healthAPI = {
 
 export const authAPI = {
   login: (identifier, password) => client.post('/auth/login', { identifier, password }),
-  resetAdmin: (email, masterKey, newPassword) => client.post('/auth/reset-admin', { email, masterKey, newPassword }),
+  resetAdmin: (identifier, masterKey, newPassword) => client.post('/auth/reset-admin', { identifier, masterKey, newPassword }),
   getMe: () => client.get('/auth/me'),
 };
 

@@ -1,5 +1,5 @@
 const express = require('express');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 const prisma = require('../prismaClient');
 const { signJWT, verifyJWT } = require('../middlewares/auth');
 const { loginLimiter } = require('../middlewares/rateLimiter');
@@ -133,7 +133,7 @@ router.post('/reset-admin', async (req, res) => {
       data: { hash_pass: hash, activo: true }
     });
 
-    logger.info({ email, userId: user.id }, '[SECURITY] Contraseña de administrador restablecida con éxito');
+    logger.info({ identifier, userId: user.id }, '[SECURITY] Contraseña de administrador restablecida con éxito');
     return res.json({ success: true, message: 'Contraseña restablecida correctamente' });
   } catch (err) {
     logger.error({ err }, '[ERROR] Error en reset-admin');

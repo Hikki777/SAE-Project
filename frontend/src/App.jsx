@@ -391,9 +391,11 @@ function App() {
 
         <div className="fixed inset-0 bg-transparent overflow-auto text-text-primary bg-grid-pattern dark">
           {/* Decorative global bubbles (Technological Texture) */}
-          <div className="absolute top-0 left-0 w-[500px] h-[500px] bg-accent/5 rounded-full mix-blend-screen filter blur-[100px] animate-blob pointer-events-none"></div>
-          <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-purple-500/5 rounded-full mix-blend-screen filter blur-[100px] animate-blob animation-delay-2000 pointer-events-none"></div>
-          <div className="absolute -bottom-32 left-1/2 w-[600px] h-[600px] bg-blue-500/5 rounded-full mix-blend-screen filter blur-[120px] animate-blob animation-delay-4000 pointer-events-none"></div>
+          <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+            <div className="absolute top-0 left-0 w-[500px] h-[500px] bg-accent/5 rounded-full mix-blend-screen filter blur-[100px] animate-blob pointer-events-none"></div>
+            <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-purple-500/5 rounded-full mix-blend-screen filter blur-[100px] animate-blob animation-delay-2000 pointer-events-none"></div>
+            <div className="absolute -bottom-32 left-1/2 w-[600px] h-[600px] bg-blue-500/5 rounded-full mix-blend-screen filter blur-[120px] animate-blob animation-delay-4000 pointer-events-none"></div>
+          </div>
           {isLoggedIn && (
             <aside
               className={`fixed inset-y-0 left-0 z-50 bg-bg-primary text-white transform transition-all duration-300 ease-in-out shadow-xl border-r border-white/5 ${

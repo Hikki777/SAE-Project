@@ -61,7 +61,7 @@
     "archiver": "^7.0.1",
     "astral-regex": "^2.0.0",
     "axios": "^1.13.1",
-    "bcrypt": "^5.1.0",
+    "bcryptjs": "^3.0.3",
     "compression": "^1.8.1",
     "cors": "^2.8.5",
     "crypto-js": "^4.2.0",
@@ -105,6 +105,7 @@
       "node_modules/**/*"
     ],
     "win": {
+      "icon": "logo.ico",
       "target": [
         {
           "target": "nsis",
@@ -138,13 +139,15 @@
     "nsis": {
       "oneClick": true,
       "createDesktopShortcut": true,
-      "createStartMenuShortcut": true,
+      "createStartMenuShortcut": false,
       "shortcutName": "SAE",
       "deleteAppDataOnUninstall": false,
       "license": "LICENSE",
       "include": "build/installer.nsh",
       "displayLanguageSelector": false,
-      "artifactName": "SAE-${version}-Setup.exe"
+      "artifactName": "SAE-${version}-Setup.exe",
+      "installerIcon": "logo.ico",
+      "uninstallerIcon": "logo.ico"
     },
     "asar": true,
     "asarUnpack": [

@@ -37,6 +37,11 @@ versionado según [Semantic Versioning](https://semver.org/lang/es/).
 ### Corregido
 - **Error de sintaxis** en `promocionService.js`: coma faltante al cierre de `getNivelDeGrado()` que impedía al servidor reconocer el nuevo método `estadoMigracion`.
 - **Bug lógico**: el año enviado al endpoint de migración manual usaba `año actual + 1` como "destino", cuando debería registrar el historial del ciclo que **termina** (año actual).
+- **Error 500 en Login (Bases de Datos Antiguas)**: Se parcheó la migración inicial en `backend/db/bootstrap.js` para asegurar que las columnas `username` e `inicializado` sean insertadas en la BD de los usuarios antiguos antes de la migración de Prisma, evitando crasheos de login.
+- **Flujo Inesperado del SetupWizard**: Los usuarios de versiones anteriores eran forzados a inicializar la aplicación. Se añadió una verificación silenciosa que autoinicializa la plataforma si la BD legada ya tenía datos de admin.
+- **Scrollbars Anormales en Login**: Se eliminó un desbordamiento gráfico producido por las animaciones en el fondo (`animate-blob`) en `App.jsx`.
+- **Restauración del Administrador**: Corrección de una desincronización de variables (`identifier` vs `email`) en el endpoint de recuperación con llave maestra.
+- **Instalador y Accesos Directos**: Se mantuvo la instalación rápida ("oneClick") pero ahora genera correctamente la carpeta en el menú de inicio (sin el acceso directo suelto extra) y utiliza los iconos del sistema actualizados (`logo.ico`). El SetupWizard ahora solo aparecerá tras finalizar la instalación *solo* si es una instalación nueva.
 
 ---
 

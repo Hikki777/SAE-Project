@@ -1,5 +1,8 @@
 const { PrismaClient } = require('../prisma-client');
 const prisma = new PrismaClient();
+const bcrypt = require('bcryptjs');
+const fs = require('fs');
+const path = require('path');
 
 async function repairDataConsistency(prismaInstance = null) {
   const prismaToUse = prismaInstance || prisma;
@@ -88,6 +91,72 @@ async function repairDataConsistency(prismaInstance = null) {
     console.log(`  Downgraded ${operadoresMigrated.count} unknown roles to 'operador'.`);
 
     console.log('--- Database Repair Completed ---');
+
+    // 4. Fix Usernames for older databases
+    console.log('Verificando usernames para usuarios antiguos...');
+    const usersWithoutUsername = await prismaToUse.usuario.findMany({
+      where: { username: null, email: { not: null } }
+    });
+    
+    if (usersWithoutUsername.length > 0) {
+      for (const user of usersWithoutUsername) {
+        // Extract prefix from email or use a fallback
+        let baseUsername = user.email.split('@')[0];
+        // Ensure uniqueness roughly
+        let finalUsername = baseUsername;
+        let count = 1;
+        while (true) {
+          const exists = await prismaToUse.usuario.findUnique({ where: { username: finalUsername }});
+          if (!exists) break;
+          finalUsername = `${baseUsername}${count}`;
+          count++;
+        }
+        await prismaToUse.usuario.update({
+          where: { id: user.id },
+          data: { username: finalUsername }
+        });
+      }
+      console.log(`  Asignados nombres de usuario a ${usersWithoutUsername.length} cuentas antiguas.`);
+    }
+
+    // 5. Generate Master Recovery Key if missing (Legacy Databases)
+    console.log('Verificando Llave Maestra de Recuperación...');
+    const institucion = await prismaToUse.institucion.findFirst({ where: { id: 1 } });
+    if (institucion && !institucion.master_recovery_key) {
+      console.log('  [ALERTA] Institución legacy detectada sin Llave Maestra. Generando auto-rescate...');
+      const masterRecoveryKey =
+        Math.random().toString(36).substring(2, 8).toUpperCase() +
+        Math.random().toString(36).substring(2, 8).toUpperCase();
+      
+      const hash = await bcrypt.hash(masterRecoveryKey, 10);
+      
+      await prismaToUse.institucion.update({
+        where: { id: 1 },
+        data: { master_recovery_key: hash, inicializado: true }
+      });
+
+      // Guardar la llave en un archivo de texto en la raíz del proyecto para que el administrador la encuentre
+      const txtPath = path.resolve(process.cwd(), 'SAE_LLAVE_RECUPERACION_AUTOMATICA.txt');
+      const textContent = `LLAVE MAESTRA DE RECUPERACIÓN (GENERADA AUTOMÁTICAMENTE)
+========================================================
+
+El sistema detectó que esta base de datos es de una versión anterior y no poseía una Llave Maestra de Recuperación.
+
+Llave generada: ${masterRecoveryKey}
+Fecha: ${new Date().toLocaleString('es-GT')}
+
+IMPORTANTE: 
+- Guarda esta llave en un lugar seguro.
+- Necesitarás esta llave para recuperar el acceso si olvidas la contraseña del Administrador.
+- NO compartas este archivo con nadie.
+
+Sistema de Administración Educativa (SAE)
+`;
+      fs.writeFileSync(txtPath, textContent, 'utf-8');
+      console.log(`  [OK] Llave maestra generada y guardada en: ${txtPath}`);
+    } else if (institucion) {
+      console.log('  Llave Maestra presente. Todo en orden.');
+    }
   } finally {
     if (!prismaInstance) {
       await prismaToUse.$disconnect();

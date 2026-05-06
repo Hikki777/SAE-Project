@@ -1,7 +1,7 @@
 const express = require('express');
 const { generatePersonalCarnet } = require('../utils/carnetGenerator');
 const router = express.Router();
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 const prisma = require('../prismaClient');
 const { logger } = require('../utils/logger');
 const { check } = require('express-validator');
@@ -35,6 +35,18 @@ router.get('/', async (req, res) => {
     let institucion = await prisma.institucion.findFirst({
       where: { id: 1 },
     });
+
+    // Validar auto-inicialización para DBs legacy
+    if (institucion && !institucion.inicializado && institucion.nombre !== 'Mi Institución Educativa') {
+      const hasAdmin = await prisma.usuario.findFirst({ where: { rol: 'admin' } });
+      if (hasAdmin) {
+        institucion = await prisma.institucion.update({
+          where: { id: 1 },
+          data: { inicializado: true }
+        });
+        logger.info('[MIGRATION] Institución auto-inicializada por tener datos legacy');
+      }
+    }
 
     // Si no existe, crear una por defecto
     if (!institucion) {
