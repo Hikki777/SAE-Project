@@ -234,15 +234,36 @@ function logError(msg) {
 }
 
 // ─────────────────────────────────────────────
-//  Detección de Puerto Dinámico
+//  Detección de Puerto — Preferido con Fallback
 // ─────────────────────────────────────────────
-function getAvailablePort(startingAt = 49152) {
+// Intenta el puerto preferido (5123) para que sea predecible en la red local.
+// Si el puerto está ocupado, el SO asigna uno libre dinámicamente.
+// El frontend siempre recibe el puerto real vía ?apiPort=, así que nada se rompe.
+const PREFERRED_PORT = 5123;
+
+function getAvailablePort(preferred = PREFERRED_PORT) {
   const net = require("net");
   return new Promise((resolve) => {
-    const srv = net.createServer();
-    srv.listen(0, "127.0.0.1", () => {
-      const port = srv.address().port;
-      srv.close(() => resolve(port));
+    // Paso 1: intentar el puerto preferido
+    const probe = net.createServer();
+    probe.listen(preferred, "0.0.0.0", () => {
+      const port = probe.address().port;
+      probe.close(() => {
+        log(`Puerto preferido ${port} disponible. Usando puerto fijo.`);
+        resolve(port);
+      });
+    });
+    probe.on("error", () => {
+      // Paso 2: puerto preferido ocupado → pedir uno libre al OS
+      log(`Puerto preferido ${preferred} ocupado. Solicitando puerto dinámico al OS...`);
+      const fallback = net.createServer();
+      fallback.listen(0, "0.0.0.0", () => {
+        const port = fallback.address().port;
+        fallback.close(() => {
+          log(`Puerto dinámico asignado: ${port}`);
+          resolve(port);
+        });
+      });
     });
   });
 }

@@ -805,9 +805,13 @@ const EquipoSettings = ({ equipos, loading, onApprove, onDelete, serverInfo }) =
   const ipv4 = serverInfo?.ips?.[0] || 'localhost';
   const urlParams = new URLSearchParams(window.location.search);
   const hashMatch = window.location.hash.match(/apiPort=(\d+)/);
-  const port = urlParams.get('apiPort') || (hashMatch ? hashMatch[1] : sessionStorage.getItem('dynamic_api_port')) || '5000'; // 5000 is legacy dev fallback
+  const port = urlParams.get('apiPort') || (hashMatch ? hashMatch[1] : sessionStorage.getItem('dynamic_api_port')) || '5000';
+
+  // URLs para Vinculación
+  const scannerUrl = `https://${ipv4}:5001/mobile-scanner.html`;
+  const httpUrl    = `http://${ipv4}:${port}/mobile-scanner.html`;
   
-  const qrData = `SAE-CONFIG|http://${ipv4}:${port}`;
+  const qrData = scannerUrl; // Por defecto apuntamos al modo seguro (HTTPS)
 
   return (
     <motion.div
@@ -935,37 +939,93 @@ const EquipoSettings = ({ equipos, loading, onApprove, onDelete, serverInfo }) =
         </table>
       </div>
 
-      {/* MODAL QR */}
+      {/* MODAL QR PREMIUM */}
       {showQR && createPortal(
-        <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4">
+        <div 
+          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-2 sm:p-4"
+          onClick={() => setShowQR(false)}
+        >
           <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
+            initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-sm flex flex-col overflow-hidden"
+            exit={{ opacity: 0, scale: 0.9 }}
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white dark:bg-gray-800 rounded-[2.5rem] shadow-2xl w-full max-w-sm overflow-hidden relative border border-gray-100 dark:border-gray-700 max-h-[95vh] flex flex-col"
           >
-            <div className="flex justify-between items-center p-5 border-b border-gray-100 dark:border-gray-700">
-              <h3 className="font-bold text-lg text-gray-900 dark:text-gray-100 flex items-center gap-2">
-                <Smartphone size={20} className="text-sky-600" />
-                Vincular App Móvil
-              </h3>
-              <button onClick={() => setShowQR(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
-                <X size={20} />
+            {/* Header con gradiente */}
+            <div className="bg-gradient-to-r from-sky-500 to-indigo-600 p-5 text-white relative shrink-0">
+              <button 
+                onClick={() => setShowQR(false)} 
+                className="absolute top-4 right-4 p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors"
+              >
+                <X size={18} />
               </button>
+              <div className="flex items-center gap-3">
+                <div className="bg-white/20 p-2 rounded-xl">
+                  <Smartphone size={24} />
+                </div>
+                <div>
+                  <h3 className="font-bold text-lg leading-tight">Vincular Móvil</h3>
+                  <p className="text-sky-100 text-[10px] uppercase tracking-wider font-semibold">Escáner Web SAE</p>
+                </div>
+              </div>
             </div>
-            <div className="p-8 flex flex-col items-center justify-center space-y-6">
-              <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
-                <QRCodeSVG value={qrData} size={200} level="H" />
+
+            <div className="p-6 space-y-5 overflow-y-auto custom-scrollbar">
+              {/* QR Code Section */}
+              <div className="flex flex-col items-center">
+                <div className="bg-white p-4 rounded-2xl shadow-md border-2 border-sky-50 overflow-hidden mb-3">
+                  <QRCodeSVG value={qrData} size={180} level="H" />
+                </div>
+                <div className="text-center">
+                  <p className="text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] mb-1">
+                    Cámara del Celular
+                  </p>
+                  <p className="text-[11px] text-gray-500 dark:text-gray-400 leading-tight">
+                    Escanea para abrir el lector de asistencia
+                  </p>
+                </div>
               </div>
-              <div className="text-center">
-                <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">
-                  Escanea este código desde el Celular
-                </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  Dirección URL Inyectada de forma Mágica:<br/>
-                  <span className="font-mono bg-gray-100 dark:bg-gray-900 px-1 py-0.5 rounded text-sky-600">http://{ipv4}:{port}</span>
-                </p>
+
+              {/* URL & Action Section */}
+              <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-2xl border border-gray-100 dark:border-gray-700 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Enlace Directo (HTTPS)</span>
+                  <div className="flex items-center gap-1 text-[10px] font-bold text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30 px-2 py-0.5 rounded-full">
+                    <Lock size={10} /> SEGURO
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 font-mono text-xs text-sky-600 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 p-3 rounded-xl truncate">
+                    {scannerUrl}
+                  </div>
+                  <button 
+                    onClick={() => {
+                      navigator.clipboard.writeText(scannerUrl);
+                      toast.success('URL copiada al portapapeles');
+                    }}
+                    className="p-3 bg-sky-100 text-sky-600 hover:bg-sky-200 rounded-xl transition-colors"
+                    title="Copiar URL"
+                  >
+                    <ClipboardList size={18} />
+                  </button>
+                </div>
+
+                <div className="flex gap-2 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800 rounded-xl">
+                  <AlertCircle size={16} className="text-amber-600 shrink-0 mt-0.5" />
+                  <p className="text-[11px] text-amber-800 dark:text-amber-200 leading-relaxed">
+                    <strong>Importante:</strong> Al entrar, verás un aviso de seguridad. Toca en <strong>"Opciones avanzadas"</strong> y luego en <strong>"Acceder a sitio no seguro"</strong> para activar la cámara.
+                  </p>
+                </div>
               </div>
+
+              <button 
+                onClick={() => setShowQR(false)}
+                className="w-full py-3.5 bg-sky-600 hover:bg-sky-700 text-white font-bold rounded-xl transition-all shadow-lg active:scale-95"
+              >
+                Entendido
+              </button>
             </div>
           </motion.div>
         </div>,

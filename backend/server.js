@@ -7,6 +7,7 @@ const path = require('path');
 const fs = require('fs-extra');
 const crypto = require('crypto');
 const multer = require('multer');
+const { getSSLCertificates } = require('./utils/ssl');
 
 // ─────────────────────────────────────────────
 // CONFIGURACIÓN DE VARIABLES DE ENTORNO
@@ -271,6 +272,12 @@ app.use(
         return callback(null, true);
       }
 
+      // Permitir conexiones de red local (LAN) para móviles y otros equipos (HTTP y HTTPS)
+      const isLanIp = /^https?:\/\/(192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+|172\.(1[6-9]|2[0-9]|3[0-1])\.\d+\.\d+)(:\d+)?$/.test(origin);
+      if (isLanIp) {
+        return callback(null, true);
+      }
+
       if (allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
@@ -366,6 +373,35 @@ app.get('/qr-mobile.html', (req, res) => {
 app.get('/qr-mobile-con-logo.html', (req, res) => {
   res.sendFile(path.join(__dirname, '../qr-mobile-con-logo.html'));
 });
+
+// Servir mobile-scanner.html — Lector de asistencias por QR para celular
+// Accesible desde cualquier dispositivo en la red local:
+//   http://IP_SERVIDOR:PUERTO/mobile-scanner.html
+app.get('/mobile-scanner.html', (req, res) => {
+  res.sendFile(path.join(__dirname, '../mobile-scanner.html'));
+});
+
+// Endpoint para descargar el certificado SSL auto-firmado en dispositivos móviles.
+// Permite instalar el cert en Android/iOS para eliminar las advertencias de seguridad
+// y habilitar la cámara en HTTPS sin servidores externos.
+app.get('/api/certs/download', (req, res) => {
+  const certsDir = saeDataDir
+    ? path.join(saeDataDir, 'certs')
+    : path.join(__dirname, 'certs');
+  const certPath = path.join(certsDir, 'server.crt');
+
+  if (!fs.existsSync(certPath)) {
+    return res.status(404).json({
+      error: 'Certificado SSL no disponible. SAE lo genera automáticamente al iniciar si OpenSSL (Git) está instalado.'
+    });
+  }
+
+  // Content-Type específico para instalación automática en Android e iOS
+  res.setHeader('Content-Type', 'application/x-x509-ca-cert');
+  res.setHeader('Content-Disposition', 'attachment; filename="SAE-certificado.crt"');
+  res.sendFile(certPath, { root: '/' });
+});
+
 
 // Servir imprimir-qr.html para imprimir QR codes
 app.get('/imprimir-qr.html', (req, res) => {
@@ -478,6 +514,7 @@ async function iniciar() {
 
     // Iniciar servidor HTTP con Promise
     return new Promise((resolve, reject) => {
+      // 3. Iniciar servidor HTTP
       const http = require('http');
       const server = http.createServer(app);
       
@@ -488,7 +525,32 @@ async function iniciar() {
       // Hacer io accesible desde las rutas
       app.set('io', io);
       
-      server.listen(PORT, '127.0.0.1', () => {
+      // 4. Iniciar servidor HTTPS (Opcional si hay certificados)
+      let httpsServer = null;
+      const HTTPS_PORT = parseInt(PORT) + 1;
+
+      getSSLCertificates(saeDataDir, logger).then(certs => {
+        if (certs) {
+          const https = require('https');
+          httpsServer = https.createServer(certs, app);
+          
+          // Vincular Socket.IO también al servidor HTTPS
+          io.attach(httpsServer);
+          
+          httpsServer.listen(HTTPS_PORT, '0.0.0.0', () => {
+            logger.info({ port: HTTPS_PORT }, '[OK] Servidor HTTPS iniciado (Auto-firmado)');
+          });
+          
+          httpsServer.on('error', (err) => {
+            logger.error({ err }, '[ERROR] No se pudo iniciar el servidor HTTPS');
+          });
+        }
+      }).catch(err => {
+        logger.error({ err }, '[ERROR] Error durante la configuración de SSL');
+      });
+
+      // Escuchar en 0.0.0.0 para permitir conexiones desde otros equipos en la red local.
+      server.listen(PORT, '0.0.0.0', () => {
         logSystemStart({
           port: PORT,
           databaseUrl: process.env.DATABASE_URL,

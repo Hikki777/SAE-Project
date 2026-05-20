@@ -60,8 +60,18 @@ router.get('/', async (req, res) => {
     const limit = Math.min(parseInt(req.query.limit) || 50, 200);
     const cursor = req.query.cursor ? parseInt(req.query.cursor) : undefined;
     const estado = req.query.estado; // Sin valor por defecto, traer todos
+    const search = req.query.search || req.query.q;
 
-    const whereClause = estado ? { estado } : {}; // Si hay estado, filtrar, sino traer todos
+    const whereClause = {
+      ...(estado && { estado }),
+      ...(search && {
+        OR: [
+          { nombres: { contains: search } },
+          { apellidos: { contains: search } },
+          { carnet: { contains: search } }
+        ]
+      })
+    };
 
     const docentes = await prisma.personal.findMany({
       where: whereClause,

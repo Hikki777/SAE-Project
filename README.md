@@ -1,10 +1,10 @@
 # SAE - Sistema de Administración Educativa
 
-![Version](https://img.shields.io/badge/version-1.1.6-brightgreen.svg) ![Electron](https://img.shields.io/badge/Electron-v35-9FEAF9.svg) ![React](https://img.shields.io/badge/React-19-61DAFB.svg) ![Node](https://img.shields.io/badge/Node-18%2B-339933.svg) ![Status](https://img.shields.io/badge/Status-Stable-brightgreen.svg) ![License](https://img.shields.io/badge/License-GPL--3.0-blue.svg)
+![Version](https://img.shields.io/badge/version-1.1.8-brightgreen.svg) ![Electron](https://img.shields.io/badge/Electron-v35-9FEAF9.svg) ![React](https://img.shields.io/badge/React-19-61DAFB.svg) ![Node](https://img.shields.io/badge/Node-18%2B-339933.svg) ![Status](https://img.shields.io/badge/Status-Stable-brightgreen.svg) ![License](https://img.shields.io/badge/License-GPL--3.0-blue.svg)
 
 **Gestión Educativa Libre** para instituciones de Guatemala
 
-> **✅ VERSIÓN 1.1.6 ESTABLE**: Automatización inteligente de migración escolar con preview en tiempo real, interfaz Dark Mode Futurista optimizada y soporte nativo PWA.
+> **✅ VERSIÓN 1.1.8 ESTABLE**: Sincronización en tiempo real celular-PC, lector QR móvil con cámara sobre HTTPS local/certificado SSL, sonidos acordes idénticos a PC y exportación de Reportes PDF y Excel nativos en móvil.
 
 ---
 
@@ -47,7 +47,7 @@
 
 1. **Descargar instalador:**
    - Ir a [Releases en GitHub](https://github.com/Hikki777/SAE-Project/releases)
-   - Descargar la última versión `SAE-1.1.6-Setup.exe`
+   - Descargar la última versión `SAE-1.1.8-Setup.exe`
 
 2. **Ejecutar instalador:**
    - Doble click en el archivo descargado
@@ -195,13 +195,12 @@ Guatemala 🇬🇹
 
 ---
 
-## 📝 Notas de la Versión 1.1.6
+## 📝 Notas de la Versión 1.1.8
 
-### 🔄 Automatización de Migración de Ciclo
-- ✅ **Modal Inteligente**: El sistema intercepta los cambios de año escolar y ofrece realizar la migración de datos con un panel interactivo antes de cerrar el ciclo.
-- ✅ **Preview Detallado**: Desglose automático de cuántos alumnos son promovidos, quiénes se gradúan, y cuáles casos irregulares requieren revisión manual.
-- ✅ **Failsafe System**: Protección contra fallos de red o errores de usuario al prevenir sobreescrituras accidentales del historial académico.
-- ✅ **Backups Dinámicos**: La metadata de los respaldos locales (`.bak`) ahora firma de manera dinámica la versión del sistema instalada.
-- ✅ **Branding & PWA**: Refinamiento estético del logo para múltiples resoluciones (`.ico` de alta fidelidad) y soporte "Add to Homescreen" (PWA) para despliegues web/Android.
+### 📱 Lector QR Móvil y HTTPS Local Autónomo
+- ✅ **Sincronización en Tiempo Real Robustecida**: Al escanear una asistencia en el celular, el backend ahora emite de forma centralizada la actualización por WebSockets. Esto garantiza que la PC muestre la información al instante, incluso si el celular pierde conectividad temporal del socket.
+- ✅ **Soporte de Cámara sin Servidores Externos (HTTPS)**: Implementación de la generación automática de certificados SSL locales. Se añade un nuevo panel explicativo con enlace de descarga directa del certificado (`/api/certs/download`) para instalar en Android, iOS o habilitar flags en Chrome sin configuraciones complejas en la red.
+- ✅ **Lógica de Sonidos de Alta Fidelidad**: Remodelación acústica en `mobile-scanner.html` con reproducción de acordes (Do-Mi-Sol ascendente para éxitos, tonos graves descendentes para fallos y doble ping para duplicados/advertencias) idénticos al sistema de escritorio.
+- ✅ **Reportes Premium en Móvil**: Integración nativa de generación y descarga de reportes diarios en formato PDF (utilizando la ventana de impresión nativa optimizada) y Excel (.xlsx usando SheetJS) en lugar de la anterior descarga simple en CSV.
 
 Esta versión consolida los hotfixes previos en una base de código robusta, optimizada para entornos Windows con instalación de un solo clic y gestión automática de directorios en `%APPDATA%`.

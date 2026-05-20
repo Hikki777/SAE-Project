@@ -45,6 +45,7 @@ import offlineQueueService from "./services/offlineQueue";
 import notificationService from "./services/notificationService";
 import syncService from "./services/syncService";
 import soundService from "./services/soundService";
+import socketService from "./services/socketService";
 import { Toaster, toast } from "react-hot-toast";
 import "./App.css";
 
@@ -295,16 +296,22 @@ function App() {
     }
   }, [isLoggedIn, user]);
 
-  // Iniciar servicio de notificaciones para admins
+  // Iniciar servicio de notificaciones y WebSockets para usuarios autenticados
   useEffect(() => {
-    if (isLoggedIn && user && user.rol === "admin") {
-      // Iniciar polling de equipos pendientes
-      notificationService.startPolling((count) => {
-        setPendingEquipmentCount(count);
-      });
+    if (isLoggedIn && user) {
+      // Iniciar polling de equipos pendientes (solo para admins)
+      if (user.rol === "admin") {
+        notificationService.startPolling((count) => {
+          setPendingEquipmentCount(count);
+        });
+      }
+
+      // Iniciar conexión WebSocket para todos los roles
+      socketService.connect(BASE_URL);
 
       return () => {
         notificationService.stopPolling();
+        socketService.disconnect();
       };
     }
   }, [isLoggedIn, user]);

@@ -20,18 +20,25 @@ async function verifySocketAuth(socket, next) {
     
     // Si es un cliente, verificar que el equipo existe
     if (equipoId) {
-      const equipo = await prisma.equipo.findUnique({
-        where: { id: parseInt(equipoId) }
-      });
-      
-      if (!equipo) {
-        return next(new Error('Equipo no encontrado'));
+      if (equipoId === 'mobile-scanner') {
+        // Dispositivo móvil temporal, permitir conexión sin registro en BD
+        socket.equipoId = equipoId;
+        socket.equipoNombre = 'Escáner Móvil';
+        socket.equipoAprobado = true;
+      } else {
+        const equipo = await prisma.equipo.findUnique({
+          where: { id: parseInt(equipoId) }
+        });
+        
+        if (!equipo) {
+          return next(new Error('Equipo no encontrado'));
+        }
+        
+        // Permitir conexión incluso si no está aprobado (para recibir notificación de aprobación)
+        socket.equipoId = equipoId;
+        socket.equipoNombre = equipo.nombre;
+        socket.equipoAprobado = equipo.aprobado;
       }
-      
-      // Permitir conexión incluso si no está aprobado (para recibir notificación de aprobación)
-      socket.equipoId = equipoId;
-      socket.equipoNombre = equipo.nombre;
-      socket.equipoAprobado = equipo.aprobado;
     }
     
     next();
@@ -48,15 +55,15 @@ function initializeSocketServer(httpServer) {
   const isDev = process.env.NODE_ENV === 'development';
   const isElectron = !!process.env.RESOURCES_PATH || !!process.env.ELECTRON_RUN_AS_NODE;
   
-  let corsOrigin = '*';
-  if (isDev) {
-    corsOrigin = ['http://localhost:5173', 'http://localhost:5000'];
-  } else if (isElectron) {
-    corsOrigin = true;
+  let corsOrigin;
+  if (isDev || isElectron) {
+    // En desarrollo o Electron, permitir cualquier origen de forma dinámica
+    corsOrigin = (origin, callback) => callback(null, true);
   } else if (process.env.ALLOWED_ORIGINS) {
-    corsOrigin = process.env.ALLOWED_ORIGINS.split(',');
+    corsOrigin = process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim());
   } else {
-    console.warn('⚠️  CORS no configurado. En producción, define ALLOWED_ORIGINS=domain.com en .env');
+    corsOrigin = '*';
+    console.warn('⚠️  CORS no configurado. En producción, define ALLOWED_ORIGINS en .env');
   }
   
   const io = socketIO(httpServer, {
@@ -94,11 +101,12 @@ function initializeSocketServer(httpServer) {
       console.log(`📤 Cambio de datos desde ${socket.equipoNombre}:`, data);
       
       // Broadcast a todos los demás clientes (no al que envió)
-      socket.broadcast.emit('sync-required', {
+      // Notificar a todos los clientes conectados al sistema
+      clientNamespace.emit('sync-required', {
         type: data.type,
         id: data.id,
-        action: data.action, // 'create', 'update', 'delete'
-        from: socket.equipoNombre
+        action: data.action,
+        from: socket.equipoNombre || 'Sistema'
       });
     });
     

@@ -151,39 +151,35 @@ router.post('/', invalidateCacheMiddleware('/api/asistencias'), async (req, res)
         observaciones: observaciones || null
       },
       include: {
-        alumno: hasAlumnoId ? {
-          select: {
-            id: true,
-            carnet: true,
-            nombres: true,
-            apellidos: true,
-            grado: true,
-            seccion: true,
-            jornada: true,
-            sexo: true
-          }
-        } : false,
-        personal: hasPersonalId ? {
-          select: {
-            id: true,
-            carnet: true,
-            nombres: true,
-            apellidos: true,
-            cargo: true,
-            jornada: true,
-            sexo: true
-          }
-        } : false
+        alumno: true,
+        personal: true
       }
     });
 
     logger.info({ tipo_evento, carnet: persona.carnet, persona_tipo }, `[OK] Asistencia registrada: ${tipo_evento}`);
+
+    // Notificar en tiempo real a la PC y todos los clientes conectados vía WebSocket
+    // IMPORTANTE: Emitir desde el SERVIDOR garantiza que la notificación llegue
+    // incluso si el socket del celular se desconectó momentáneamente.
+    try {
+      const io = req.app.get('io');
+      if (io && io.broadcastDataChange) {
+        io.broadcastDataChange('asistencias', asistencia.id, 'create');
+        logger.info({ asistenciaId: asistencia.id }, '[WS] Notificación de asistencia emitida a clientes');
+      }
+    } catch (wsErr) {
+      // El fallo de WebSocket no debe interrumpir la respuesta HTTP
+      logger.warn({ err: wsErr }, '[WS] Error al emitir notificación WebSocket (no crítico)');
+    }
+
     res.status(201).json(asistencia);
   } catch (error) {
     logger.error({ err: error, body: req.body }, '[ERROR] Error registrando asistencia');
     res.status(500).json({ error: error.message });
   }
 });
+
+
 
 /**
  * GET /api/asistencias
@@ -707,10 +703,14 @@ router.get('/stats', cacheMiddleware('stats'), async (req, res) => {
       // Contar alumnos únicos que asistieron ese día
       const alumnosQueAsistieron = new Set(
         asistencias
-          .filter(a => a.timestamp.toISOString().split('T')[0] === fecha && a.tipo_evento === 'entrada')
+          .filter(a => {
+            if (!a.timestamp) return false;
+            const f = a.timestamp.toISOString().split('T')[0];
+            return f === fecha && a.tipo_evento === 'entrada' && a.alumno_id;
+          })
           .map(a => a.alumno_id)
       );
-      porDia[fecha].ausentes = totalAlumnos - alumnosQueAsistieron.size;
+      porDia[fecha].ausentes = Math.max(0, totalAlumnos - alumnosQueAsistieron.size);
     }
 
     res.json({
@@ -739,6 +739,42 @@ router.delete('/:id', async (req, res) => {
     res.json({ success: true, message: 'Asistencia eliminada' });
   } catch (error) {
     logger.error({ err: error, asistenciaId: req.params.id }, '[ERROR] Error eliminando asistencia');
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * GET /api/asistencias/:id
+ * Obtener detalles de una asistencia específica
+ */
+router.get('/:id', async (req, res, next) => {
+  try {
+    const id = parseInt(req.params.id);
+    
+    // Si no es un número, ignorar para que otras rutas (como /stats) puedan manejarlo si llegaran aquí
+    if (isNaN(id)) return next();
+
+    const asistencia = await prisma.asistencia.findUnique({
+      where: { id },
+      include: {
+        alumno: {
+          select: {
+            id: true, carnet: true, nombres: true, apellidos: true,
+            grado: true, seccion: true, jornada: true, sexo: true, foto_path: true
+          }
+        },
+        personal: {
+          select: {
+            id: true, carnet: true, nombres: true, apellidos: true,
+            cargo: true, jornada: true, sexo: true, foto_path: true
+          }
+        }
+      }
+    });
+
+    if (!asistencia) return res.status(404).json({ error: 'Asistencia no encontrada' });
+    res.json(asistencia);
+  } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });

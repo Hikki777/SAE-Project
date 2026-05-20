@@ -3,7 +3,9 @@ import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 import fs from "fs";
 
-const pkg = JSON.parse(fs.readFileSync("./package.json", "utf-8"));
+// Leer versión desde el package.json RAÍZ del proyecto para evitar desincronización.
+// El frontend/package.json ya no necesita mantener su propia versión separada.
+const pkg = JSON.parse(fs.readFileSync("../package.json", "utf-8"));
 
 // https://vite.dev/config/
 export default defineConfig({

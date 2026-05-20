@@ -15,6 +15,15 @@ pnpm-debug.log*
 .env.local
 .env.*.local
 
+# Certificados locales SSL
+certs/
+backend/certs/
+
+# Desarrollo y pruebas locales
+dummy.png
+scratch/
+backend/scratch_reset.js
+
 # ============================================
 # BASE DE DATOS
 # ============================================

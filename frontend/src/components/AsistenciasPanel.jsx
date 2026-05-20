@@ -11,6 +11,7 @@ import { TableSkeleton } from './LoadingSpinner';
 import ModalSinSalida from './ModalSinSalida';
 import ModalJustificacionRapida from './ModalJustificacionRapida';
 import GenderAvatar from './GenderAvatar';
+import soundService from '../services/soundService';
 
 
 
@@ -145,6 +146,124 @@ export default function AsistenciasPanel() {
     return `${BASE_URL}/api/uploads/${directory}/${prefix}_${cleanCarnet}.png`;
   }, []);
 
+  const fetchAsistenciasHoy = useCallback(async () => {
+    setLoading(true);
+    try {
+      // Calcular inicio y fin del día local en formato ISO para enviar al backend
+      const start = new Date();
+      start.setHours(0, 0, 0, 0);
+      const end = new Date();
+      end.setHours(23, 59, 59, 999);
+      
+      const response = await client.get('/asistencias', {
+        params: {
+          desde: start.toISOString(),
+          hasta: end.toISOString(),
+          limit: 100 // Obtener suficientes registros del día
+        }
+      });
+      
+      const asistencias = response.data.asistencias || [];
+      setAsistenciasHoy(asistencias);
+      
+      // Obtener ausentes del día
+      try {
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+        const fechaHoy = `${year}-${month}-${day}`;
+        
+        console.log('🔍 Fetching ausentes para fecha:', fechaHoy);
+        
+        const ausentesResponse = await client.get('/asistencias/ausentes', {
+          params: { fecha: fechaHoy }
+        });
+        
+        const ausentesData = ausentesResponse.data.ausentes || [];
+        console.log('✅ Ausentes obtenidos:', ausentesData.length, ausentesData);
+        setAusentes(ausentesData);
+      } catch (err) {
+        console.error('❌ Error fetching ausentes:', err);
+        setAusentes([]);
+      }
+      
+      // Calcular stats localmente si el endpoint general no los devuelve pre-calculados
+      const stats = {
+        total: asistencias.length,
+        entradas: asistencias.filter(a => a.tipo_evento === 'entrada').length,
+        salidas: asistencias.filter(a => a.tipo_evento === 'salida').length,
+        puntuales: asistencias.filter(a => a.estado_puntualidad === 'puntual').length,
+        tardes: asistencias.filter(a => a.estado_puntualidad === 'tarde').length
+      };
+      setStats(stats);
+      
+    } catch (error) {
+      console.error('Error fetching today\'s attendances:', error);
+      toast.error('Error al cargar asistencias del día');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Escuchar cambios remotos vía WebSockets (Escáner móvil u otros equipos)
+  useEffect(() => {
+    const handleDataSync = async (e) => {
+      const { type, id, action } = e.detail;
+      
+      // Si se creó una nueva asistencia remotamente
+      if (type === 'asistencias' && action === 'create') {
+        try {
+          // 1. Obtener los detalles completos de la nueva asistencia
+          console.log('[DEBUG] Recibida notificación de asistencia remota id:', id);
+          const res = await client.get(`/asistencias/${id}`);
+          const asistencia = res.data;
+          console.log('[DEBUG] Datos de asistencia obtenidos:', asistencia);
+          
+          // 2. Actualizar lista y stats localmente
+          fetchAsistenciasHoy();
+          
+          // 3. Mostrar el modal de confirmación y reproducir sonido si estamos en el panel
+          console.log('[DEBUG] Estado isProcessing:', isProcessingRef.current);
+          if (!isProcessingRef.current) {
+            const persona = asistencia.alumno || asistencia.personal;
+            console.log('[DEBUG] Mostrando modal para:', persona?.nombres);
+            
+            setModalData({
+              ...persona,
+              tipoEvento: asistencia.tipo_evento.toUpperCase(),
+              hora: new Date(asistencia.timestamp).toLocaleTimeString('es-ES', { 
+                hour: '2-digit', minute: '2-digit' 
+              }),
+              foto_url: getUserPhotoUrl(asistencia.persona_tipo, persona.carnet, persona),
+              isError: false
+            });
+            setShowModal(true);
+            
+            // Sonido según puntualidad
+            console.log('[DEBUG] Reproduciendo sonido para estado:', asistencia.estado_puntualidad);
+            if (asistencia.estado_puntualidad === 'tarde') {
+              soundService.error();
+            } else {
+              soundService.success();
+            }
+            
+            // Auto-cerrar modal tras 4 segundos
+            setTimeout(() => setShowModal(false), 4000);
+          } else {
+            console.warn('[DEBUG] Modal omitido porque isProcessingRef es true');
+          }
+          
+        } catch (error) {
+          console.error('Error al procesar notificación de asistencia remota:', error);
+        }
+      }
+    };
+
+    window.addEventListener('data-sync-required', handleDataSync);
+    return () => window.removeEventListener('data-sync-required', handleDataSync);
+  }, [fetchAsistenciasHoy, getUserPhotoUrl]);
+
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!token) {
@@ -249,65 +368,7 @@ export default function AsistenciasPanel() {
     };
   }, []);
 
-  const fetchAsistenciasHoy = async () => {
-    setLoading(true);
-    try {
-      // Calcular inicio y fin del día local en formato ISO para enviar al backend
-      const start = new Date();
-      start.setHours(0, 0, 0, 0);
-      const end = new Date();
-      end.setHours(23, 59, 59, 999);
-      
-      const response = await client.get('/asistencias', {
-        params: {
-          desde: start.toISOString(),
-          hasta: end.toISOString(),
-          limit: 100 // Obtener suficientes registros del día
-        }
-      });
-      
-      const asistencias = response.data.asistencias || [];
-      setAsistenciasHoy(asistencias);
-      
-      // Obtener ausentes del día
-      try {
-        const today = new Date();
-        const year = today.getFullYear();
-        const month = String(today.getMonth() + 1).padStart(2, '0');
-        const day = String(today.getDate()).padStart(2, '0');
-        const fechaHoy = `${year}-${month}-${day}`;
-        
-        console.log('🔍 Fetching ausentes para fecha:', fechaHoy);
-        
-        const ausentesResponse = await client.get('/asistencias/ausentes', {
-          params: { fecha: fechaHoy }
-        });
-        
-        const ausentesData = ausentesResponse.data.ausentes || [];
-        console.log('✅ Ausentes obtenidos:', ausentesData.length, ausentesData);
-        setAusentes(ausentesData);
-      } catch (err) {
-        console.error('❌ Error fetching ausentes:', err);
-        setAusentes([]);
-      }
-      
-      // Calcular stats localmente si el endpoint general no los devuelve pre-calculados
-      const stats = {
-        total: asistencias.length,
-        entradas: asistencias.filter(a => a.tipo_evento === 'entrada').length,
-        salidas: asistencias.filter(a => a.tipo_evento === 'salida').length,
-        puntuales: asistencias.filter(a => a.estado_puntualidad === 'puntual').length,
-        tardes: asistencias.filter(a => a.estado_puntualidad === 'tarde').length
-      };
-      setStats(stats);
-      
-    } catch (error) {
-      console.error('Error fetching asistencias:', error);
-      toast.error('Error al cargar asistencias: ' + (error.response?.data?.error || error.message));
-    } finally {
-      setLoading(false);
-    }
-  };
+
 
   const fetchAlumnos = async () => {
     try {
@@ -1405,11 +1466,11 @@ export default function AsistenciasPanel() {
                       </td>
                       <td className="px-3 py-2 text-center">
                         <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                          asistencia.origen === 'QR'
+                          (asistencia.origen === 'QR' || asistencia.origen === 'Scanner Móvil')
                             ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
                             : 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
                         }`}>
-                          {asistencia.origen === 'QR' ? '📱 QR' : '✍️ Manual'}
+                          {(asistencia.origen === 'QR' || asistencia.origen === 'Scanner Móvil') ? '📱 QR' : '✍️ Manual'}
                         </span>
                       </td>
                       <td className="px-3 py-2 text-center">

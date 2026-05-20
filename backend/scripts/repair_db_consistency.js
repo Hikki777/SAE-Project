@@ -6,7 +6,18 @@ const path = require('path');
 
 async function repairDataConsistency(prismaInstance = null) {
   const prismaToUse = prismaInstance || prisma;
-  console.log('--- Starting Database Data Consistency Repair ---');
+
+  // ╔══════════════════════════════════════════════════════════════════╗
+  // ║  DEPRECATED - ÚLTIMA VERSIÓN CON SOPORTE: SAE v1.1.7           ║
+  // ║  Este script migra datos de BDs anteriores a v1.1.7:           ║
+  // ║   - Géneros abreviados (M/F → Masculino/Femenino) [v1.0.x]     ║
+  // ║   - Nomenclatura "6to. Diversificado" → "Graduandos" [v1.0.x]  ║
+  // ║   - Roles legacy (administrador/superadmin) → admin [v1.0.x]   ║
+  // ║   - Usernames nulos → auto-generados [v1.1.x]                  ║
+  // ║   - Master recovery key faltante [v1.1.5]                      ║
+  // ║  A partir de v1.2.0 este archivo sera eliminado completamente.  ║
+  // ╚══════════════════════════════════════════════════════════════════╝
+  console.log('--- [LEGACY v1.0-v1.1.6] Starting Database Data Consistency Repair (Last supported version: v1.1.7) ---');
 
   try {
     // 1. Repair Genders

@@ -312,7 +312,14 @@ async function repairCreateTable(prisma, tableName, createSQL) {
 // ============================================================================
 
 async function runEsquemaRepairs(prisma) {
-  log('Ejecutando reparaciones de esquema previas...', 'info');
+  // ╔══════════════════════════════════════════════════════════════════╗
+  // ║  AVISO: COMPATIBILIDAD LEGACY - ÚLTIMA VERSIÓN CON SOPORTE      ║
+  // ║  Esta función existe para migrar BDs creadas antes de v1.1.7.   ║
+  // ║  A partir de v1.2.0 se eliminarán estas reparaciones.           ║
+  // ║  Si tu BD ya fue creada con v1.1.7+, este bloque no hace nada.  ║
+  // ╚══════════════════════════════════════════════════════════════════╝
+  log('Ejecutando reparaciones de esquema previas (compatibilidad legacy v1.0.x - v1.1.6)...', 'warn');
+  log('NOTA: Esta es la ultima version que soporta BDs anteriores a v1.1.7. En v1.2.0 este bloque sera eliminado.', 'warn');
   // ── Tablas existentes: añadir columnas faltantes ──
   await repairTable(prisma, 'institucion', [
     { name: 'horario_salida',          type: 'TEXT' },

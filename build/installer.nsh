@@ -76,12 +76,28 @@
   Sleep 300
   DetailPrint ""
 
-  ; Crear acceso directo en escritorio (opcional)
-  CreateDirectory "$SMPROGRAMS\SAE"
-  CreateShortCut "$SMPROGRAMS\SAE\SAE - Sistema de Administración.lnk" "$INSTDIR\SAE.exe"
-  CreateShortCut "$SMPROGRAMS\SAE\Desinstalar SAE.lnk" "$INSTDIR\Uninstall.exe"
+  ; LIMPIEZA: Eliminar accesos directos de versiones anteriores (evitar residuos al actualizar)
+  DetailPrint "      -> Limpiando accesos directos de versiones anteriores..."
+  Delete "$DESKTOP\SAE - Sistema de Administracion Educativa.lnk"
+  Delete "$SMPROGRAMS\SAE - Sistema de Administracion Educativa\*.*"
+  RMDir "$SMPROGRAMS\SAE - Sistema de Administracion Educativa"
+  Delete "$SMPROGRAMS\SAE - Sistema de Administracion\*.*"
+  RMDir "$SMPROGRAMS\SAE - Sistema de Administracion"
+  DetailPrint "      V Accesos directos antiguos limpiados"
 
-  DetailPrint "      ✓ Accesos directos creados"
+  DetailPrint ""
+  DetailPrint "      -> Creando nuevos accesos directos..."
+  
+  ; Forzar creacion del acceso en Escritorio
+  CreateShortCut "$DESKTOP\SAE.lnk" "$INSTDIR\SAE - Sistema de Administración Educativa.exe"
+  
+  ; Forzar creacion del acceso en Menu de Inicio
+  CreateDirectory "$SMPROGRAMS\SAE"
+  CreateShortCut "$SMPROGRAMS\SAE\SAE.lnk" "$INSTDIR\SAE - Sistema de Administración Educativa.exe"
+  CreateShortCut "$SMPROGRAMS\SAE\Desinstalar SAE.lnk" "$INSTDIR\Uninstall SAE - Sistema de Administración Educativa.exe"
+
+  DetailPrint "      V Accesos directos creados correctamente"
+
   DetailPrint ""
 
   DetailPrint "  [4/4] Finalizando..."
