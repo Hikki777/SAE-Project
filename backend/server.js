@@ -399,7 +399,7 @@ app.get('/api/certs/download', (req, res) => {
   // Content-Type específico para instalación automática en Android e iOS
   res.setHeader('Content-Type', 'application/x-x509-ca-cert');
   res.setHeader('Content-Disposition', 'attachment; filename="SAE-certificado.crt"');
-  res.sendFile(certPath, { root: '/' });
+  res.sendFile(certPath);
 });
 
 
