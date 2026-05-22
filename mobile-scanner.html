@@ -17,8 +17,10 @@
   <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
-  <!-- SheetJS para exportación de Excel nativa sin dependencias del servidor -->
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <!-- Dependencias PDF y Excel nativos -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
 
   <style>
     :root {
@@ -1364,111 +1366,186 @@
       }
     }
 
-    // ── Exportar PDF (ventana de impresión nativa del navegador, sin dependencias) ──
-    function exportarPDF() {
+    // ── Exportar PDF (Igual a la versión PC) ──
+    async function exportarPDF() {
       if (!reporteData?.asistencias?.length) { showToast('No hay datos para exportar', 'warning'); return; }
+      if (typeof jspdf === 'undefined') { showToast('Cargando librerías PDF...', 'warning'); return; }
+      
       const { asistencias, stats, fecha } = reporteData;
       const inst = document.getElementById('profile-name')?.textContent || 'SAE';
       const fechaStr = new Date((fecha || new Date().toISOString().split('T')[0]) + 'T12:00:00')
         .toLocaleDateString('es-ES', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
 
       const filas = asistencias.map(a => {
-        const p    = a.alumno || a.personal || {};
+        const p = a.alumno || a.personal || {};
         const hora = new Date(a.timestamp).toLocaleTimeString('es-ES', { hour:'2-digit', minute:'2-digit' });
-        const gc   = a.persona_tipo === 'alumno' ? (p.grado || '') : (p.cargo || '');
-        const est  = a.estado_puntualidad || '';
-        return `<tr>
-          <td>${p.carnet||''}</td>
-          <td>${p.nombres||''} ${p.apellidos||''}</td>
-          <td><span class="badge ${a.tipo_evento}">${a.tipo_evento.toUpperCase()}</span></td>
-          <td>${hora}</td>
-          <td>${est ? `<span class="badge ${est}">${est.toUpperCase()}</span>` : '—'}</td>
-          <td>${gc}</td>
-          <td>${a.origen||'Manual'}</td>
-        </tr>`;
-      }).join('');
+        const gc = a.persona_tipo === 'alumno' ? (p.grado || '') : (p.cargo || '');
+        const est = a.estado_puntualidad || '';
+        const tipo = a.persona_tipo === 'alumno' ? 'Alumno' : 'Personal';
+        const colorEstado = (est === 'tarde' && a.tipo_evento === 'entrada') ? 'red' : 'black';
+        return {
+          fecha: new Date((fecha || new Date().toISOString().split('T')[0]) + 'T12:00:00').toLocaleDateString('es-ES', {day:'2-digit', month:'2-digit', year:'numeric'}),
+          hora,
+          carnet: p.carnet || 'N/A',
+          nombre: `${p.nombres||''} ${p.apellidos||''}`.trim(),
+          tipo,
+          grado: gc,
+          seccion: a.persona_tipo === 'alumno' ? (p.seccion || '-') : '-',
+          jornada: (p.jornada || 'Matutina'),
+          evento: a.tipo_evento ? a.tipo_evento.toUpperCase() : '',
+          estado: a.tipo_evento === 'salida' ? '-' : (est ? est.charAt(0).toUpperCase() + est.slice(1) : ''),
+          colorEstado
+        };
+      });
 
-      const html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">
-        <title>Reporte Asistencias — ${fecha}</title>
-        <style>
-          *{box-sizing:border-box;margin:0;padding:0}
-          body{font-family:Arial,sans-serif;color:#1e293b;padding:24px;font-size:12px}
-          h1{font-size:18px;font-weight:bold;margin-bottom:4px}
-          .sub{font-size:11px;color:#64748b;margin-bottom:20px}
-          .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px}
-          .s{border:1px solid #e2e8f0;border-radius:8px;padding:10px;text-align:center}
-          .sv{font-size:26px;font-weight:800}
-          .sl{font-size:9px;color:#64748b;text-transform:uppercase;margin-top:2px}
-          table{width:100%;border-collapse:collapse}
-          th{background:#0f172a;color:#fff;padding:7px 8px;text-align:left;font-size:10px;text-transform:uppercase}
-          td{padding:6px 8px;border-bottom:1px solid #f1f5f9;font-size:11px}
-          tr:nth-child(even) td{background:#f8fafc}
-          .badge{padding:2px 6px;border-radius:4px;font-size:9px;font-weight:bold}
-          .entrada{background:#dcfce7;color:#166534}
-          .salida{background:#fef3c7;color:#92400e}
-          .puntual{background:#dbeafe;color:#1e40af}
-          .tarde{background:#fee2e2;color:#991b1b}
-          .foot{margin-top:16px;font-size:9px;color:#94a3b8;text-align:center}
-          @media print{body{padding:12px}}
-        </style></head><body>
-        <h1>${inst} — Reporte de Asistencias</h1>
-        <p class="sub">${fechaStr}</p>
-        <div class="stats">
-          <div class="s"><div class="sv" style="color:#166534">${stats.entradas}</div><div class="sl">Entradas</div></div>
-          <div class="s"><div class="sv" style="color:#92400e">${stats.salidas}</div><div class="sl">Salidas</div></div>
-          <div class="s"><div class="sv" style="color:#1e40af">${stats.puntuales}</div><div class="sl">Puntuales</div></div>
-          <div class="s"><div class="sv" style="color:#991b1b">${stats.tardes}</div><div class="sl">Tardanzas</div></div>
-        </div>
-        <table><thead><tr>
-          <th>Carnet</th><th>Nombre</th><th>Tipo</th><th>Hora</th><th>Estado</th><th>Grado/Cargo</th><th>Origen</th>
-        </tr></thead><tbody>${filas}</tbody></table>
-        <p class="foot">Generado por SAE v1.1.8 — ${new Date().toLocaleString('es-ES')}</p>
-        <script>window.onload=function(){window.print();window.onafterprint=function(){window.close();}}<\/script>
-      </body></html>`;
+      const { jsPDF } = jspdf;
+      const doc = new jsPDF();
+      
+      doc.setFontSize(16);
+      doc.setTextColor(31, 71, 136);
+      doc.text(inst, 105, 22, { align: 'center' });
+      doc.setFontSize(14);
+      doc.setTextColor(50);
+      doc.text('REPORTE DE ASISTENCIAS', 105, 30, { align: 'center' });
+      doc.setFontSize(10);
+      doc.setTextColor(0);
+      doc.text(`Fecha de emisión: ${fechaStr}`, 105, 36, { align: 'center' });
 
-      const win = window.open('', '_blank', 'width=900,height=700');
-      if (!win) { showToast('Permite ventanas emergentes para generar PDF', 'warning'); return; }
-      win.document.write(html);
-      win.document.close();
-    }
+      const puntuales = Math.max(0, (stats.entradas || 0) - (stats.tardes || 0));
+      const statsStr = `Total: ${stats.total||0} | Entradas: ${stats.entradas||0} (Puntuales: ${puntuales}, Tardes: ${stats.tardes||0}) | Salidas: ${stats.salidas||0}`;
+      doc.text(statsStr, 105, 42, { align: 'center' });
 
-    // ── Exportar Excel usando SheetJS (cargado desde CDN) ──
-    function exportarExcel() {
-      if (!reporteData?.asistencias?.length) { showToast('No hay datos para exportar', 'warning'); return; }
-      if (typeof XLSX === 'undefined') { showToast('La librería Excel aún está cargando, intenta en un momento', 'warning'); return; }
+      doc.setDrawColor(200);
+      doc.line(15, 45, 195, 45);
 
-      const { asistencias, stats, fecha } = reporteData;
-      const fechaStr = fecha || new Date().toISOString().split('T')[0];
-
-      // Hoja de estadísticas
-      const wsStats = XLSX.utils.aoa_to_sheet([
-        ['Estadísticas del Día', fechaStr],
-        [],
-        ['Entradas', stats.entradas],
-        ['Salidas',  stats.salidas],
-        ['Puntuales', stats.puntuales],
-        ['Tardanzas', stats.tardes],
-        ['Total registros', asistencias.length],
+      const bodyData = filas.map(f => [
+        f.fecha, f.hora, f.carnet, f.nombre, `${f.tipo}\n${f.grado}`, f.seccion, f.jornada, f.evento, f.estado
       ]);
 
-      // Hoja de registros
-      const encabezados = ['Carnet','Nombres','Apellidos','Tipo Evento','Hora','Estado Puntualidad','Origen','Grado o Cargo'];
-      const filas = asistencias.map(a => {
-        const p    = a.alumno || a.personal || {};
-        const hora = new Date(a.timestamp).toLocaleTimeString('es-ES', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
-        return [p.carnet||'', p.nombres||'', p.apellidos||'', a.tipo_evento, hora,
-                a.estado_puntualidad||'', a.origen||'Manual', p.grado||p.cargo||''];
+      doc.autoTable({
+        startY: 50,
+        head: [[ 'Fecha', 'Hora', 'Carnet', 'Nombre', 'Tipo / Grado', 'Sección', 'Jornada', 'Evento', 'Estado' ]],
+        body: bodyData,
+        theme: 'striped',
+        headStyles: { fillColor: [30, 58, 138], textColor: 255, fontSize: 8, halign: 'center' },
+        styles: { fontSize: 7, cellPadding: 2, halign: 'center', valign: 'middle' },
+        columnStyles: { 3: { halign: 'left' }, 4: { halign: 'left' } },
+        didParseCell: function(data) {
+          if (data.section === 'body' && data.column.index === 8) {
+             const rowIdx = data.row.index;
+             if (filas[rowIdx].colorEstado === 'red') {
+                 data.cell.styles.textColor = [255, 0, 0];
+                 data.cell.styles.fontStyle = 'bold';
+             }
+          }
+        }
       });
-      const wsRegistros = XLSX.utils.aoa_to_sheet([encabezados, ...filas]);
+      
+      const filename = `Reporte_Asistencia_${new Date().getTime()}.pdf`;
+      doc.save(filename);
+      showToast('Descargando PDF...', 'success');
+    }
 
-      // Anchos de columna
-      wsRegistros['!cols'] = [10,18,18,12,8,14,14,12].map(w => ({ wch: w }));
+    // ── Exportar Excel (Igual a la versión PC) ──
+    async function exportarExcel() {
+      if (!reporteData?.asistencias?.length) { showToast('No hay datos para exportar', 'warning'); return; }
+      if (typeof ExcelJS === 'undefined') { showToast('Cargando librería Excel...', 'warning'); return; }
 
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, wsRegistros, 'Registros');
-      XLSX.utils.book_append_sheet(wb, wsStats, 'Resumen');
-      XLSX.writeFile(wb, `asistencias-${fechaStr}.xlsx`);
-      showToast('Excel descargado correctamente', 'success');
+      const { asistencias, stats, fecha } = reporteData;
+      const inst = document.getElementById('profile-name')?.textContent || 'SAE';
+      const fechaStr = new Date((fecha || new Date().toISOString().split('T')[0]) + 'T12:00:00')
+        .toLocaleDateString('es-ES', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+
+      const filas = asistencias.map(a => {
+        const p = a.alumno || a.personal || {};
+        const hora = new Date(a.timestamp).toLocaleTimeString('es-ES', { hour:'2-digit', minute:'2-digit' });
+        const gc = a.persona_tipo === 'alumno' ? (p.grado || '') : (p.cargo || '');
+        const est = a.estado_puntualidad || '';
+        const tipo = a.persona_tipo === 'alumno' ? 'Alumno' : 'Personal';
+        const colorEstado = (est === 'tarde' && a.tipo_evento === 'entrada') ? 'red' : 'black';
+        return {
+          fecha: new Date((fecha || new Date().toISOString().split('T')[0]) + 'T12:00:00').toLocaleDateString('es-ES', {day:'2-digit', month:'2-digit', year:'numeric'}),
+          hora,
+          carnet: p.carnet || 'N/A',
+          nombre: `${p.nombres||''} ${p.apellidos||''}`.trim(),
+          tipo,
+          grado: gc,
+          seccion: a.persona_tipo === 'alumno' ? (p.seccion || '-') : '-',
+          jornada: (p.jornada || 'Matutina'),
+          evento: a.tipo_evento ? a.tipo_evento.toUpperCase() : '',
+          estado: a.tipo_evento === 'salida' ? '-' : (est ? est.charAt(0).toUpperCase() + est.slice(1) : ''),
+          colorEstado
+        };
+      });
+
+      const workbook = new ExcelJS.Workbook();
+      const sheet = workbook.addWorksheet('Asistencia');
+
+      sheet.mergeCells('A1:I1');
+      sheet.getCell('A1').value = inst;
+      sheet.getCell('A1').font = { name: 'Calibri', size: 16, bold: true, color: { argb: 'FF1F4788' } };
+      sheet.getCell('A1').alignment = { horizontal: 'center', vertical: 'middle' };
+
+      sheet.mergeCells('A2:I2');
+      sheet.getCell('A2').value = 'REPORTE DE ASISTENCIAS';
+      sheet.getCell('A2').font = { name: 'Calibri', size: 14, bold: true };
+      sheet.getCell('A2').alignment = { horizontal: 'center', vertical: 'middle' };
+
+      sheet.mergeCells('A3:I3');
+      sheet.getCell('A3').value = `Fecha de emisión: ${fechaStr}`;
+      sheet.getCell('A3').font = { name: 'Calibri', size: 11 };
+      sheet.getCell('A3').alignment = { horizontal: 'center', vertical: 'middle' };
+
+      const puntuales = Math.max(0, (stats.entradas || 0) - (stats.tardes || 0));
+      sheet.mergeCells('A4:I4');
+      sheet.getCell('A4').value = `Total: ${stats.total||0} | Entradas: ${stats.entradas||0} (Puntuales: ${puntuales}, Tardes: ${stats.tardes||0}) | Salidas: ${stats.salidas||0}`;
+      sheet.getCell('A4').font = { name: 'Calibri', size: 11 };
+      sheet.getCell('A4').alignment = { horizontal: 'center', vertical: 'middle' };
+      sheet.getCell('A4').border = { bottom: { style: 'thin' } };
+
+      sheet.getRow(1).height = 30;
+      sheet.getRow(2).height = 25;
+      sheet.getRow(3).height = 20;
+      sheet.getRow(4).height = 20;
+      sheet.getRow(5).height = 10;
+
+      const headers = ['Fecha', 'Hora', 'Carnet', 'Nombre', 'Tipo / Grado', 'Sección', 'Jornada', 'Evento', 'Estado'];
+      const headerRow = sheet.getRow(6);
+      headerRow.values = headers;
+      headerRow.eachCell((cell) => {
+        cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E3A8A' } };
+        cell.alignment = { horizontal: 'center', vertical: 'middle' };
+        cell.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
+      });
+      
+      sheet.columns = [
+        { width: 12 }, { width: 10 }, { width: 15 }, { width: 35 }, { width: 30 }, { width: 8 }, { width: 12 }, { width: 12 }, { width: 15 }
+      ];
+
+      filas.forEach(fila => {
+        const row = sheet.addRow([fila.fecha, fila.hora, fila.carnet, fila.nombre, `${fila.tipo}\n${fila.grado}`, fila.seccion, fila.jornada, fila.evento, fila.estado]);
+        row.height = 28;
+        row.eachCell((cell, colNum) => {
+          cell.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
+          cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+          cell.font = { name: 'Calibri', size: 10 };
+          if (colNum === 4 || colNum === 5) cell.alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
+        });
+        if (fila.colorEstado === 'red') {
+          row.getCell(9).font = { color: { argb: 'FFFF0000' }, bold: true };
+        }
+      });
+
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Reporte_Asistencia_${new Date().getTime()}.xlsx`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+      showToast('Descargando Excel...', 'success');
     }
 
     document.getElementById('btn-logout').addEventListener('click', () => {
