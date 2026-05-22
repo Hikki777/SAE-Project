@@ -381,6 +381,14 @@ app.get('/mobile-scanner.html', (req, res) => {
   res.sendFile(path.join(__dirname, '../mobile-scanner.html'));
 });
 
+// Servir archivos PWA para el mobile scanner
+app.get('/manifest.json', (req, res) => {
+  res.sendFile(path.join(__dirname, '../manifest.json'));
+});
+app.get('/sw.js', (req, res) => {
+  res.sendFile(path.join(__dirname, '../sw.js'));
+});
+
 // Endpoint para descargar el certificado SSL auto-firmado en dispositivos móviles.
 // Permite instalar el cert en Android/iOS para eliminar las advertencias de seguridad
 // y habilitar la cámara en HTTPS sin servidores externos.
