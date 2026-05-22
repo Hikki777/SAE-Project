@@ -310,11 +310,90 @@ async function guardarLogo(base64Data, filename = 'logo.png') {
   }
 }
 
+/**
+ * Regenerar TODOS los QRs existentes con el logo institucional actual.
+ * Diseñado para ejecutarse en background (sin bloquear la respuesta HTTP).
+ *
+ * @param {string} [logoFuenteParam] - Ruta/base64 del logo a usar. Si no se pasa,
+ *   se obtiene de la institución en BD. Útil para pasar el logo recién actualizado.
+ * @returns {Promise<{exito: number, error: number}>}
+ */
+async function regenerarTodosLosQrs(logoFuenteParam) {
+  logger.info('[QR-REGEN] Iniciando regeneración masiva de QRs por cambio de logo...');
+
+  let successCount = 0;
+  let errorCount = 0;
+
+  try {
+    // 1. Obtener logo (usar el pasado por parámetro o leer desde BD)
+    let logoFuente = logoFuenteParam;
+    if (!logoFuente) {
+      const institucion = await prisma.institucion.findFirst();
+      logoFuente = institucion?.logo_path || institucion?.logo_base64;
+    }
+
+    if (!logoFuente) {
+      logger.warn('[QR-REGEN] No se encontró logo institucional. Regeneración cancelada.');
+      return { exito: 0, error: 0 };
+    }
+
+    // 2. Obtener todos los códigos QR con la info de su persona
+    const qrs = await prisma.codigoQr.findMany({
+      include: { alumno: true, personal: true }
+    });
+
+    logger.info({ total: qrs.length }, '[QR-REGEN] QRs encontrados para regenerar');
+
+    // 3. Procesar uno a uno (secuencial para no saturar recursos)
+    for (const qr of qrs) {
+      try {
+        const persona = qr.alumno || qr.personal;
+        if (!persona) {
+          logger.warn({ qrId: qr.id }, '[QR-REGEN] QR huérfano (sin persona). Omitiendo...');
+          continue;
+        }
+
+        const filename = `${qr.persona_tipo}-${persona.carnet.replace(/\s+/g, '_')}.png`;
+
+        const qrUrl = await generarQrConLogo(
+          qr.token,
+          logoFuente,
+          filename,
+          persona.carnet
+        );
+
+        if (qrUrl) {
+          await prisma.codigoQr.update({
+            where: { id: qr.id },
+            data: { png_path: qrUrl, regenerado_en: new Date() }
+          });
+          successCount++;
+        } else {
+          throw new Error('generarQrConLogo devolvió null');
+        }
+      } catch (err) {
+        logger.error({ err, qrId: qr.id }, '[QR-REGEN] Error procesando QR');
+        errorCount++;
+      }
+    }
+
+    logger.info(
+      { exito: successCount, error: errorCount },
+      '[QR-REGEN] Regeneración masiva finalizada'
+    );
+  } catch (fatalErr) {
+    logger.error({ err: fatalErr }, '[QR-REGEN] Error fatal en regenerarTodosLosQrs');
+  }
+
+  return { exito: successCount, error: errorCount };
+}
+
 module.exports = {
   generarQrConLogo,
   crearTextoCarnet,
   generarQrParaPersona,
   regenerarQr,
+  regenerarTodosLosQrs,
   obtenerRutasQr,
   guardarLogo
 };

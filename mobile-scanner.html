@@ -298,7 +298,7 @@
       backdrop-blur: 20px;
       border: 1px solid var(--card-border);
       border-radius: 24px;
-      padding: 8px;
+      padding: 6px;
       display: flex;
       justify-content: space-around;
       box-shadow: 0 10px 40px rgba(0,0,0,0.4);
@@ -308,18 +308,33 @@
       display: flex;
       flex-direction: column;
       align-items: center;
+      justify-content: center;
       gap: 4px;
-      padding: 8px 16px;
+      padding: 8px 4px;
       border-radius: 16px;
       color: var(--text-muted);
       transition: all 0.3s;
       flex: 1;
       background: transparent;
       box-shadow: none;
+      width: auto;
+    }
+    .nav-item svg, .nav-item i {
+      width: 20px;
+      height: 20px;
+      font-size: 20px;
+      stroke-width: 2;
+      display: block;
+    }
+    .nav-item span {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+      display: block;
     }
     .nav-item.active { color: var(--accent); background: rgba(56, 189, 248, 0.1); }
-    .nav-item i { font-size: 20px; }
-    .nav-item span { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
 
     #toast {
       position: fixed;
@@ -437,10 +452,10 @@
             <i data-lucide="download-cloud" size="14"></i> Descargar e Instalar Certificado
           </a>
           <p style="font-size:10px; color:var(--text-muted); line-height:1.6; text-align:center;">
-            <strong style="color:var(--text-main);">Android:</strong> Descarga → Archivos → Instalar cert.<br>
+            <strong style="color:var(--text-main);">Android:</strong> Descargar → Ir a Ajustes → Seguridad (o Contraseñas y Seguridad) → Cifrado y credenciales → Instalar certificado → Certificado de CA → Instalar de todos modos → Seleccionar archivo.<br>
             <strong style="color:var(--text-main);">iOS:</strong> Descarga → Ajustes → Perfil descargado → Instalar → Confiar.<br>
-            <strong style="color:var(--text-main);">Chrome Android (alternativa):</strong><br>
-            <code style="font-size:9px; color:var(--accent);">chrome://flags → treat-insecure → agrega http://IP:PUERTO</code>
+            <strong style="color:var(--text-main);">Chrome Android (alternativa sin certs):</strong><br>
+            <code style="font-size:9px; color:var(--accent);">chrome://flags/#unsafely-treat-insecure-origin-as-secure → Habilitar y agregar http://IP_SERVIDOR:5000</code>
           </p>
         </div>
       </div>

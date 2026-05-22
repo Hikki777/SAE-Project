@@ -381,8 +381,23 @@ router.put('/', upload.fields([{ name: 'logo', maxCount: 1 }]), async (req, res)
     req.app.locals.cache?.del('institucion');
     logger.debug('[CACHE INVALIDATE] Caché de institución invalidado tras actualización');
 
+    // Si se actualizó el logo, regenerar todos los QRs en background
+    if (logoPath) {
+      logger.info(
+        { logoPath },
+        '[LOGO] Nuevo logo detectado — disparando regeneración masiva de QRs en background'
+      );
+      // Fire-and-forget: no bloqueamos la respuesta HTTP
+      qrService.regenerarTodosLosQrs(logoPath).catch((err) => {
+        logger.error({ err }, '[QR-REGEN] Error en regeneración background tras cambio de logo');
+      });
+    }
+
     logger.info('Institución actualizada:', { id: institucion.id, nombre: institucion.nombre });
-    res.json(institucion);
+    res.json({
+      ...institucion,
+      ...(logoPath ? { qr_regeneracion: 'en_progreso' } : {})
+    });
   } catch (error) {
     logger.error('Error al actualizar institución:', error);
     res.status(500).json({
