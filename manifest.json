@@ -1,0 +1,22 @@
+{
+  "name": "SAE Mobile Scanner",
+  "short_name": "SAE Scanner",
+  "description": "Control de Asistencia Móvil SAE",
+  "start_url": "/mobile-scanner.html",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/frontend/public/logo-256.png",
+      "sizes": "256x256",
+      "type": "image/png"
+    },
+    {
+      "src": "/frontend/public/logo-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

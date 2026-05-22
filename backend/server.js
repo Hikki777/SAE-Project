@@ -396,10 +396,19 @@ app.get('/api/certs/download', (req, res) => {
     });
   }
 
-  // Content-Type específico para instalación automática en Android e iOS
-  res.setHeader('Content-Type', 'application/x-x509-ca-cert');
-  res.setHeader('Content-Disposition', 'attachment; filename="SAE-certificado.crt"');
-  res.sendFile(certPath);
+  // Leer y enviar el archivo de forma binaria para evitar restricciones de res.sendFile
+  fs.readFile(certPath, (err, data) => {
+    if (err) {
+      return res.status(500).json({
+        error: 'No se pudo leer el archivo de certificado en el servidor.',
+        details: err.message
+      });
+    }
+    // Content-Type específico para instalación automática en Android e iOS
+    res.setHeader('Content-Type', 'application/x-x509-ca-cert');
+    res.setHeader('Content-Disposition', 'attachment; filename="SAE-certificado.crt"');
+    res.send(data);
+  });
 });
 
 

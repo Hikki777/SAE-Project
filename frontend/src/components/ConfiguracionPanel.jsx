@@ -800,6 +800,7 @@ const UsuarioSettings = ({ usuarios, loadingUsers, showUserModal, setShowUserMod
 
 const EquipoSettings = ({ equipos, loading, onApprove, onDelete, serverInfo }) => {
   const [showQR, setShowQR] = useState(false);
+  const [customUrl, setCustomUrl] = useState('');
 
   // Obtener IP e Inyectar Puerto Dinámico Actual (si existe)
   const ipv4 = serverInfo?.ips?.[0] || 'localhost';
@@ -807,11 +808,13 @@ const EquipoSettings = ({ equipos, loading, onApprove, onDelete, serverInfo }) =
   const hashMatch = window.location.hash.match(/apiPort=(\d+)/);
   const port = urlParams.get('apiPort') || (hashMatch ? hashMatch[1] : sessionStorage.getItem('dynamic_api_port')) || '5000';
 
+  const httpsPort = parseInt(port) + 1;
+
   // URLs para Vinculación
-  const scannerUrl = `https://${ipv4}:5001/mobile-scanner.html`;
+  const scannerUrl = `https://${ipv4}:${httpsPort}/mobile-scanner.html`;
   const httpUrl    = `http://${ipv4}:${port}/mobile-scanner.html`;
   
-  const qrData = scannerUrl; // Por defecto apuntamos al modo seguro (HTTPS)
+  const qrData = customUrl.trim() !== '' ? customUrl : scannerUrl;
 
   return (
     <motion.div
@@ -989,15 +992,27 @@ const EquipoSettings = ({ equipos, loading, onApprove, onDelete, serverInfo }) =
 
               {/* URL & Action Section */}
               <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-2xl border border-gray-100 dark:border-gray-700 space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Enlace Directo (HTTPS)</span>
+                <div className="space-y-2 mb-3">
+                  <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest block">URL Externa (Cloudflare/Tailscale)</label>
+                  <input
+                    type="text"
+                    placeholder="Ej: https://mi-colegio.com/mobile-scanner.html"
+                    value={customUrl}
+                    onChange={(e) => setCustomUrl(e.target.value)}
+                    className="w-full text-xs bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 p-2.5 rounded-lg text-sky-600 font-mono outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-100 dark:focus:ring-sky-900 transition-all"
+                  />
+                  <p className="text-[10px] text-gray-400 dark:text-gray-500 leading-tight">Pega tu URL pública aquí para que el QR se actualice mágicamente.</p>
+                </div>
+
+                <div className="flex items-center justify-between pt-2 border-t border-gray-200 dark:border-gray-700">
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Enlace Local</span>
                   <div className="flex items-center gap-1 text-[10px] font-bold text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30 px-2 py-0.5 rounded-full">
-                    <Lock size={10} /> SEGURO
+                    <Lock size={10} /> LOCAL
                   </div>
                 </div>
                 
                 <div className="flex items-center gap-2">
-                  <div className="flex-1 font-mono text-xs text-sky-600 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 p-3 rounded-xl truncate">
+                  <div className="flex-1 font-mono text-xs text-sky-600 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 p-3 rounded-xl truncate opacity-70">
                     {scannerUrl}
                   </div>
                   <button 

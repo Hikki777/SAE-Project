@@ -7,7 +7,12 @@ versionado según [Semantic Versioning](https://semver.org/lang/es/).
 ## [1.1.9] — 2026-05-22
 
 ### Corregido
-- **Regeneración automática de QRs al cambiar logo** (`backend/routes/institucion.js`, `backend/services/qrService.js`): Al actualizar el logo institucional mediante `PUT /api/institucion`, el sistema ahora lanza automáticamente en background la regeneración masiva de todos los códigos QR existentes con el nuevo logo. El proceso es asíncrono (fire-and-forget) para no bloquear la respuesta HTTP y registra progreso/errores en el log del servidor. La respuesta incluye el campo `qr_regeneracion: 'en_progreso'` para que el cliente pueda informar al usuario.
+- **Soporte Offline (PWA) para Mobile Scanner** (`mobile-scanner.html`, `sw.js`, `manifest.json`): El lector web ahora es una Progressive Web App completa. 
+  - Funciona 100% sin conexión a internet o cuando se cae la red local (guardando en IndexedDB).
+  - Sincroniza automáticamente los registros acumulados al recuperar la conexión.
+  - Añadido soporte para instalarse como una app nativa en la pantalla de inicio del celular.
+- **URL Dinámica para Vinculación Celular** (`frontend/src/components/ConfiguracionPanel.jsx`): En el panel de "Equipos", la opción "Vincular Celular" ahora permite introducir una URL externa (Cloudflare/Tailscale). El QR se actualiza en tiempo real, permitiendo acceso remoto. Además, el puerto local HTTPS ahora se calcula dinámicamente (`Puerto Actual + 1`) evitando fallos al cambiar de puerto.
+- **Regeneración automática de QRs al cambiar logo** (`backend/routes/institucion.js`, `backend/services/qrService.js`): Al actualizar el logo institucional mediante `PUT /api/institucion`, el sistema ahora lanza automáticamente en background la regeneración masiva de todos los códigos QR.
 - **Navegación centrada en Mobile Scanner** (`mobile-scanner.html`): Se corrigió el alineado y tamaño de los ítems de navegación de la barra inferior para que queden correctamente centrados en pantallas móviles.
 
 ### Refactorizado

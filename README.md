@@ -1,10 +1,12 @@
 # SAE - Sistema de Administración Educativa
 
-![Version](https://img.shields.io/badge/version-1.1.8-brightgreen.svg) ![Electron](https://img.shields.io/badge/Electron-v35-9FEAF9.svg) ![React](https://img.shields.io/badge/React-19-61DAFB.svg) ![Node](https://img.shields.io/badge/Node-18%2B-339933.svg) ![Status](https://img.shields.io/badge/Status-Stable-brightgreen.svg) ![License](https://img.shields.io/badge/License-GPL--3.0-blue.svg)
+![Version](https://img.shields.io/badge/version-1.1.9-brightgreen.svg) ![Electron](https://img.shields.io/badge/Electron-v35-9FEAF9.svg) ![React](https://img.shields.io/badge/React-19-61DAFB.svg) ![Node](https://img.shields.io/badge/Node-18%2B-339933.svg) ![Status](https://img.shields.io/badge/Status-Stable-brightgreen.svg) ![License](https://img.shields.io/badge/License-GPL--3.0-blue.svg)
 
 **Gestión Educativa Libre** para instituciones de Guatemala
 
-> **✅ VERSIÓN 1.1.8 ESTABLE**: Sincronización en tiempo real celular-PC, lector QR móvil con cámara sobre HTTPS local/certificado SSL, sonidos acordes idénticos a PC y exportación de Reportes PDF y Excel nativos en móvil.
+> **✅ VERSIÓN 1.1.9 ESTABLE**: Nueva Progressive Web App (PWA) para celular con soporte 100% Offline, regeneración masiva de códigos QR y UI optimizada.
+
+> **⚠️ AVISO IMPORTANTE SOBRE MIGRACIÓN DE DATOS:** La versión 1.1.7 fue la última con soporte automático para reparar bases de datos de versiones obsoletas. A partir de la versión 1.1.8 en adelante, el sistema utiliza un nuevo esquema estable (Safe-Migrate) que protege los datos contra corrupción, pero ya no intentará rescatar esquemas incompatibles muy antiguos. Tus datos desde la 1.1.8 en adelante están garantizados para mantenerse íntegros en futuras actualizaciones.
 
 ---
 

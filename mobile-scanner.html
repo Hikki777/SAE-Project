@@ -8,6 +8,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="SAE Mobile" />
+  <link rel="manifest" href="/manifest.json">
   <title>SAE — Control de Asistencia</title>
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -666,7 +667,129 @@
     let audioUnlocked = false;
     let selectedPersonaForJustificar = null;
 
+    // --- Offline Queue (IndexedDB) ---
+    class OfflineQueue {
+      constructor() {
+        this.dbName = 'sae_offline_db';
+        this.storeName = 'asistencias_queue';
+        this.db = null;
+        this.pendingCount = 0;
+      }
+      async init() {
+        return new Promise((resolve, reject) => {
+          const req = indexedDB.open(this.dbName, 1);
+          req.onupgradeneeded = (e) => {
+            e.target.result.createObjectStore(this.storeName, { keyPath: 'id', autoIncrement: true });
+          };
+          req.onsuccess = (e) => {
+            this.db = e.target.result;
+            this.updateCount();
+            resolve();
+          };
+          req.onerror = () => reject('Error abriendo IndexedDB');
+        });
+      }
+      async add(payload) {
+        if (!this.db) return;
+        return new Promise((resolve, reject) => {
+          const tx = this.db.transaction(this.storeName, 'readwrite');
+          tx.objectStore(this.storeName).add({ payload, timestamp: new Date().getTime() });
+          tx.oncomplete = () => { this.updateCount(); resolve(); };
+          tx.onerror = () => reject('Error guardando en queue');
+        });
+      }
+      async getAll() {
+        if (!this.db) return [];
+        return new Promise((resolve) => {
+          const tx = this.db.transaction(this.storeName, 'readonly');
+          const req = tx.objectStore(this.storeName).getAll();
+          req.onsuccess = () => resolve(req.result);
+        });
+      }
+      async remove(id) {
+        if (!this.db) return;
+        return new Promise((resolve) => {
+          const tx = this.db.transaction(this.storeName, 'readwrite');
+          tx.objectStore(this.storeName).delete(id);
+          tx.oncomplete = () => { this.updateCount(); resolve(); };
+        });
+      }
+      async updateCount() {
+        if (!this.db) return;
+        const tx = this.db.transaction(this.storeName, 'readonly');
+        const req = tx.objectStore(this.storeName).count();
+        req.onsuccess = () => {
+          this.pendingCount = req.result;
+          updateNetworkStatus();
+        };
+      }
+    }
+    const queue = new OfflineQueue();
+    queue.init().catch(console.error);
+
+    // --- Service Worker Registration ---
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').then(reg => {
+          console.log('[SW] Service Worker registrado:', reg.scope);
+        }).catch(err => console.warn('[SW] Error registrando:', err));
+      });
+    }
+
+    // --- Network Listeners ---
+    window.addEventListener('online', () => {
+      showToast('Conexión recuperada. Sincronizando...', 'success');
+      updateNetworkStatus();
+      syncQueue();
+    });
+    window.addEventListener('offline', () => {
+      showToast('Sin conexión. Modo Offline activado.', 'warning');
+      updateNetworkStatus();
+    });
+
+    async function syncQueue() {
+      if (!navigator.onLine) return;
+      const items = await queue.getAll();
+      if (items.length === 0) return;
+      
+      let synced = 0;
+      for (const item of items) {
+        try {
+          const res = await fetch(`${API_BASE}/asistencias`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify(item.payload)
+          });
+          if (res.ok || res.status === 409) {
+            await queue.remove(item.id);
+            synced++;
+          }
+        } catch (e) {
+          console.warn('Fallo sync de registro', item.id);
+        }
+      }
+      if (synced > 0) {
+        showToast(`Se sincronizaron ${synced} registros pendientes`, 'success');
+      }
+    }
+
+    function updateNetworkStatus() {
+      const dot = document.querySelector('.status-dot');
+      const text = document.querySelector('.status-badge span');
+      if (navigator.onLine) {
+        dot.className = 'status-dot online';
+        text.textContent = queue.pendingCount > 0 ? `EN LÍNEA (${queue.pendingCount} pend.)` : 'EN LÍNEA';
+        text.style.color = '#f8fafc';
+      } else {
+        dot.className = 'status-dot offline';
+        dot.style.background = '#f59e0b';
+        text.textContent = `SIN CONEXIÓN (${queue.pendingCount})`;
+        text.style.color = '#f59e0b';
+      }
+    }
+
     lucide.createIcons();
+    updateNetworkStatus();
 
     const sounds = {
       ctx: null,
@@ -965,15 +1088,29 @@
     }
 
     async function handleRegistration(data) {
-      try {
-        const body = {
-          tipo_evento: data.origen?.includes('Salida') ? 'salida' : currentMode,
-          origen: data.origen || (data.manual ? 'Manual - Celular' : 'Scanner Móvil'),
-          dispositivo: 'Smartphone Web'
-        };
-        if (data.tipo === 'alumno') body.alumno_id = data.id;
-        else body.personal_id = data.id;
+      const body = {
+        tipo_evento: data.origen?.includes('Salida') ? 'salida' : currentMode,
+        origen: data.origen || (data.manual ? 'Manual - Celular' : 'Scanner Móvil'),
+        dispositivo: 'Smartphone Web',
+        // Guardamos la fecha original por si se guarda offline y se envía después
+        fecha_registro: new Date().toISOString()
+      };
+      if (data.tipo === 'alumno') body.alumno_id = data.id;
+      else body.personal_id = data.id;
 
+      const nombreFinal = data.nombre || 'Registro';
+
+      if (!navigator.onLine) {
+        // Modo OFFLINE: Guardamos en IndexedDB
+        await queue.add(body);
+        sounds.playSuccess();
+        showToast(`GUARDADO LOCAL: ${nombreFinal}`, 'warning');
+        if (!data.manual) addLogItem({ local: true, timestamp: body.fecha_registro, personal: { nombres: nombreFinal } });
+        return;
+      }
+
+      // Modo ONLINE
+      try {
         const res = await fetch(`${API_BASE}/asistencias`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -990,14 +1127,11 @@
 
         sounds.playSuccess();
         const persona = resData.alumno || resData.personal || {};
-        const nombreFinal = data.nombre || persona.nombres || 'Registro';
-        showToast(`${body.tipo_evento.toUpperCase()} EXITOSA: ${nombreFinal}`, 'success');
+        showToast(`${body.tipo_evento.toUpperCase()} EXITOSA: ${persona.nombres || nombreFinal}`, 'success');
         
         updateScanCount();
         
-        // Emitir evento vía WebSocket (capa secundaria de seguridad).
-        // El servidor ya notifica a la PC al guardar en BD, pero este emit
-        // sirve como confirmación adicional si el socket está activo.
+        // Emitir evento vía WebSocket
         const asistenciaId = resData.id;
         if (socket?.connected && asistenciaId) {
           socket.emit('data-changed', { type: 'asistencias', id: asistenciaId, action: 'create' });
@@ -1006,7 +1140,18 @@
           addDebugLog(`⚠️ Sin WS — el servidor ya notificó a la PC directamente`, '#f59e0b');
         }
         if (!data.manual) addLogItem(resData);
-      } catch (e) { showToast(e.message, 'error'); sounds.playError(); }
+      } catch (e) { 
+        // Si falló por error de red puro, lo encolamos
+        if (e.message.includes('fetch') || e.message.includes('NetworkError') || e.message.includes('Failed to fetch')) {
+          await queue.add(body);
+          sounds.playSuccess();
+          showToast(`RED CAÍDA: GUARDADO LOCAL: ${nombreFinal}`, 'warning');
+          if (!data.manual) addLogItem({ local: true, timestamp: body.fecha_registro, personal: { nombres: nombreFinal } });
+        } else {
+          showToast(e.message, 'error'); 
+          sounds.playError(); 
+        }
+      }
     }
 
     function addLogItem(data) {
