@@ -388,6 +388,9 @@ app.get('/manifest.json', (req, res) => {
 app.get('/sw.js', (req, res) => {
   res.sendFile(path.join(__dirname, '../sw.js'));
 });
+app.get('/logo.png', (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/public/logo-512.png'));
+});
 
 // Endpoint para descargar el certificado SSL auto-firmado en dispositivos móviles.
 // Permite instalar el cert en Android/iOS para eliminar las advertencias de seguridad
@@ -475,6 +478,7 @@ app.use('/api/migracion', promocionRoutes); // Mount Migracion Routes
 app.use('/api/equipos', require('./routes/equipos'));
 app.use('/api/backup', require('./routes/backup'));
 app.use('/api/sync', require('./routes/sync'));
+app.use('/api/importar', require('./routes/importacion'));
 
 // ============ ERROR HANDLER ============
 

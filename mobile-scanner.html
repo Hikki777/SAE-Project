@@ -844,13 +844,17 @@
       lnkHttps.href = httpsUrl;
     }
 
+    let globalInstData = { nombre: 'Sistema de Administración Educativa', logoUrl: null };
+
     async function fetchInstitucion() {
       try {
         const res = await fetch(`${API_BASE}/institucion`);
         if (res.ok) {
           const data = await res.json();
+          if (data.nombre) globalInstData.nombre = data.nombre;
           if (data.logo_path) {
             const logoUrl = `${API_BASE}/uploads/${data.logo_path}`;
+            globalInstData.logoUrl = logoUrl;
             document.getElementById('header-logo').src = logoUrl;
             document.getElementById('header-logo').style.display = 'block';
             document.getElementById('logo-placeholder').style.display = 'none';
@@ -1372,7 +1376,7 @@
       if (typeof jspdf === 'undefined') { showToast('Cargando librerías PDF...', 'warning'); return; }
       
       const { asistencias, stats, fecha } = reporteData;
-      const inst = document.getElementById('profile-name')?.textContent || 'SAE';
+      const inst = globalInstData.nombre || document.getElementById('profile-name')?.textContent || 'SAE';
       const fechaStr = new Date((fecha || new Date().toISOString().split('T')[0]) + 'T12:00:00')
         .toLocaleDateString('es-ES', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
 
@@ -1401,6 +1405,35 @@
       const { jsPDF } = jspdf;
       const doc = new jsPDF();
       
+      const loadImageBase64 = async (src) => {
+        return new Promise((resolve) => {
+          const img = new Image();
+          img.crossOrigin = 'Anonymous';
+          img.src = src;
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0);
+            resolve(canvas.toDataURL('image/png'));
+          };
+          img.onerror = () => resolve(null);
+        });
+      };
+
+      try {
+         const sysLogo = await loadImageBase64('/logo.png');
+         if(sysLogo) doc.addImage(sysLogo, 'PNG', 170, 15, 25, 25);
+      } catch(e){}
+
+      if (globalInstData.logoUrl) {
+        try {
+            const instLogo = await loadImageBase64(globalInstData.logoUrl);
+            if(instLogo) doc.addImage(instLogo, 'PNG', 15, 15, 25, 25);
+        } catch (e) {}
+      }
+
       doc.setFontSize(16);
       doc.setTextColor(31, 71, 136);
       doc.text(inst, 105, 22, { align: 'center' });
@@ -1452,7 +1485,7 @@
       if (typeof ExcelJS === 'undefined') { showToast('Cargando librería Excel...', 'warning'); return; }
 
       const { asistencias, stats, fecha } = reporteData;
-      const inst = document.getElementById('profile-name')?.textContent || 'SAE';
+      const inst = globalInstData.nombre || document.getElementById('profile-name')?.textContent || 'SAE';
       const fechaStr = new Date((fecha || new Date().toISOString().split('T')[0]) + 'T12:00:00')
         .toLocaleDateString('es-ES', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
 

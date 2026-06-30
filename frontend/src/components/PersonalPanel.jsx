@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, Plus, Edit, Trash2, Download, Search, Filter, X, User, QrCode, Briefcase, Sun, CheckCircle, XCircle, Camera, AlertTriangle, ShieldAlert } from 'lucide-react';
+import { Users, Plus, Edit, Trash2, Download, Search, Filter, X, User, QrCode, Briefcase, Sun, CheckCircle, XCircle, Camera, AlertTriangle, ShieldAlert, FileSpreadsheet } from 'lucide-react';
 import WebcamCaptureModal from './WebcamCaptureModal';
 import toast from 'react-hot-toast';
 import client, { API_URL, BASE_URL } from '../api/client';
@@ -12,6 +12,7 @@ import { TableSkeleton } from './LoadingSpinner';
 import { Card } from './ui/Card';
 import { Button } from './ui/Button';
 import { PageHeader } from './ui/PageHeader';
+import ImportModal from './ImportModal';
 
 
 
@@ -40,8 +41,11 @@ export default function PersonalPanel() {
     cargo: 'Docente',
     jornada: '',
     grado_guia: '',
-    curso: ''
+    curso: '',
+    fecha_nacimiento: ''
   });
+
+  const [showImportModal, setShowImportModal] = useState(false);
 
   // Sistema híbrido de carnets
   const [carnetMode, setCarnetMode] = useState('auto');
@@ -309,6 +313,7 @@ export default function PersonalPanel() {
         jornada: '',
         grado_guia: '',
         curso: '',
+        fecha_nacimiento: '',
         foto: null,
         preview: null
       });
@@ -331,6 +336,7 @@ export default function PersonalPanel() {
       jornada: miembro.jornada || '',
       grado_guia: miembro.grado_guia || '',
       curso: miembro.curso || '',
+      fecha_nacimiento: miembro.fecha_nacimiento ? miembro.fecha_nacimiento.split('T')[0] : '',
       foto: null,
       preview: miembro.foto_path ? (miembro.foto_path.startsWith('http') ? miembro.foto_path : `${BASE_URL}/api/uploads/${miembro.foto_path}`) : null
     });
@@ -534,6 +540,14 @@ export default function PersonalPanel() {
     <div className="space-y-4 sm:space-y-6">
       {/* Header */}
       <PageHeader title="Personal" icon={Users}>
+        <button
+          onClick={() => setShowImportModal(true)}
+          className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold px-3 py-2 rounded-lg transition"
+          title="Importar personal desde Excel o JSON"
+        >
+          <FileSpreadsheet size={16} />
+          <span className="hidden sm:inline">Importar</span>
+        </button>
         <Button
           variant="success"
           icon={Plus}
@@ -544,12 +558,17 @@ export default function PersonalPanel() {
               nombres: '',
               apellidos: '',
               sexo: '',
-              categoria: 'Docente',
-              jornada: ''
+              cargo: 'Docente',
+              jornada: '',
+              grado_guia: '',
+              curso: '',
+              fecha_nacimiento: '',
+              foto: null,
+              preview: null
             });
-            setCursosList([]); // Limpiar lista de cursos
-            setCursoInput(''); // Limpiar input de cursos
-            setCarnetMode('auto'); // Reset carnet mode
+            setCursosList([]);
+            setCursoInput('');
+            setCarnetMode('auto');
             setShowModal(true);
           }}
         >
@@ -1160,6 +1179,17 @@ export default function PersonalPanel() {
                     <option value="Extendida">Extendida</option>
                   </select>
                 </div>
+              </div>
+
+              {/* Campo Fecha de Nacimiento */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Fecha de Nacimiento</label>
+                <input
+                  type="date"
+                  value={formData.fecha_nacimiento}
+                  onChange={(e) => setFormData({ ...formData, fecha_nacimiento: e.target.value })}
+                  className="w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-success focus:border-transparent text-gray-900 dark:text-gray-100"
+                />
               </div>
 
               {/* Campo Docente Guía y Curso - solo visibles si cargo es Docente */}
@@ -1798,6 +1828,14 @@ export default function PersonalPanel() {
           document.body
         )}
       </AnimatePresence>
+
+      {/* Modal de Importación Masiva */}
+      <ImportModal
+        isOpen={showImportModal}
+        onClose={() => setShowImportModal(false)}
+        tipo="personal"
+        onSuccess={fetchPersonal}
+      />
     </div>
   );
 }

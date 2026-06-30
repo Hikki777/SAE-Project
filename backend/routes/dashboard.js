@@ -284,4 +284,112 @@ router.get('/top-grados', async (req, res) => {
   }
 });
 
+/**
+ * GET /api/dashboard/hoy
+ * Stats del día en tiempo real: alumnos + personal separados + feed de últimas asistencias
+ */
+router.get('/hoy', async (req, res) => {
+  try {
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    const manana = new Date(hoy);
+    manana.setDate(manana.getDate() + 1);
+
+    // ── Totales activos ──────────────────────────────────────────
+    const [totalAlumnos, totalPersonal] = await Promise.all([
+      prisma.alumno.count({ where: { estado: 'activo' } }),
+      prisma.personal.count({ where: { estado: 'activo' } }),
+    ]);
+
+    // ── Asistencias del día ──────────────────────────────────────
+    const asistenciasHoy = await prisma.asistencia.findMany({
+      where: { timestamp: { gte: hoy, lt: manana } },
+      orderBy: { timestamp: 'desc' },
+      include: {
+        alumno: {
+          select: { id: true, carnet: true, nombres: true, apellidos: true, grado: true, seccion: true, sexo: true }
+        },
+        personal: {
+          select: { id: true, carnet: true, nombres: true, apellidos: true, cargo: true, sexo: true }
+        }
+      }
+    });
+
+    // ── Cálculo Alumnos ──────────────────────────────────────────
+    const entradasAlumnos  = asistenciasHoy.filter(a => a.tipo_evento === 'entrada' && a.alumno_id);
+    const salidasAlumnos   = asistenciasHoy.filter(a => a.tipo_evento === 'salida'  && a.alumno_id);
+
+    const alumnosPresentesSet = new Set(entradasAlumnos.map(a => a.alumno_id));
+    const alumnosConSalidaSet = new Set(salidasAlumnos.map(a => a.alumno_id));
+    const alumnosSinSalida    = [...alumnosPresentesSet].filter(id => !alumnosConSalidaSet.has(id)).length;
+
+    const alumnosPuntualesSet = new Set(entradasAlumnos.filter(a => a.estado_puntualidad === 'puntual').map(a => a.alumno_id));
+    const alumnosTardesSet    = new Set(entradasAlumnos.filter(a => a.estado_puntualidad === 'tarde').map(a => a.alumno_id));
+
+    const alumnosPresentes = alumnosPresentesSet.size;
+    const alumnosAusentes  = Math.max(0, totalAlumnos - alumnosPresentes);
+
+    // ── Cálculo Personal ─────────────────────────────────────────
+    const entradasPersonal = asistenciasHoy.filter(a => a.tipo_evento === 'entrada' && a.personal_id);
+    const salidasPersonal  = asistenciasHoy.filter(a => a.tipo_evento === 'salida'  && a.personal_id);
+
+    const personalPresenteSet = new Set(entradasPersonal.map(a => a.personal_id));
+    const personalConSalidaSet = new Set(salidasPersonal.map(a => a.personal_id));
+    const personalSinSalida    = [...personalPresenteSet].filter(id => !personalConSalidaSet.has(id)).length;
+
+    const personalPresente = personalPresenteSet.size;
+    const personalAusente  = Math.max(0, totalPersonal - personalPresente);
+
+    // ── Feed: últimas 10 asistencias ─────────────────────────────
+    const feed = asistenciasHoy.slice(0, 10).map(a => {
+      const p = a.alumno || a.personal;
+      return {
+        id: a.id,
+        tipo_evento: a.tipo_evento,
+        timestamp: a.timestamp,
+        estado_puntualidad: a.estado_puntualidad || null,
+        origen: a.origen || 'Manual',
+        persona_tipo: a.persona_tipo,
+        persona: p ? {
+          nombres: p.nombres,
+          apellidos: p.apellidos,
+          carnet: p.carnet,
+          grado: p.grado || p.cargo || null,
+          seccion: p.seccion || null,
+          sexo: p.sexo || null
+        } : null
+      };
+    });
+
+    res.json({
+      fecha: hoy.toISOString().split('T')[0],
+      alumnos: {
+        total:     totalAlumnos,
+        presentes: alumnosPresentes,
+        ausentes:  alumnosAusentes,
+        sinSalida: alumnosSinSalida,
+        puntuales: alumnosPuntualesSet.size,
+        tardes:    alumnosTardesSet.size,
+        porcentaje: totalAlumnos > 0
+          ? parseFloat(((alumnosPresentes / totalAlumnos) * 100).toFixed(1))
+          : 0
+      },
+      personal: {
+        total:     totalPersonal,
+        presentes: personalPresente,
+        ausentes:  personalAusente,
+        sinSalida: personalSinSalida,
+        porcentaje: totalPersonal > 0
+          ? parseFloat(((personalPresente / totalPersonal) * 100).toFixed(1))
+          : 0
+      },
+      feed
+    });
+  } catch (error) {
+    logger.error({ err: error }, '[ERROR] Error obteniendo stats del día');
+    res.status(500).json({ error: 'Error al obtener estadísticas del día' });
+  }
+});
+
 module.exports = router;
+

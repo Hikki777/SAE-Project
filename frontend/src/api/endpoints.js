@@ -103,5 +103,7 @@ export const excusasAPI = {
 
 export const dashboardAPI = {
   stats: () => client.get('/dashboard/stats'),
-  topGrados: () => client.get('/dashboard/top-grados')
+  topGrados: () => client.get('/dashboard/top-grados'),
+  statsHoy: () => client.get('/dashboard/hoy'),
 };
+

@@ -2998,6 +2998,7 @@ export namespace Prisma {
     especialidad: string | null
     jornada: string | null
     estado: string | null
+    fecha_nacimiento: Date | null
     anio_ingreso: number | null
     anio_graduacion: number | null
     nivel_actual: string | null
@@ -3020,6 +3021,7 @@ export namespace Prisma {
     especialidad: string | null
     jornada: string | null
     estado: string | null
+    fecha_nacimiento: Date | null
     anio_ingreso: number | null
     anio_graduacion: number | null
     nivel_actual: string | null
@@ -3042,6 +3044,7 @@ export namespace Prisma {
     especialidad: number
     jornada: number
     estado: number
+    fecha_nacimiento: number
     anio_ingreso: number
     anio_graduacion: number
     nivel_actual: number
@@ -3078,6 +3081,7 @@ export namespace Prisma {
     especialidad?: true
     jornada?: true
     estado?: true
+    fecha_nacimiento?: true
     anio_ingreso?: true
     anio_graduacion?: true
     nivel_actual?: true
@@ -3100,6 +3104,7 @@ export namespace Prisma {
     especialidad?: true
     jornada?: true
     estado?: true
+    fecha_nacimiento?: true
     anio_ingreso?: true
     anio_graduacion?: true
     nivel_actual?: true
@@ -3122,6 +3127,7 @@ export namespace Prisma {
     especialidad?: true
     jornada?: true
     estado?: true
+    fecha_nacimiento?: true
     anio_ingreso?: true
     anio_graduacion?: true
     nivel_actual?: true
@@ -3231,6 +3237,7 @@ export namespace Prisma {
     especialidad: string | null
     jornada: string | null
     estado: string
+    fecha_nacimiento: Date | null
     anio_ingreso: number | null
     anio_graduacion: number | null
     nivel_actual: string | null
@@ -3272,6 +3279,7 @@ export namespace Prisma {
     especialidad?: boolean
     jornada?: boolean
     estado?: boolean
+    fecha_nacimiento?: boolean
     anio_ingreso?: boolean
     anio_graduacion?: boolean
     nivel_actual?: boolean
@@ -3299,6 +3307,7 @@ export namespace Prisma {
     especialidad?: boolean
     jornada?: boolean
     estado?: boolean
+    fecha_nacimiento?: boolean
     anio_ingreso?: boolean
     anio_graduacion?: boolean
     nivel_actual?: boolean
@@ -3321,6 +3330,7 @@ export namespace Prisma {
     especialidad?: boolean
     jornada?: boolean
     estado?: boolean
+    fecha_nacimiento?: boolean
     anio_ingreso?: boolean
     anio_graduacion?: boolean
     nivel_actual?: boolean
@@ -3360,6 +3370,7 @@ export namespace Prisma {
       especialidad: string | null
       jornada: string | null
       estado: string
+      fecha_nacimiento: Date | null
       anio_ingreso: number | null
       anio_graduacion: number | null
       nivel_actual: string | null
@@ -3776,6 +3787,7 @@ export namespace Prisma {
     readonly especialidad: FieldRef<"Alumno", 'String'>
     readonly jornada: FieldRef<"Alumno", 'String'>
     readonly estado: FieldRef<"Alumno", 'String'>
+    readonly fecha_nacimiento: FieldRef<"Alumno", 'DateTime'>
     readonly anio_ingreso: FieldRef<"Alumno", 'Int'>
     readonly anio_graduacion: FieldRef<"Alumno", 'Int'>
     readonly nivel_actual: FieldRef<"Alumno", 'String'>
@@ -4220,6 +4232,7 @@ export namespace Prisma {
     jornada: string | null
     grado_guia: string | null
     estado: string | null
+    fecha_nacimiento: Date | null
     foto_path: string | null
     creado_en: Date | null
     actualizado_en: Date | null
@@ -4236,6 +4249,7 @@ export namespace Prisma {
     jornada: string | null
     grado_guia: string | null
     estado: string | null
+    fecha_nacimiento: Date | null
     foto_path: string | null
     creado_en: Date | null
     actualizado_en: Date | null
@@ -4252,6 +4266,7 @@ export namespace Prisma {
     jornada: number
     grado_guia: number
     estado: number
+    fecha_nacimiento: number
     foto_path: number
     creado_en: number
     actualizado_en: number
@@ -4278,6 +4293,7 @@ export namespace Prisma {
     jornada?: true
     grado_guia?: true
     estado?: true
+    fecha_nacimiento?: true
     foto_path?: true
     creado_en?: true
     actualizado_en?: true
@@ -4294,6 +4310,7 @@ export namespace Prisma {
     jornada?: true
     grado_guia?: true
     estado?: true
+    fecha_nacimiento?: true
     foto_path?: true
     creado_en?: true
     actualizado_en?: true
@@ -4310,6 +4327,7 @@ export namespace Prisma {
     jornada?: true
     grado_guia?: true
     estado?: true
+    fecha_nacimiento?: true
     foto_path?: true
     creado_en?: true
     actualizado_en?: true
@@ -4413,6 +4431,7 @@ export namespace Prisma {
     jornada: string | null
     grado_guia: string | null
     estado: string
+    fecha_nacimiento: Date | null
     foto_path: string | null
     creado_en: Date
     actualizado_en: Date
@@ -4448,6 +4467,7 @@ export namespace Prisma {
     jornada?: boolean
     grado_guia?: boolean
     estado?: boolean
+    fecha_nacimiento?: boolean
     foto_path?: boolean
     creado_en?: boolean
     actualizado_en?: boolean
@@ -4468,6 +4488,7 @@ export namespace Prisma {
     jornada?: boolean
     grado_guia?: boolean
     estado?: boolean
+    fecha_nacimiento?: boolean
     foto_path?: boolean
     creado_en?: boolean
     actualizado_en?: boolean
@@ -4484,6 +4505,7 @@ export namespace Prisma {
     jornada?: boolean
     grado_guia?: boolean
     estado?: boolean
+    fecha_nacimiento?: boolean
     foto_path?: boolean
     creado_en?: boolean
     actualizado_en?: boolean
@@ -4515,6 +4537,7 @@ export namespace Prisma {
       jornada: string | null
       grado_guia: string | null
       estado: string
+      fecha_nacimiento: Date | null
       foto_path: string | null
       creado_en: Date
       actualizado_en: Date
@@ -4924,6 +4947,7 @@ export namespace Prisma {
     readonly jornada: FieldRef<"Personal", 'String'>
     readonly grado_guia: FieldRef<"Personal", 'String'>
     readonly estado: FieldRef<"Personal", 'String'>
+    readonly fecha_nacimiento: FieldRef<"Personal", 'DateTime'>
     readonly foto_path: FieldRef<"Personal", 'String'>
     readonly creado_en: FieldRef<"Personal", 'DateTime'>
     readonly actualizado_en: FieldRef<"Personal", 'DateTime'>
@@ -13624,6 +13648,7 @@ export namespace Prisma {
     especialidad: 'especialidad',
     jornada: 'jornada',
     estado: 'estado',
+    fecha_nacimiento: 'fecha_nacimiento',
     anio_ingreso: 'anio_ingreso',
     anio_graduacion: 'anio_graduacion',
     nivel_actual: 'nivel_actual',
@@ -13647,6 +13672,7 @@ export namespace Prisma {
     jornada: 'jornada',
     grado_guia: 'grado_guia',
     estado: 'estado',
+    fecha_nacimiento: 'fecha_nacimiento',
     foto_path: 'foto_path',
     creado_en: 'creado_en',
     actualizado_en: 'actualizado_en',
@@ -13991,6 +14017,7 @@ export namespace Prisma {
     especialidad?: StringNullableFilter<"Alumno"> | string | null
     jornada?: StringNullableFilter<"Alumno"> | string | null
     estado?: StringFilter<"Alumno"> | string
+    fecha_nacimiento?: DateTimeNullableFilter<"Alumno"> | Date | string | null
     anio_ingreso?: IntNullableFilter<"Alumno"> | number | null
     anio_graduacion?: IntNullableFilter<"Alumno"> | number | null
     nivel_actual?: StringNullableFilter<"Alumno"> | string | null
@@ -14017,6 +14044,7 @@ export namespace Prisma {
     especialidad?: SortOrderInput | SortOrder
     jornada?: SortOrderInput | SortOrder
     estado?: SortOrder
+    fecha_nacimiento?: SortOrderInput | SortOrder
     anio_ingreso?: SortOrderInput | SortOrder
     anio_graduacion?: SortOrderInput | SortOrder
     nivel_actual?: SortOrderInput | SortOrder
@@ -14046,6 +14074,7 @@ export namespace Prisma {
     especialidad?: StringNullableFilter<"Alumno"> | string | null
     jornada?: StringNullableFilter<"Alumno"> | string | null
     estado?: StringFilter<"Alumno"> | string
+    fecha_nacimiento?: DateTimeNullableFilter<"Alumno"> | Date | string | null
     anio_ingreso?: IntNullableFilter<"Alumno"> | number | null
     anio_graduacion?: IntNullableFilter<"Alumno"> | number | null
     nivel_actual?: StringNullableFilter<"Alumno"> | string | null
@@ -14072,6 +14101,7 @@ export namespace Prisma {
     especialidad?: SortOrderInput | SortOrder
     jornada?: SortOrderInput | SortOrder
     estado?: SortOrder
+    fecha_nacimiento?: SortOrderInput | SortOrder
     anio_ingreso?: SortOrderInput | SortOrder
     anio_graduacion?: SortOrderInput | SortOrder
     nivel_actual?: SortOrderInput | SortOrder
@@ -14102,6 +14132,7 @@ export namespace Prisma {
     especialidad?: StringNullableWithAggregatesFilter<"Alumno"> | string | null
     jornada?: StringNullableWithAggregatesFilter<"Alumno"> | string | null
     estado?: StringWithAggregatesFilter<"Alumno"> | string
+    fecha_nacimiento?: DateTimeNullableWithAggregatesFilter<"Alumno"> | Date | string | null
     anio_ingreso?: IntNullableWithAggregatesFilter<"Alumno"> | number | null
     anio_graduacion?: IntNullableWithAggregatesFilter<"Alumno"> | number | null
     nivel_actual?: StringNullableWithAggregatesFilter<"Alumno"> | string | null
@@ -14125,6 +14156,7 @@ export namespace Prisma {
     jornada?: StringNullableFilter<"Personal"> | string | null
     grado_guia?: StringNullableFilter<"Personal"> | string | null
     estado?: StringFilter<"Personal"> | string
+    fecha_nacimiento?: DateTimeNullableFilter<"Personal"> | Date | string | null
     foto_path?: StringNullableFilter<"Personal"> | string | null
     creado_en?: DateTimeFilter<"Personal"> | Date | string
     actualizado_en?: DateTimeFilter<"Personal"> | Date | string
@@ -14144,6 +14176,7 @@ export namespace Prisma {
     jornada?: SortOrderInput | SortOrder
     grado_guia?: SortOrderInput | SortOrder
     estado?: SortOrder
+    fecha_nacimiento?: SortOrderInput | SortOrder
     foto_path?: SortOrderInput | SortOrder
     creado_en?: SortOrder
     actualizado_en?: SortOrder
@@ -14166,6 +14199,7 @@ export namespace Prisma {
     jornada?: StringNullableFilter<"Personal"> | string | null
     grado_guia?: StringNullableFilter<"Personal"> | string | null
     estado?: StringFilter<"Personal"> | string
+    fecha_nacimiento?: DateTimeNullableFilter<"Personal"> | Date | string | null
     foto_path?: StringNullableFilter<"Personal"> | string | null
     creado_en?: DateTimeFilter<"Personal"> | Date | string
     actualizado_en?: DateTimeFilter<"Personal"> | Date | string
@@ -14185,6 +14219,7 @@ export namespace Prisma {
     jornada?: SortOrderInput | SortOrder
     grado_guia?: SortOrderInput | SortOrder
     estado?: SortOrder
+    fecha_nacimiento?: SortOrderInput | SortOrder
     foto_path?: SortOrderInput | SortOrder
     creado_en?: SortOrder
     actualizado_en?: SortOrder
@@ -14209,6 +14244,7 @@ export namespace Prisma {
     jornada?: StringNullableWithAggregatesFilter<"Personal"> | string | null
     grado_guia?: StringNullableWithAggregatesFilter<"Personal"> | string | null
     estado?: StringWithAggregatesFilter<"Personal"> | string
+    fecha_nacimiento?: DateTimeNullableWithAggregatesFilter<"Personal"> | Date | string | null
     foto_path?: StringNullableWithAggregatesFilter<"Personal"> | string | null
     creado_en?: DateTimeWithAggregatesFilter<"Personal"> | Date | string
     actualizado_en?: DateTimeWithAggregatesFilter<"Personal"> | Date | string
@@ -15047,6 +15083,7 @@ export namespace Prisma {
     especialidad?: string | null
     jornada?: string | null
     estado?: string
+    fecha_nacimiento?: Date | string | null
     anio_ingreso?: number | null
     anio_graduacion?: number | null
     nivel_actual?: string | null
@@ -15073,6 +15110,7 @@ export namespace Prisma {
     especialidad?: string | null
     jornada?: string | null
     estado?: string
+    fecha_nacimiento?: Date | string | null
     anio_ingreso?: number | null
     anio_graduacion?: number | null
     nivel_actual?: string | null
@@ -15098,6 +15136,7 @@ export namespace Prisma {
     especialidad?: NullableStringFieldUpdateOperationsInput | string | null
     jornada?: NullableStringFieldUpdateOperationsInput | string | null
     estado?: StringFieldUpdateOperationsInput | string
+    fecha_nacimiento?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     anio_ingreso?: NullableIntFieldUpdateOperationsInput | number | null
     anio_graduacion?: NullableIntFieldUpdateOperationsInput | number | null
     nivel_actual?: NullableStringFieldUpdateOperationsInput | string | null
@@ -15124,6 +15163,7 @@ export namespace Prisma {
     especialidad?: NullableStringFieldUpdateOperationsInput | string | null
     jornada?: NullableStringFieldUpdateOperationsInput | string | null
     estado?: StringFieldUpdateOperationsInput | string
+    fecha_nacimiento?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     anio_ingreso?: NullableIntFieldUpdateOperationsInput | number | null
     anio_graduacion?: NullableIntFieldUpdateOperationsInput | number | null
     nivel_actual?: NullableStringFieldUpdateOperationsInput | string | null
@@ -15150,6 +15190,7 @@ export namespace Prisma {
     especialidad?: string | null
     jornada?: string | null
     estado?: string
+    fecha_nacimiento?: Date | string | null
     anio_ingreso?: number | null
     anio_graduacion?: number | null
     nivel_actual?: string | null
@@ -15171,6 +15212,7 @@ export namespace Prisma {
     especialidad?: NullableStringFieldUpdateOperationsInput | string | null
     jornada?: NullableStringFieldUpdateOperationsInput | string | null
     estado?: StringFieldUpdateOperationsInput | string
+    fecha_nacimiento?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     anio_ingreso?: NullableIntFieldUpdateOperationsInput | number | null
     anio_graduacion?: NullableIntFieldUpdateOperationsInput | number | null
     nivel_actual?: NullableStringFieldUpdateOperationsInput | string | null
@@ -15193,6 +15235,7 @@ export namespace Prisma {
     especialidad?: NullableStringFieldUpdateOperationsInput | string | null
     jornada?: NullableStringFieldUpdateOperationsInput | string | null
     estado?: StringFieldUpdateOperationsInput | string
+    fecha_nacimiento?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     anio_ingreso?: NullableIntFieldUpdateOperationsInput | number | null
     anio_graduacion?: NullableIntFieldUpdateOperationsInput | number | null
     nivel_actual?: NullableStringFieldUpdateOperationsInput | string | null
@@ -15212,6 +15255,7 @@ export namespace Prisma {
     jornada?: string | null
     grado_guia?: string | null
     estado?: string
+    fecha_nacimiento?: Date | string | null
     foto_path?: string | null
     creado_en?: Date | string
     actualizado_en?: Date | string
@@ -15231,6 +15275,7 @@ export namespace Prisma {
     jornada?: string | null
     grado_guia?: string | null
     estado?: string
+    fecha_nacimiento?: Date | string | null
     foto_path?: string | null
     creado_en?: Date | string
     actualizado_en?: Date | string
@@ -15249,6 +15294,7 @@ export namespace Prisma {
     jornada?: NullableStringFieldUpdateOperationsInput | string | null
     grado_guia?: NullableStringFieldUpdateOperationsInput | string | null
     estado?: StringFieldUpdateOperationsInput | string
+    fecha_nacimiento?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     foto_path?: NullableStringFieldUpdateOperationsInput | string | null
     creado_en?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizado_en?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -15268,6 +15314,7 @@ export namespace Prisma {
     jornada?: NullableStringFieldUpdateOperationsInput | string | null
     grado_guia?: NullableStringFieldUpdateOperationsInput | string | null
     estado?: StringFieldUpdateOperationsInput | string
+    fecha_nacimiento?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     foto_path?: NullableStringFieldUpdateOperationsInput | string | null
     creado_en?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizado_en?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -15287,6 +15334,7 @@ export namespace Prisma {
     jornada?: string | null
     grado_guia?: string | null
     estado?: string
+    fecha_nacimiento?: Date | string | null
     foto_path?: string | null
     creado_en?: Date | string
     actualizado_en?: Date | string
@@ -15302,6 +15350,7 @@ export namespace Prisma {
     jornada?: NullableStringFieldUpdateOperationsInput | string | null
     grado_guia?: NullableStringFieldUpdateOperationsInput | string | null
     estado?: StringFieldUpdateOperationsInput | string
+    fecha_nacimiento?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     foto_path?: NullableStringFieldUpdateOperationsInput | string | null
     creado_en?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizado_en?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -15318,6 +15367,7 @@ export namespace Prisma {
     jornada?: NullableStringFieldUpdateOperationsInput | string | null
     grado_guia?: NullableStringFieldUpdateOperationsInput | string | null
     estado?: StringFieldUpdateOperationsInput | string
+    fecha_nacimiento?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     foto_path?: NullableStringFieldUpdateOperationsInput | string | null
     creado_en?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizado_en?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -16239,17 +16289,6 @@ export namespace Prisma {
     _max?: NestedDateTimeFilter<$PrismaModel>
   }
 
-  export type IntNullableFilter<$PrismaModel = never> = {
-    equals?: number | IntFieldRefInput<$PrismaModel> | null
-    in?: number[] | null
-    notIn?: number[] | null
-    lt?: number | IntFieldRefInput<$PrismaModel>
-    lte?: number | IntFieldRefInput<$PrismaModel>
-    gt?: number | IntFieldRefInput<$PrismaModel>
-    gte?: number | IntFieldRefInput<$PrismaModel>
-    not?: NestedIntNullableFilter<$PrismaModel> | number | null
-  }
-
   export type DateTimeNullableFilter<$PrismaModel = never> = {
     equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
     in?: Date[] | string[] | null
@@ -16259,6 +16298,17 @@ export namespace Prisma {
     gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
     gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
     not?: NestedDateTimeNullableFilter<$PrismaModel> | Date | string | null
+  }
+
+  export type IntNullableFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel> | null
+    in?: number[] | null
+    notIn?: number[] | null
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntNullableFilter<$PrismaModel> | number | null
   }
 
   export type AsistenciaListRelationFilter = {
@@ -16313,6 +16363,7 @@ export namespace Prisma {
     especialidad?: SortOrder
     jornada?: SortOrder
     estado?: SortOrder
+    fecha_nacimiento?: SortOrder
     anio_ingreso?: SortOrder
     anio_graduacion?: SortOrder
     nivel_actual?: SortOrder
@@ -16341,6 +16392,7 @@ export namespace Prisma {
     especialidad?: SortOrder
     jornada?: SortOrder
     estado?: SortOrder
+    fecha_nacimiento?: SortOrder
     anio_ingreso?: SortOrder
     anio_graduacion?: SortOrder
     nivel_actual?: SortOrder
@@ -16363,6 +16415,7 @@ export namespace Prisma {
     especialidad?: SortOrder
     jornada?: SortOrder
     estado?: SortOrder
+    fecha_nacimiento?: SortOrder
     anio_ingreso?: SortOrder
     anio_graduacion?: SortOrder
     nivel_actual?: SortOrder
@@ -16377,6 +16430,20 @@ export namespace Prisma {
     id?: SortOrder
     anio_ingreso?: SortOrder
     anio_graduacion?: SortOrder
+  }
+
+  export type DateTimeNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
+    in?: Date[] | string[] | null
+    notIn?: Date[] | string[] | null
+    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    not?: NestedDateTimeNullableWithAggregatesFilter<$PrismaModel> | Date | string | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedDateTimeNullableFilter<$PrismaModel>
+    _max?: NestedDateTimeNullableFilter<$PrismaModel>
   }
 
   export type IntNullableWithAggregatesFilter<$PrismaModel = never> = {
@@ -16395,20 +16462,6 @@ export namespace Prisma {
     _max?: NestedIntNullableFilter<$PrismaModel>
   }
 
-  export type DateTimeNullableWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
-    in?: Date[] | string[] | null
-    notIn?: Date[] | string[] | null
-    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    not?: NestedDateTimeNullableWithAggregatesFilter<$PrismaModel> | Date | string | null
-    _count?: NestedIntNullableFilter<$PrismaModel>
-    _min?: NestedDateTimeNullableFilter<$PrismaModel>
-    _max?: NestedDateTimeNullableFilter<$PrismaModel>
-  }
-
   export type PersonalCountOrderByAggregateInput = {
     id?: SortOrder
     carnet?: SortOrder
@@ -16419,6 +16472,7 @@ export namespace Prisma {
     jornada?: SortOrder
     grado_guia?: SortOrder
     estado?: SortOrder
+    fecha_nacimiento?: SortOrder
     foto_path?: SortOrder
     creado_en?: SortOrder
     actualizado_en?: SortOrder
@@ -16439,6 +16493,7 @@ export namespace Prisma {
     jornada?: SortOrder
     grado_guia?: SortOrder
     estado?: SortOrder
+    fecha_nacimiento?: SortOrder
     foto_path?: SortOrder
     creado_en?: SortOrder
     actualizado_en?: SortOrder
@@ -16455,6 +16510,7 @@ export namespace Prisma {
     jornada?: SortOrder
     grado_guia?: SortOrder
     estado?: SortOrder
+    fecha_nacimiento?: SortOrder
     foto_path?: SortOrder
     creado_en?: SortOrder
     actualizado_en?: SortOrder
@@ -16980,16 +17036,16 @@ export namespace Prisma {
     connect?: HistorialAcademicoWhereUniqueInput | HistorialAcademicoWhereUniqueInput[]
   }
 
+  export type NullableDateTimeFieldUpdateOperationsInput = {
+    set?: Date | string | null
+  }
+
   export type NullableIntFieldUpdateOperationsInput = {
     set?: number | null
     increment?: number
     decrement?: number
     multiply?: number
     divide?: number
-  }
-
-  export type NullableDateTimeFieldUpdateOperationsInput = {
-    set?: Date | string | null
   }
 
   export type AsistenciaUpdateManyWithoutAlumnoNestedInput = {
@@ -17558,6 +17614,20 @@ export namespace Prisma {
     not?: NestedDateTimeNullableFilter<$PrismaModel> | Date | string | null
   }
 
+  export type NestedDateTimeNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
+    in?: Date[] | string[] | null
+    notIn?: Date[] | string[] | null
+    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    not?: NestedDateTimeNullableWithAggregatesFilter<$PrismaModel> | Date | string | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedDateTimeNullableFilter<$PrismaModel>
+    _max?: NestedDateTimeNullableFilter<$PrismaModel>
+  }
+
   export type NestedIntNullableWithAggregatesFilter<$PrismaModel = never> = {
     equals?: number | IntFieldRefInput<$PrismaModel> | null
     in?: number[] | null
@@ -17583,20 +17653,6 @@ export namespace Prisma {
     gt?: number | FloatFieldRefInput<$PrismaModel>
     gte?: number | FloatFieldRefInput<$PrismaModel>
     not?: NestedFloatNullableFilter<$PrismaModel> | number | null
-  }
-
-  export type NestedDateTimeNullableWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
-    in?: Date[] | string[] | null
-    notIn?: Date[] | string[] | null
-    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    not?: NestedDateTimeNullableWithAggregatesFilter<$PrismaModel> | Date | string | null
-    _count?: NestedIntNullableFilter<$PrismaModel>
-    _min?: NestedDateTimeNullableFilter<$PrismaModel>
-    _max?: NestedDateTimeNullableFilter<$PrismaModel>
   }
 
   export type AsistenciaCreateWithoutAlumnoInput = {
@@ -18015,6 +18071,7 @@ export namespace Prisma {
     jornada?: string | null
     grado_guia?: string | null
     estado?: string
+    fecha_nacimiento?: Date | string | null
     foto_path?: string | null
     creado_en?: Date | string
     actualizado_en?: Date | string
@@ -18033,6 +18090,7 @@ export namespace Prisma {
     jornada?: string | null
     grado_guia?: string | null
     estado?: string
+    fecha_nacimiento?: Date | string | null
     foto_path?: string | null
     creado_en?: Date | string
     actualizado_en?: Date | string
@@ -18057,6 +18115,7 @@ export namespace Prisma {
     especialidad?: string | null
     jornada?: string | null
     estado?: string
+    fecha_nacimiento?: Date | string | null
     anio_ingreso?: number | null
     anio_graduacion?: number | null
     nivel_actual?: string | null
@@ -18082,6 +18141,7 @@ export namespace Prisma {
     especialidad?: string | null
     jornada?: string | null
     estado?: string
+    fecha_nacimiento?: Date | string | null
     anio_ingreso?: number | null
     anio_graduacion?: number | null
     nivel_actual?: string | null
@@ -18120,6 +18180,7 @@ export namespace Prisma {
     jornada?: NullableStringFieldUpdateOperationsInput | string | null
     grado_guia?: NullableStringFieldUpdateOperationsInput | string | null
     estado?: StringFieldUpdateOperationsInput | string
+    fecha_nacimiento?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     foto_path?: NullableStringFieldUpdateOperationsInput | string | null
     creado_en?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizado_en?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -18138,6 +18199,7 @@ export namespace Prisma {
     jornada?: NullableStringFieldUpdateOperationsInput | string | null
     grado_guia?: NullableStringFieldUpdateOperationsInput | string | null
     estado?: StringFieldUpdateOperationsInput | string
+    fecha_nacimiento?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     foto_path?: NullableStringFieldUpdateOperationsInput | string | null
     creado_en?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizado_en?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -18168,6 +18230,7 @@ export namespace Prisma {
     especialidad?: NullableStringFieldUpdateOperationsInput | string | null
     jornada?: NullableStringFieldUpdateOperationsInput | string | null
     estado?: StringFieldUpdateOperationsInput | string
+    fecha_nacimiento?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     anio_ingreso?: NullableIntFieldUpdateOperationsInput | number | null
     anio_graduacion?: NullableIntFieldUpdateOperationsInput | number | null
     nivel_actual?: NullableStringFieldUpdateOperationsInput | string | null
@@ -18193,6 +18256,7 @@ export namespace Prisma {
     especialidad?: NullableStringFieldUpdateOperationsInput | string | null
     jornada?: NullableStringFieldUpdateOperationsInput | string | null
     estado?: StringFieldUpdateOperationsInput | string
+    fecha_nacimiento?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     anio_ingreso?: NullableIntFieldUpdateOperationsInput | number | null
     anio_graduacion?: NullableIntFieldUpdateOperationsInput | number | null
     nivel_actual?: NullableStringFieldUpdateOperationsInput | string | null
@@ -18215,6 +18279,7 @@ export namespace Prisma {
     jornada?: string | null
     grado_guia?: string | null
     estado?: string
+    fecha_nacimiento?: Date | string | null
     foto_path?: string | null
     creado_en?: Date | string
     actualizado_en?: Date | string
@@ -18233,6 +18298,7 @@ export namespace Prisma {
     jornada?: string | null
     grado_guia?: string | null
     estado?: string
+    fecha_nacimiento?: Date | string | null
     foto_path?: string | null
     creado_en?: Date | string
     actualizado_en?: Date | string
@@ -18257,6 +18323,7 @@ export namespace Prisma {
     especialidad?: string | null
     jornada?: string | null
     estado?: string
+    fecha_nacimiento?: Date | string | null
     anio_ingreso?: number | null
     anio_graduacion?: number | null
     nivel_actual?: string | null
@@ -18282,6 +18349,7 @@ export namespace Prisma {
     especialidad?: string | null
     jornada?: string | null
     estado?: string
+    fecha_nacimiento?: Date | string | null
     anio_ingreso?: number | null
     anio_graduacion?: number | null
     nivel_actual?: string | null
@@ -18320,6 +18388,7 @@ export namespace Prisma {
     jornada?: NullableStringFieldUpdateOperationsInput | string | null
     grado_guia?: NullableStringFieldUpdateOperationsInput | string | null
     estado?: StringFieldUpdateOperationsInput | string
+    fecha_nacimiento?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     foto_path?: NullableStringFieldUpdateOperationsInput | string | null
     creado_en?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizado_en?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -18338,6 +18407,7 @@ export namespace Prisma {
     jornada?: NullableStringFieldUpdateOperationsInput | string | null
     grado_guia?: NullableStringFieldUpdateOperationsInput | string | null
     estado?: StringFieldUpdateOperationsInput | string
+    fecha_nacimiento?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     foto_path?: NullableStringFieldUpdateOperationsInput | string | null
     creado_en?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizado_en?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -18368,6 +18438,7 @@ export namespace Prisma {
     especialidad?: NullableStringFieldUpdateOperationsInput | string | null
     jornada?: NullableStringFieldUpdateOperationsInput | string | null
     estado?: StringFieldUpdateOperationsInput | string
+    fecha_nacimiento?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     anio_ingreso?: NullableIntFieldUpdateOperationsInput | number | null
     anio_graduacion?: NullableIntFieldUpdateOperationsInput | number | null
     nivel_actual?: NullableStringFieldUpdateOperationsInput | string | null
@@ -18393,6 +18464,7 @@ export namespace Prisma {
     especialidad?: NullableStringFieldUpdateOperationsInput | string | null
     jornada?: NullableStringFieldUpdateOperationsInput | string | null
     estado?: StringFieldUpdateOperationsInput | string
+    fecha_nacimiento?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     anio_ingreso?: NullableIntFieldUpdateOperationsInput | number | null
     anio_graduacion?: NullableIntFieldUpdateOperationsInput | number | null
     nivel_actual?: NullableStringFieldUpdateOperationsInput | string | null
@@ -18550,6 +18622,7 @@ export namespace Prisma {
     especialidad?: string | null
     jornada?: string | null
     estado?: string
+    fecha_nacimiento?: Date | string | null
     anio_ingreso?: number | null
     anio_graduacion?: number | null
     nivel_actual?: string | null
@@ -18575,6 +18648,7 @@ export namespace Prisma {
     especialidad?: string | null
     jornada?: string | null
     estado?: string
+    fecha_nacimiento?: Date | string | null
     anio_ingreso?: number | null
     anio_graduacion?: number | null
     nivel_actual?: string | null
@@ -18602,6 +18676,7 @@ export namespace Prisma {
     jornada?: string | null
     grado_guia?: string | null
     estado?: string
+    fecha_nacimiento?: Date | string | null
     foto_path?: string | null
     creado_en?: Date | string
     actualizado_en?: Date | string
@@ -18620,6 +18695,7 @@ export namespace Prisma {
     jornada?: string | null
     grado_guia?: string | null
     estado?: string
+    fecha_nacimiento?: Date | string | null
     foto_path?: string | null
     creado_en?: Date | string
     actualizado_en?: Date | string
@@ -18655,6 +18731,7 @@ export namespace Prisma {
     especialidad?: NullableStringFieldUpdateOperationsInput | string | null
     jornada?: NullableStringFieldUpdateOperationsInput | string | null
     estado?: StringFieldUpdateOperationsInput | string
+    fecha_nacimiento?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     anio_ingreso?: NullableIntFieldUpdateOperationsInput | number | null
     anio_graduacion?: NullableIntFieldUpdateOperationsInput | number | null
     nivel_actual?: NullableStringFieldUpdateOperationsInput | string | null
@@ -18680,6 +18757,7 @@ export namespace Prisma {
     especialidad?: NullableStringFieldUpdateOperationsInput | string | null
     jornada?: NullableStringFieldUpdateOperationsInput | string | null
     estado?: StringFieldUpdateOperationsInput | string
+    fecha_nacimiento?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     anio_ingreso?: NullableIntFieldUpdateOperationsInput | number | null
     anio_graduacion?: NullableIntFieldUpdateOperationsInput | number | null
     nivel_actual?: NullableStringFieldUpdateOperationsInput | string | null
@@ -18713,6 +18791,7 @@ export namespace Prisma {
     jornada?: NullableStringFieldUpdateOperationsInput | string | null
     grado_guia?: NullableStringFieldUpdateOperationsInput | string | null
     estado?: StringFieldUpdateOperationsInput | string
+    fecha_nacimiento?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     foto_path?: NullableStringFieldUpdateOperationsInput | string | null
     creado_en?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizado_en?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -18731,6 +18810,7 @@ export namespace Prisma {
     jornada?: NullableStringFieldUpdateOperationsInput | string | null
     grado_guia?: NullableStringFieldUpdateOperationsInput | string | null
     estado?: StringFieldUpdateOperationsInput | string
+    fecha_nacimiento?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     foto_path?: NullableStringFieldUpdateOperationsInput | string | null
     creado_en?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizado_en?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -18750,6 +18830,7 @@ export namespace Prisma {
     especialidad?: string | null
     jornada?: string | null
     estado?: string
+    fecha_nacimiento?: Date | string | null
     anio_ingreso?: number | null
     anio_graduacion?: number | null
     nivel_actual?: string | null
@@ -18775,6 +18856,7 @@ export namespace Prisma {
     especialidad?: string | null
     jornada?: string | null
     estado?: string
+    fecha_nacimiento?: Date | string | null
     anio_ingreso?: number | null
     anio_graduacion?: number | null
     nivel_actual?: string | null
@@ -18815,6 +18897,7 @@ export namespace Prisma {
     especialidad?: NullableStringFieldUpdateOperationsInput | string | null
     jornada?: NullableStringFieldUpdateOperationsInput | string | null
     estado?: StringFieldUpdateOperationsInput | string
+    fecha_nacimiento?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     anio_ingreso?: NullableIntFieldUpdateOperationsInput | number | null
     anio_graduacion?: NullableIntFieldUpdateOperationsInput | number | null
     nivel_actual?: NullableStringFieldUpdateOperationsInput | string | null
@@ -18840,6 +18923,7 @@ export namespace Prisma {
     especialidad?: NullableStringFieldUpdateOperationsInput | string | null
     jornada?: NullableStringFieldUpdateOperationsInput | string | null
     estado?: StringFieldUpdateOperationsInput | string
+    fecha_nacimiento?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     anio_ingreso?: NullableIntFieldUpdateOperationsInput | number | null
     anio_graduacion?: NullableIntFieldUpdateOperationsInput | number | null
     nivel_actual?: NullableStringFieldUpdateOperationsInput | string | null

@@ -188,7 +188,8 @@ router.post('/', invalidateCacheMiddleware('/api/docentes'), (req, res, next) =>
         jornada: jornada || null,
         grado_guia: (cargo === 'Docente' && grado_guia) ? grado_guia : null,
         curso: (cargo === 'Docente' && curso) ? curso : null,
-        foto_path: foto_url
+        foto_path: foto_url,
+        fecha_nacimiento: req.body.fecha_nacimiento ? new Date(req.body.fecha_nacimiento) : null
       }
     });
 
@@ -252,7 +253,10 @@ router.put('/:id', invalidateCacheMiddleware('/api/docentes'), (req, res, next) 
         estado: estado || docente.estado,
         grado_guia: (cargo === 'Docente' || docente.cargo === 'Docente') && grado_guia !== undefined ? grado_guia : (cargo !== 'Docente' ? null : docente.grado_guia),
         curso: (cargo === 'Docente' || docente.cargo === 'Docente') && curso !== undefined ? curso : (cargo !== 'Docente' ? null : docente.curso),
-        foto_path: foto_url
+        foto_path: foto_url,
+        ...(req.body.fecha_nacimiento !== undefined && {
+          fecha_nacimiento: req.body.fecha_nacimiento ? new Date(req.body.fecha_nacimiento) : null
+        })
       }
     });
 

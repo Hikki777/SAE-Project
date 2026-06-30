@@ -210,12 +210,13 @@ router.post('/', invalidateCacheMiddleware('/api/alumnos'), validarCrearAlumno, 
         apellidos,
         sexo: sexo || null,
         grado,
-        nivel_actual: calcularNivelActual(grado), // Calcular automáticamente
+        nivel_actual: calcularNivelActual(grado),
         seccion: seccion || null,
         carrera: req.body.carrera || null,
         especialidad: req.body.especialidad || null,
         jornada: jornada || 'Matutina',
-        estado: 'activo'
+        estado: 'activo',
+        fecha_nacimiento: req.body.fecha_nacimiento ? new Date(req.body.fecha_nacimiento) : null
       },
       select: {
         id: true,
@@ -229,6 +230,7 @@ router.post('/', invalidateCacheMiddleware('/api/alumnos'), validarCrearAlumno, 
         especialidad: true,
         jornada: true,
         estado: true,
+        fecha_nacimiento: true,
         foto_path: true,
         creado_en: true,
         actualizado_en: true
@@ -276,12 +278,15 @@ router.put('/:id', invalidateCacheMiddleware('/api/alumnos'), validarActualizarA
         ...(nombres && { nombres }),
         ...(apellidos && { apellidos }),
         ...(sexo && { sexo }),
-        ...(grado && { grado, nivel_actual: calcularNivelActual(grado) }), // Actualizar nivel si cambia grado
+        ...(grado && { grado, nivel_actual: calcularNivelActual(grado) }),
         ...(seccion !== undefined && { seccion }),
         ...(carrera !== undefined && { carrera }),
         ...(especialidad !== undefined && { especialidad }),
         ...(jornada && { jornada }),
-        ...(estado && { estado })
+        ...(estado && { estado }),
+        ...(req.body.fecha_nacimiento !== undefined && {
+          fecha_nacimiento: req.body.fecha_nacimiento ? new Date(req.body.fecha_nacimiento) : null
+        })
       },
       select: {
         id: true,
@@ -295,6 +300,7 @@ router.put('/:id', invalidateCacheMiddleware('/api/alumnos'), validarActualizarA
         especialidad: true,
         jornada: true,
         estado: true,
+        fecha_nacimiento: true,
         foto_path: true,
         creado_en: true,
         actualizado_en: true

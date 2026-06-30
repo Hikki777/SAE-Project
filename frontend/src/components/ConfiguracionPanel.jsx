@@ -812,9 +812,12 @@ const EquipoSettings = ({ equipos, loading, onApprove, onDelete, serverInfo }) =
 
   // URLs para Vinculación
   const scannerUrl = `https://${ipv4}:${httpsPort}/mobile-scanner.html`;
-  const httpUrl    = `http://${ipv4}:${port}/mobile-scanner.html`;
   
-  const qrData = customUrl.trim() !== '' ? customUrl : scannerUrl;
+  let qrData = scannerUrl;
+  if (customUrl.trim() !== '') {
+    const cleanUrl = customUrl.trim().replace(/\/+$/, ''); // Quitar slash final si lo hay
+    qrData = cleanUrl.endsWith('.html') ? cleanUrl : `${cleanUrl}/mobile-scanner.html`;
+  }
 
   return (
     <motion.div

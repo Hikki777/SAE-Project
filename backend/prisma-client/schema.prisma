@@ -35,29 +35,30 @@ model Institucion {
 }
 
 model Alumno {
-  id              Int                  @id @default(autoincrement())
-  carnet          String               @unique
-  nombres         String
-  apellidos       String
-  sexo            String?
-  grado           String
-  seccion         String?
-  carrera         String?
-  especialidad    String?
-  jornada         String?
-  estado          String               @default("activo")
-  anio_ingreso    Int?
-  anio_graduacion Int?
-  nivel_actual    String?
-  motivo_baja     String?
-  fecha_baja      DateTime?
-  foto_path       String?
-  creado_en       DateTime             @default(now())
-  actualizado_en  DateTime             @updatedAt
-  asistencias     Asistencia[]         @relation("alumno_asistencia")
-  codigos_qr      CodigoQr[]           @relation("alumno_qr")
-  excusas         Excusa[]             @relation("alumno_excusa")
-  historial       HistorialAcademico[]
+  id               Int                  @id @default(autoincrement())
+  carnet           String               @unique
+  nombres          String
+  apellidos        String
+  sexo             String?
+  grado            String
+  seccion          String?
+  carrera          String?
+  especialidad     String?
+  jornada          String?
+  estado           String               @default("activo")
+  fecha_nacimiento DateTime?
+  anio_ingreso     Int?
+  anio_graduacion  Int?
+  nivel_actual     String?
+  motivo_baja      String?
+  fecha_baja       DateTime?
+  foto_path        String?
+  creado_en        DateTime             @default(now())
+  actualizado_en   DateTime             @updatedAt
+  asistencias      Asistencia[]         @relation("alumno_asistencia")
+  codigos_qr       CodigoQr[]           @relation("alumno_qr")
+  excusas          Excusa[]             @relation("alumno_excusa")
+  historial        HistorialAcademico[]
 
   @@index([estado])
   @@index([grado])
@@ -66,22 +67,23 @@ model Alumno {
 }
 
 model Personal {
-  id             Int          @id @default(autoincrement())
-  carnet         String       @unique
-  nombres        String
-  apellidos      String
-  sexo           String?
-  cargo          String?
-  jornada        String?
-  grado_guia     String?
-  estado         String       @default("activo")
-  foto_path      String?
-  creado_en      DateTime     @default(now())
-  actualizado_en DateTime     @updatedAt
-  curso          String?
-  asistencias    Asistencia[] @relation("personal_asistencia")
-  codigos_qr     CodigoQr[]   @relation("personal_qr")
-  excusas        Excusa[]     @relation("personal_excusa")
+  id               Int          @id @default(autoincrement())
+  carnet           String       @unique
+  nombres          String
+  apellidos        String
+  sexo             String?
+  cargo            String?
+  jornada          String?
+  grado_guia       String?
+  estado           String       @default("activo")
+  fecha_nacimiento DateTime?
+  foto_path        String?
+  creado_en        DateTime     @default(now())
+  actualizado_en   DateTime     @updatedAt
+  curso            String?
+  asistencias      Asistencia[] @relation("personal_asistencia")
+  codigos_qr       CodigoQr[]   @relation("personal_qr")
+  excusas          Excusa[]     @relation("personal_excusa")
 
   @@index([estado])
   @@map("personal")

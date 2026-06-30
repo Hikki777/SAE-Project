@@ -154,6 +154,12 @@ export default function Dashboard() {
   const [isNetworkOnline, setIsNetworkOnline] = useState(navigator.onLine);
   const [pendingSync, setPendingSync] = useState(0);
 
+  // ── Stats del día (en tiempo real) ──────────────────────────────
+  const [statsHoy, setStatsHoy] = useState(null);
+  const [feedAsistencias, setFeedAsistencias] = useState([]);
+  const [loadingHoy, setLoadingHoy] = useState(true);
+  const [feedNuevo, setFeedNuevo] = useState(false);
+
   useEffect(() => {
     fetchInstitucion();
     fetchStats();
@@ -298,7 +304,38 @@ export default function Dashboard() {
     }
   };
 
+  // ── Stats del día ────────────────────────────────────────────────
+  const fetchStatsHoy = async () => {
+    try {
+      const response = await dashboardAPI.statsHoy();
+      setStatsHoy(response.data);
+      setFeedAsistencias(response.data.feed || []);
+    } catch (error) {
+      console.error("Error fetching stats del día:", error);
+    } finally {
+      setLoadingHoy(false);
+    }
+  };
 
+  // Cargar stats del día al montar y refrescar cada 30s
+  useEffect(() => {
+    fetchStatsHoy();
+    const interval = setInterval(fetchStatsHoy, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Escuchar eventos de Socket.IO (via window) para actualización instantánea
+  useEffect(() => {
+    const handleSyncEvent = (event) => {
+      if (event.detail?.type === 'asistencias') {
+        setFeedNuevo(true);
+        fetchStatsHoy();
+        setTimeout(() => setFeedNuevo(false), 3000);
+      }
+    };
+    window.addEventListener('data-sync-required', handleSyncEvent);
+    return () => window.removeEventListener('data-sync-required', handleSyncEvent);
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -465,6 +502,287 @@ export default function Dashboard() {
         <div className="flex items-center justify-center gap-2 bg-yellow-100 dark:bg-yellow-900/30 p-2 rounded-lg text-yellow-800 dark:text-yellow-200 text-sm font-bold animate-pulse border border-yellow-200 dark:border-yellow-700">
           <Activity size={18} />
           <span>Sincronizando {pendingSync} registros pendientes...</span>
+        </div>
+      )}
+
+      {/* ══════════════════════ ACTIVIDAD DEL DÍA ══════════════════════ */}
+      {!loadingHoy && statsHoy && (
+        <div className="space-y-4">
+          {/* Header de sección */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-1.5 h-6 bg-blue-500 rounded-full" />
+              <h2 className="text-base font-bold text-gray-800 dark:text-gray-100">Actividad del Día</h2>
+            </div>
+            <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+              <span className="relative flex h-2 w-2">
+                <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
+                  feedNuevo ? 'bg-emerald-400' : 'bg-blue-400'
+                }`} />
+                <span className={`relative inline-flex rounded-full h-2 w-2 ${
+                  feedNuevo ? 'bg-emerald-500' : 'bg-blue-500'
+                }`} />
+              </span>
+              <span className={feedNuevo ? 'text-emerald-600 dark:text-emerald-400 font-semibold' : ''}>
+                {feedNuevo ? '¡Nueva asistencia registrada!' : 'Actualiza cada 30s'}
+              </span>
+            </div>
+          </div>
+
+          {/* ── Cuadros de stats: Alumnos + Personal ── */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+
+            {/* ALUMNOS */}
+            <div className="bg-bg-secondary/70 backdrop-blur-xl rounded-2xl p-5 border border-white/5">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="p-1.5 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                  <Users className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                </div>
+                <span className="text-xs font-black uppercase tracking-widest text-blue-600 dark:text-blue-400">Alumnos</span>
+              </div>
+
+              {/* Barra de progreso de asistencia */}
+              <div className="mb-4">
+                <div className="flex justify-between items-baseline mb-1.5">
+                  <span className="text-3xl font-black text-gray-900 dark:text-white">{statsHoy.alumnos.presentes}</span>
+                  <span className="text-sm text-gray-400 dark:text-gray-500">de {statsHoy.alumnos.total} alumnos</span>
+                </div>
+                <div className="h-3 bg-gray-100 dark:bg-gray-700/60 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full transition-all duration-700"
+                    style={{ width: `${Math.min(statsHoy.alumnos.porcentaje, 100)}%` }}
+                  />
+                </div>
+                <div className="flex justify-between mt-1">
+                  <span className="text-xs text-gray-400">Presentes hoy</span>
+                  <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">{statsHoy.alumnos.porcentaje}%</span>
+                </div>
+              </div>
+
+              {/* Sub-métricas */}
+              <div className="grid grid-cols-3 gap-2">
+                <div className="bg-red-50 dark:bg-red-900/20 rounded-xl p-3 text-center border border-red-100 dark:border-red-900/30">
+                  <div className="text-xl font-black text-red-600 dark:text-red-400">{statsHoy.alumnos.ausentes}</div>
+                  <div className="text-[10px] font-bold text-red-500 uppercase tracking-wider mt-0.5">Ausentes</div>
+                </div>
+                <div className="bg-amber-50 dark:bg-amber-900/20 rounded-xl p-3 text-center border border-amber-100 dark:border-amber-900/30">
+                  <div className="text-xl font-black text-amber-600 dark:text-amber-400">{statsHoy.alumnos.sinSalida}</div>
+                  <div className="text-[10px] font-bold text-amber-500 uppercase tracking-wider mt-0.5">Sin salida</div>
+                </div>
+                <div className="bg-orange-50 dark:bg-orange-900/20 rounded-xl p-3 text-center border border-orange-100 dark:border-orange-900/30">
+                  <div className="text-xl font-black text-orange-600 dark:text-orange-400">{statsHoy.alumnos.tardes}</div>
+                  <div className="text-[10px] font-bold text-orange-500 uppercase tracking-wider mt-0.5">Tardanzas</div>
+                </div>
+              </div>
+            </div>
+
+            {/* PERSONAL */}
+            <div className="bg-bg-secondary/70 backdrop-blur-xl rounded-2xl p-5 border border-white/5">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="p-1.5 bg-teal-100 dark:bg-teal-900/30 rounded-lg">
+                  <Briefcase className="w-4 h-4 text-teal-600 dark:text-teal-400" />
+                </div>
+                <span className="text-xs font-black uppercase tracking-widest text-teal-600 dark:text-teal-400">Personal</span>
+              </div>
+
+              {/* Barra de progreso personal */}
+              <div className="mb-4">
+                <div className="flex justify-between items-baseline mb-1.5">
+                  <span className="text-3xl font-black text-gray-900 dark:text-white">{statsHoy.personal.presentes}</span>
+                  <span className="text-sm text-gray-400 dark:text-gray-500">de {statsHoy.personal.total} miembros</span>
+                </div>
+                <div className="h-3 bg-gray-100 dark:bg-gray-700/60 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-teal-500 to-teal-400 rounded-full transition-all duration-700"
+                    style={{ width: `${Math.min(statsHoy.personal.porcentaje, 100)}%` }}
+                  />
+                </div>
+                <div className="flex justify-between mt-1">
+                  <span className="text-xs text-gray-400">Presentes hoy</span>
+                  <span className="text-xs font-bold text-teal-600 dark:text-teal-400">{statsHoy.personal.porcentaje}%</span>
+                </div>
+              </div>
+
+              {/* Sub-métricas personal */}
+              <div className="grid grid-cols-2 gap-2">
+                <div className="bg-red-50 dark:bg-red-900/20 rounded-xl p-3 text-center border border-red-100 dark:border-red-900/30">
+                  <div className="text-xl font-black text-red-600 dark:text-red-400">{statsHoy.personal.ausentes}</div>
+                  <div className="text-[10px] font-bold text-red-500 uppercase tracking-wider mt-0.5">Ausentes</div>
+                </div>
+                <div className="bg-amber-50 dark:bg-amber-900/20 rounded-xl p-3 text-center border border-amber-100 dark:border-amber-900/30">
+                  <div className="text-xl font-black text-amber-600 dark:text-amber-400">{statsHoy.personal.sinSalida}</div>
+                  <div className="text-[10px] font-bold text-amber-500 uppercase tracking-wider mt-0.5">Sin salida</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* ── Feed en vivo + Alertas ── */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+
+            {/* FEED DE ASISTENCIAS */}
+            <div className="bg-bg-secondary/70 backdrop-blur-xl rounded-2xl border border-white/5 overflow-hidden">
+              <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-700/50">
+                <div className="flex items-center gap-2">
+                  <div className="w-1 h-5 bg-blue-500 rounded-full" />
+                  <h3 className="text-sm font-bold text-gray-800 dark:text-gray-100">Últimas Asistencias</h3>
+                </div>
+                <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400">
+                  <span className="relative flex h-1.5 w-1.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
+                  </span>
+                  En vivo
+                </span>
+              </div>
+              <div className="p-3 space-y-1.5 max-h-[340px] overflow-y-auto">
+                {feedAsistencias.length === 0 ? (
+                  <div className="py-12 text-center">
+                    <Activity size={32} className="mx-auto mb-2 text-gray-300 dark:text-gray-600" />
+                    <p className="text-sm text-gray-400 dark:text-gray-500">Sin registros hoy</p>
+                    <p className="text-xs text-gray-300 dark:text-gray-600 mt-1">Los escaneos aparecerán aquí</p>
+                  </div>
+                ) : (
+                  feedAsistencias.map((item, i) => {
+                    const p = item.persona;
+                    const isMale = p?.sexo?.toUpperCase() === 'M' || p?.sexo?.toUpperCase() === 'MASCULINO';
+                    const ini = p ? `${p.nombres?.[0] || ''}${p.apellidos?.[0] || ''}`.toUpperCase() : '??';
+                    const esEntrada = item.tipo_evento === 'entrada';
+                    const hora = new Date(item.timestamp).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+                    return (
+                      <div
+                        key={item.id || i}
+                        className={`flex items-center gap-3 p-2.5 rounded-xl border-l-[3px] transition-all ${
+                          esEntrada
+                            ? 'border-l-emerald-500 bg-emerald-50/50 dark:bg-emerald-900/10'
+                            : 'border-l-blue-500 bg-blue-50/50 dark:bg-blue-900/10'
+                        }`}
+                      >
+                        {/* Avatar de iniciales */}
+                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-xs flex-shrink-0 ${
+                          isMale
+                            ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300'
+                            : 'bg-pink-100 dark:bg-pink-900/40 text-pink-700 dark:text-pink-300'
+                        }`}>
+                          {ini}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-[13px] font-semibold text-gray-800 dark:text-gray-100 truncate">
+                            {p ? `${p.nombres} ${p.apellidos}` : 'Desconocido'}
+                          </div>
+                          <div className="text-[11px] text-gray-400 dark:text-gray-500 truncate">
+                            {p?.carnet}{p?.grado ? ` · ${p.grado}${p.seccion ? ` ${p.seccion}` : ''}` : ''}
+                          </div>
+                        </div>
+                        <div className="flex-shrink-0 text-right">
+                          <div className={`text-[12px] font-bold ${
+                            esEntrada ? 'text-emerald-600 dark:text-emerald-400' : 'text-blue-600 dark:text-blue-400'
+                          }`}>
+                            {esEntrada ? '↑' : '↓'} {hora}
+                          </div>
+                          {item.estado_puntualidad && (
+                            <div className={`text-[10px] font-medium ${
+                              item.estado_puntualidad === 'puntual'
+                                ? 'text-emerald-500 dark:text-emerald-400'
+                                : 'text-orange-500 dark:text-orange-400'
+                            }`}>
+                              {item.estado_puntualidad}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+
+            {/* ALERTAS DEL DÍA */}
+            <div className="bg-bg-secondary/70 backdrop-blur-xl rounded-2xl border border-white/5 overflow-hidden">
+              <div className="flex items-center gap-2 px-5 py-4 border-b border-gray-100 dark:border-gray-700/50">
+                <div className="w-1 h-5 bg-amber-500 rounded-full" />
+                <h3 className="text-sm font-bold text-gray-800 dark:text-gray-100">Alertas del Día</h3>
+              </div>
+              <div className="p-4 space-y-3">
+
+                {/* Alumnos ausentes */}
+                {statsHoy.alumnos.ausentes > 0 && (
+                  <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-xl border-l-4 border-red-500">
+                    <div className="flex items-center gap-2 mb-1">
+                      <AlertTriangle size={15} className="text-red-500 flex-shrink-0" />
+                      <span className="font-bold text-red-700 dark:text-red-400 text-sm">
+                        {statsHoy.alumnos.ausentes} alumno{statsHoy.alumnos.ausentes > 1 ? 's' : ''} ausente{statsHoy.alumnos.ausentes > 1 ? 's' : ''}
+                      </span>
+                    </div>
+                    <p className="text-xs text-red-500 dark:text-red-400 ml-5 opacity-80">Sin registro de asistencia hoy</p>
+                  </div>
+                )}
+
+                {/* Alumnos sin salida */}
+                {statsHoy.alumnos.sinSalida > 0 && (
+                  <div className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-xl border-l-4 border-amber-500">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Clock size={15} className="text-amber-500 flex-shrink-0" />
+                      <span className="font-bold text-amber-700 dark:text-amber-400 text-sm">
+                        {statsHoy.alumnos.sinSalida} alumno{statsHoy.alumnos.sinSalida > 1 ? 's' : ''} sin marcar salida
+                      </span>
+                    </div>
+                    <p className="text-xs text-amber-500 dark:text-amber-400 ml-5 opacity-80">Jornada activa o pendiente de cierre</p>
+                  </div>
+                )}
+
+                {/* Personal ausente */}
+                {statsHoy.personal.ausentes > 0 && (
+                  <div className="p-4 bg-orange-50 dark:bg-orange-900/20 rounded-xl border-l-4 border-orange-500">
+                    <div className="flex items-center gap-2 mb-1">
+                      <AlertTriangle size={15} className="text-orange-500 flex-shrink-0" />
+                      <span className="font-bold text-orange-700 dark:text-orange-400 text-sm">
+                        {statsHoy.personal.ausentes} miembro{statsHoy.personal.ausentes > 1 ? 's' : ''} del personal ausente{statsHoy.personal.ausentes > 1 ? 's' : ''}
+                      </span>
+                    </div>
+                    <p className="text-xs text-orange-500 dark:text-orange-400 ml-5 opacity-80">Sin registro de asistencia hoy</p>
+                  </div>
+                )}
+
+                {/* % asistencia alumnos */}
+                <div className="p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl border-l-4 border-emerald-500">
+                  <div className="flex items-center gap-2 mb-1">
+                    <TrendingUp size={15} className="text-emerald-500 flex-shrink-0" />
+                    <span className="font-bold text-emerald-700 dark:text-emerald-400 text-sm">
+                      {statsHoy.alumnos.porcentaje}% de asistencia de alumnos
+                    </span>
+                  </div>
+                  <p className="text-xs text-emerald-600 dark:text-emerald-400 ml-5 opacity-80">
+                    {statsHoy.alumnos.puntuales} puntuales · {statsHoy.alumnos.tardes} tardanzas
+                  </p>
+                </div>
+
+                {/* % asistencia personal */}
+                <div className="p-4 bg-teal-50 dark:bg-teal-900/20 rounded-xl border-l-4 border-teal-500">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Briefcase size={15} className="text-teal-500 flex-shrink-0" />
+                    <span className="font-bold text-teal-700 dark:text-teal-400 text-sm">
+                      {statsHoy.personal.porcentaje}% de asistencia del personal
+                    </span>
+                  </div>
+                  <p className="text-xs text-teal-600 dark:text-teal-400 ml-5 opacity-80">
+                    {statsHoy.personal.presentes} de {statsHoy.personal.total} miembros presentes
+                  </p>
+                </div>
+
+                {/* Estado nominal */}
+                {statsHoy.alumnos.ausentes === 0 && statsHoy.alumnos.sinSalida === 0 && statsHoy.personal.ausentes === 0 && (
+                  <div className="py-4 text-center">
+                    <div className="w-10 h-10 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center mx-auto mb-2">
+                      <Activity size={20} className="text-emerald-500" />
+                    </div>
+                    <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">Todo en orden</p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Sin alertas activas</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       )}
 

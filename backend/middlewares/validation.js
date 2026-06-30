@@ -69,6 +69,10 @@ exports.validarCrearAlumno = [
     .optional()
     .isIn(['activo', 'inactivo', 'repitente']).withMessage('Estado inválido'),
   
+  body('fecha_nacimiento')
+    .optional({ checkFalsy: true })
+    .isISO8601().withMessage('Fecha de nacimiento inválida (formato YYYY-MM-DD)'),
+  
   handleValidationErrors
 ];
 
@@ -116,6 +120,10 @@ exports.validarActualizarAlumno = [
     .optional()
     .isIn(['activo', 'inactivo', 'repitente']).withMessage('Estado inválido'),
   
+  body('fecha_nacimiento')
+    .optional({ checkFalsy: true })
+    .isISO8601().withMessage('Fecha de nacimiento inválida (formato YYYY-MM-DD)'),
+  
   handleValidationErrors
 ];
 
@@ -159,6 +167,10 @@ exports.validarCrearDocente = [
     .optional()
     .isIn(['activo', 'inactivo']).withMessage('Estado inválido'),
   
+  body('fecha_nacimiento')
+    .optional({ checkFalsy: true })
+    .isISO8601().withMessage('Fecha de nacimiento inválida (formato YYYY-MM-DD)'),
+  
   handleValidationErrors
 ];
 
@@ -200,6 +212,10 @@ exports.validarActualizarDocente = [
   body('estado')
     .optional()
     .isIn(['activo', 'inactivo']).withMessage('Estado inválido'),
+  
+  body('fecha_nacimiento')
+    .optional({ checkFalsy: true })
+    .isISO8601().withMessage('Fecha de nacimiento inválida (formato YYYY-MM-DD)'),
   
   handleValidationErrors
 ];

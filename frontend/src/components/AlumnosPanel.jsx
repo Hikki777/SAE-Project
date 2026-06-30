@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { GraduationCap, Plus, Edit, Trash2, Download, Search, Filter, X, User, QrCode, BookOpen, Sun, CheckCircle, XCircle, Briefcase, RotateCcw, AlertCircle, Camera, AlertTriangle, ShieldAlert } from 'lucide-react';
+import { GraduationCap, Plus, Edit, Trash2, Download, Search, Filter, X, User, QrCode, BookOpen, Sun, CheckCircle, XCircle, Briefcase, RotateCcw, AlertCircle, Camera, AlertTriangle, ShieldAlert, FileSpreadsheet } from 'lucide-react';
 import WebcamCaptureModal from './WebcamCaptureModal';
 import toast from 'react-hot-toast';
 import { alumnosAPI, qrAPI, institucionAPI } from '../api/endpoints';
@@ -12,6 +12,7 @@ import client, { API_URL, BASE_URL } from '../api/client';
 import { Card } from './ui/Card';
 import { Button } from './ui/Button';
 import { PageHeader } from './ui/PageHeader';
+import ImportModal from './ImportModal';
 
 export default function AlumnosPanel() {
   const [alumnos, setAlumnos] = useState([]);
@@ -41,9 +42,12 @@ export default function AlumnosPanel() {
     especialidad: '',
     jornada: '',
     sexo: '',
+    fecha_nacimiento: '',
     foto: null,
     preview: null
   });
+
+  const [showImportModal, setShowImportModal] = useState(false);
 
   // Sistema híbrido de carnets
   const [carnetMode, setCarnetMode] = useState('auto');
@@ -210,7 +214,7 @@ export default function AlumnosPanel() {
       
       setShowModal(false);
       setEditingAlumno(null);
-      setFormData({ carnet: '', nombres: '', apellidos: '', grado: '', seccion: '', carrera: '', especialidad: '', jornada: '', sexo: '', foto: null, preview: null });
+      setFormData({ carnet: '', nombres: '', apellidos: '', grado: '', seccion: '', carrera: '', especialidad: '', jornada: '', sexo: '', fecha_nacimiento: '', foto: null, preview: null });
       setCarnetMode('auto');
       setSuggestedCarnet('');
       setCarnetValidation({ valid: true, error: null });
@@ -229,10 +233,11 @@ export default function AlumnosPanel() {
       apellidos: alumno.apellidos,
       grado: alumno.grado || '',
       seccion: alumno.seccion || '',
-      carrera: alumno.carrera || '', // Fix: Cargar carrera
+      carrera: alumno.carrera || '',
       especialidad: alumno.especialidad || '',
       jornada: alumno.jornada || '',
       sexo: alumno.sexo || '',
+      fecha_nacimiento: alumno.fecha_nacimiento ? alumno.fecha_nacimiento.split('T')[0] : '',
       foto: null,
       preview: alumno.foto_path ? (alumno.foto_path.startsWith('http') ? alumno.foto_path : `${BASE_URL}/api/uploads/${alumno.foto_path}`) : null
     });
@@ -462,12 +467,20 @@ export default function AlumnosPanel() {
     <div className="space-y-4 sm:space-y-6">
       {/* Header */}
       <PageHeader title="Alumnos" icon={GraduationCap}>
+        <button
+          onClick={() => setShowImportModal(true)}
+          className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold px-3 py-2 rounded-lg transition"
+          title="Importar alumnos desde Excel o JSON"
+        >
+          <FileSpreadsheet size={16} />
+          <span className="hidden sm:inline">Importar</span>
+        </button>
         <Button
           variant="primary"
           icon={Plus}
           onClick={() => {
             setEditingAlumno(null);
-            setFormData({ carnet: '', nombres: '', apellidos: '', grado: '', seccion: '', carrera: '', especialidad: '', jornada: '', sexo: '', foto: null, preview: null });
+            setFormData({ carnet: '', nombres: '', apellidos: '', grado: '', seccion: '', carrera: '', especialidad: '', jornada: '', sexo: '', fecha_nacimiento: '', foto: null, preview: null });
             setShowModal(true);
           }}
         >
@@ -1124,6 +1137,17 @@ export default function AlumnosPanel() {
               </div>
 
 
+               {/* Campo Fecha de Nacimiento */}
+               <div>
+                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Fecha de Nacimiento</label>
+                 <input
+                   type="date"
+                   value={formData.fecha_nacimiento}
+                   onChange={(e) => setFormData({ ...formData, fecha_nacimiento: e.target.value })}
+                   className="w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-primary-500 focus:border-transparent text-gray-900 dark:text-gray-100"
+                 />
+               </div>
+
                {/* Campos carrera/especialidad solo visibles para Diversificado */}
                {formData.grado && (formData.grado.includes('Diversificado') || formData.grado.includes('Bachillerato') || formData.grado.includes('Graduandos')) && (
                  <>
@@ -1659,6 +1683,14 @@ export default function AlumnosPanel() {
           document.body
         )}
       </AnimatePresence>
+
+      {/* Modal de Importación Masiva */}
+      <ImportModal
+        isOpen={showImportModal}
+        onClose={() => setShowImportModal(false)}
+        tipo="alumnos"
+        onSuccess={fetchData}
+      />
     </div>
   );
 }
