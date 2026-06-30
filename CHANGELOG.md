@@ -4,6 +4,21 @@ Todos los cambios notables de este proyecto están documentados en este archivo.
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.0.0/),
 versionado según [Semantic Versioning](https://semver.org/lang/es/).
 
+## [1.1.10] — 2026-06-30
+
+### Añadido
+- **Campo `fecha_nacimiento`**: 
+  - Agregado al modelo de base de datos para `Alumno` y `Personal`.
+  - Integrado selector de fecha opcional en los formularios web de creación y edición.
+- **Importación Masiva desde Excel**:
+  - Nuevo botón "Importar" en la barra superior de la vista de Alumnos y Personal.
+  - Nuevo componente `ImportModal` con soporte para arrastrar y soltar (drag & drop) archivos `.xlsx` y `.xls`.
+  - Nuevos endpoints para procesar archivos de manera masiva (hasta 500 alumnos y 200 personal por carga).
+  - Descarga de plantilla Excel pre-configurada directamente desde la interfaz.
+  - Reporte instantáneo de importación con barra de progreso, listado de registros exitosos y desglose de errores por fila.
+  - Generación automática de Carnets y Códigos QR para todos los registros importados.
+  - Instalación de la dependencia `xlsx` (SheetJS) para el procesamiento y generación de hojas de cálculo.
+
 ## [1.1.9] — 2026-05-22
 
 ### Corregido
